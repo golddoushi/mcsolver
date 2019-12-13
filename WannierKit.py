@@ -119,18 +119,12 @@ class TBmodel(object):
                     # hopping start with orb
                     if(hopping[0]==iorb):
                         hopping[2]+=orb_shift
-                        #print(orb_shift)
-                        #print(hopping)
-                        #print()
                     if(hopping[1]==iorb):
                         hopping[2]-=orb_shift
-                        #print(orb_shift)
-                        #print(hopping)
-                        #print()
 
     def viewStructure(self):
         '''visualize the orbital and bonding's spatial configuration'''
-        f=fig.Figure(figsize=(4,3))
+        f=fig.Figure(figsize=(3,3))
         ax=f.add_subplot(111,projection='3d')
         
         def dragLineWithTwoPoints(pt0, pt1, c='black', linewidth=2):
@@ -161,7 +155,7 @@ class TBmodel(object):
         for iorb, orb in enumerate(self.orbital_coor):
             orb_xyz=np.dot(orb[0],self.lattice)
             ax.scatter(orb_xyz[0],orb_xyz[1],orb_xyz[2],c=orb[2],s=orb[1])
-            ax.text(orb_xyz[0],orb_xyz[1],orb_xyz[2],str(iorb))
+            #ax.text(orb_xyz[0],orb_xyz[1],orb_xyz[2],str(iorb))
         
         for hopping in self.hopping:
             iorb0, iorb1, Rextra, amp, color, linewidth=hopping[0], hopping[1], hopping[2], hopping[3], hopping[4], hopping[5]

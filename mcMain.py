@@ -5,10 +5,10 @@ import random
 import time
 
 class MC:
-    def __init__(self,ID,LMatrix,pos,bondList,T=1,Lx=1,Ly=1,Lz=1): # init for specified temperature
+    def __init__(self,ID,LMatrix,pos,S,bondList,T=1,Lx=1,Ly=1,Lz=1): # init for specified temperature
         norb=len(pos)
         totOrbs=Lx*Ly*Lz*norb
-        lattice_array, lattice=lat.establishLattice(Lx=Lx,Ly=Ly,Lz=Lz,norb=norb,Lmatrix=np.array(LMatrix),bmatrix=np.array(pos))
+        lattice_array, lattice=lat.establishLattice(Lx=Lx,Ly=Ly,Lz=Lz,norb=norb,Lmatrix=np.array(LMatrix),bmatrix=np.array(pos),SpinList=S)
         # create bond list for manual temperature
         bondT=[]
         for bond in bondList:
@@ -28,9 +28,9 @@ class MC:
         self.nthermal=nthermal
 
         # initial spin
-        #SpinField=c_float*self.totOrbs
         initSpin=(c_float*self.totOrbs)()
         for iorb, orb in enumerate(self.lattice):
+            #print(orb.spin)
             initSpin[iorb]=c_float(orb.spin)
         
         # link strength

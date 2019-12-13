@@ -122,7 +122,7 @@ def loadOrbitals():
 
     id_base=tk.Frame(addOrbFrameBase)
     id_base.grid(row=0,column=0)
-    IDandTypeNote=toolbox.NoteFrm(id_base, init_notes=['ID:','Type:','Spin:'],init_data=[0,0,1],row=True,entryWidth=6)
+    IDandTypeNote=toolbox.NoteFrm(id_base, init_notes=['ID:','Type:','Init spin:'],init_data=[0,0,1],row=True,entryWidth=5)
     IDandTypeNote.entry_list[0].config(state='disabled')
     pos_base=tk.Frame(addOrbFrameBase)
     pos_base.grid(row=1,column=0,sticky='W')

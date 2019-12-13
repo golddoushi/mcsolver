@@ -10,8 +10,8 @@ global bondList,LMatrix,pos,nsweep,nthermal,Lx,Ly,Lz,algorithm
 def startMC(param):
     global bondList,LMatrix,pos,nsweep,nthermal,Lx,Ly,Lz,algorithm
     # unzip all global parameters for every processing
-    ID, T, bondList,LMatrix,pos,nsweep,nthermal,Lx,Ly,Lz,algorithm=param
-    mcslave=mc.MC(ID,LMatrix,pos,bondList,T,Lx,Ly,Lz)
+    ID, T, bondList,LMatrix,pos,S,nsweep,nthermal,Lx,Ly,Lz,algorithm=param
+    mcslave=mc.MC(ID,LMatrix,pos,S,bondList,T,Lx,Ly,Lz)
     mData, eData=np.array(mcslave.mainLoopViaCLib(nsweep=nsweep,nthermal=nthermal,algo=algorithm))
     mData=abs(mData)/Lx/Ly/Lz
     eData/=(Lx*Ly*Lz)
@@ -73,7 +73,7 @@ def startSimulaton():
         
         paramPack=[]
         for iT, T in enumerate(TList):
-            paramPack.append([iT,T,bondList,LMatrix,pos,nsweep,nthermal,Lx,Ly,Lz,algorithm])
+            paramPack.append([iT,T,bondList,LMatrix,pos,S,nsweep,nthermal,Lx,Ly,Lz,algorithm])
         
         TResult=[];magResult=[];susResult=[];energyResult=[];capaResult=[]
         pool=multiprocessing.Pool(processes=ncores)
