@@ -18,6 +18,11 @@ class Orbital:
         self.z=z
     
     def addLinking(self,targetOrb,strength):
+        # check redundancy
+        for orb in self.linkedOrb:
+            if targetOrb.id==orb.id:
+                print('Warning: redundant bonding between orb: %d and %d'%(self.id, orb.id))
+                return
         self.linkedOrb.append(targetOrb)
         self.linkStrength.append(strength)
 
