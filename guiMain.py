@@ -204,7 +204,7 @@ def loadBonds():
     addBondFrameBase.grid(row=1,column=0)
 
     id_base=Frame(addBondFrameBase)
-    id_base.grid(row=0,column=0)
+    id_base.grid(row=0,column=0,sticky=(W,E))
     IDandTypeOfBondNote=toolbox.NoteFrm(id_base, init_notes=['ID:','Jz','Jx','Jy'],init_data=[1,-1,-1,-1],row=True,entryWidth=5)
     IDandTypeOfBondNote.entry_list[0].config(state='disabled')
 
@@ -213,8 +213,11 @@ def loadBonds():
     BondDetailNote=toolbox.NoteFrm(detail_base, init_notes=['s','t','over lat.','',''],init_data=[0,0,1,0,0],row=True,entryWidth=2)
 
     anis_base=Frame(addBondFrameBase)
-    anis_base.grid(row=2,column=0)
+    anis_base.grid(row=2,column=0,sticky=(W,E))
     AnisotropyOfBondNote=toolbox.NoteFrm(anis_base, init_notes=['Orb Ani:','Dz','Dx','Dy'],init_data=[0,0,0,0],row=True,entryWidth=4)
+
+    unitLabel=Label(BondFrame,text='Note all energy units are in Kelvin (1meV=11.58875K)')
+    unitLabel.grid(row=2,column=0,sticky=(W,E))
 
     addBtn=Button(addBondFrameBase,text='add',command=addBond)
     addBtn.grid(row=0,column=1,rowspan=2,sticky='E')
