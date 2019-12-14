@@ -1,5 +1,4 @@
-from tkinter import *
-import re
+from tkinter import Label, Entry, Listbox,Scrollbar, END, VERTICAL, N, S, StringVar
  
 class NoteFrm:
     frm_base=None
@@ -101,9 +100,3 @@ class InfoList:
         if len(idxs)==1:
             return self.infoData[idxs[0]]
         return []
-
-
-        
-        
-
-

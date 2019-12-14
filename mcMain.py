@@ -1,7 +1,7 @@
+from ctypes import c_float, c_int, CDLL, py_object
+from random import random, randint
 import Lattice as lat
 import numpy as np
-from ctypes import *
-import random
 import time
 
 class MC:
@@ -9,6 +9,8 @@ class MC:
         norb=len(pos)
         totOrbs=Lx*Ly*Lz*norb
         lattice_array, lattice=lat.establishLattice(Lx=Lx,Ly=Ly,Lz=Lz,norb=norb,Lmatrix=np.array(LMatrix),bmatrix=np.array(pos),SpinList=S)
+        # to aviod 0K
+        T=0.1 if T<0.1 else T
         # create bond list for manual temperature
         bondT=[]
         for bond in bondList:
@@ -116,20 +118,20 @@ class MC:
         data.close()
 
     def LocalUpdate(self):
-        seedOrb=self.lattice[random.randint(0,self.totOrbs-1)]
+        seedOrb=self.lattice[randint(0,self.totOrbs-1)]
         corr=seedOrb.getCorrEnergyDirect()
         if corr>=0:
             seedOrb.spin*=-1
             self.Sz+=(seedOrb.spin*2)
             self.Energy-=corr*2
-        elif np.exp(2*corr)>random.random():
+        elif np.exp(2*corr)>random():
             seedOrb.spin*=-1
             self.Sz+=(seedOrb.spin*2)
             self.Energy-=corr*2
         return
 
     def BlockUpdate(self):
-        seedOrb=self.lattice[random.randint(0,self.totOrbs-1)]
+        seedOrb=self.lattice[randint(0,self.totOrbs-1)]
         seedOrb.inBlock=True
         block=[seedOrb]
         buffer=[seedOrb]

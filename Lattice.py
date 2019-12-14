@@ -1,5 +1,5 @@
 import numpy as np
-import matplotlib.pyplot as plt
+from matplotlib.figure import Figure
 
 class Orbital:
     '''
@@ -140,14 +140,15 @@ def plotLattice(lattice):
     '''
     uncode the lattice pack and print each orbital on screen
     '''
-    plt.figure()
+    f=Figure()
+    ax=f.add_subplot(111)
     for x in lattice:
         for y in x:
             for z in y:
                 for o in z:
-                    plt.scatter(o.x,o.y,color='blue')
-                    plt.annotate(o.id,(o.x,o.y),size=10.5)
+                    ax.scatter(o.x,o.y,color='blue')
+                    ax.annotate(o.id,(o.x,o.y),size=10.5)
                     for target in o.linkedSite:
-                        plt.plot([o.x,target.x],[o.y,target.y],color='red')
-    plt.show()
+                        ax.plot([o.x,target.x],[o.y,target.y],color='red')
+    f.show()
 

@@ -5,8 +5,7 @@ Created on 2018 12 8
 '''
 import numpy as np
 import re
-import matplotlib.figure as fig
-import matplotlib.pyplot as plt
+from matplotlib.figure import Figure
 from mpl_toolkits.mplot3d.axes3d import Axes3D
 
 class TBmodel(object):
@@ -124,7 +123,7 @@ class TBmodel(object):
 
     def viewStructure(self):
         '''visualize the orbital and bonding's spatial configuration'''
-        f=fig.Figure(figsize=(3,3))
+        f=Figure(figsize=(3,3))
         ax=f.add_subplot(111,projection='3d')
         
         def dragLineWithTwoPoints(pt0, pt1, c='black', linewidth=2):

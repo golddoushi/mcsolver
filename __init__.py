@@ -1,5 +1,5 @@
-import tkinter as tk
-import multiprocessing
+from tkinter import Tk
+from multiprocessing import Pool, freeze_support
 import numpy as np
 import guiMain as gui
 import Lattice as lat
@@ -76,7 +76,7 @@ def startSimulaton():
             paramPack.append([iT,T,bondList,LMatrix,pos,S,nsweep,nthermal,Lx,Ly,Lz,algorithm])
         
         TResult=[];magResult=[];susResult=[];energyResult=[];capaResult=[]
-        pool=multiprocessing.Pool(processes=ncores)
+        pool=Pool(processes=ncores)
         for result in pool.imap_unordered(startMC,paramPack):
             ID, T, mData, eData =result
             TResult.append(T)
@@ -101,7 +101,7 @@ def startSimulaton():
     return
             
 if __name__ == '__main__': # crucial for multiprocessing in Windows
-    multiprocessing.freeze_support()
-    app=tk.Tk(className='mc solver v1.0')
+    freeze_support()
+    app=Tk(className='mc solver v1.0')
     gui.loadEverything(app,startSimulaton)
     app.mainloop()

@@ -1,22 +1,21 @@
-import tkinter as tk
-import toolbox as toolbox
-import multiprocessing
-import numpy as np
-import matplotlib.backends.backend_tkagg as tkagg#import FigureCanvasTkAgg,NavigationToolbar2Tk
-
-import matplotlib.figure as fig
-import WannierKit as wan
+from tkinter import Label, LabelFrame, Frame, Spinbox, Button, END, VERTICAL, N, S, W, E, StringVar
+from multiprocessing import cpu_count
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg#,NavigationToolbar2Tk
+from matplotlib.figure import Figure
 from mpl_toolkits.mplot3d.axes3d import Axes3D
+import numpy as np
+import toolbox as toolbox
+import WannierKit as wan
 
 global gui  # root gui
 global latticeGui, supercellGui, latticeData # read lattice matrix
 global nOrbnBondGui, nOrb, nBonds  # read number of orbitals and bonds
 
 global OrbListBox, IDandTypeNote, PosNote
-global BondBox, IDandTypeOfBondNote, BondDetailNote
+global BondBox, IDandTypeOfBondNote, BondDetailNote, AnisotropyOfBondNote
 
 global TlistGui, MCparamGui, modelGui, algorithmGui, coreGui
-global resultViewerBase, resultViewer, structureFrame, structureViewer
+global resultViewerBase, resultViewer, structureFrame, structureViewer, structureAxis
 global submitBtn
 
 #gui=tk.Tk(className='mc solver v0.0.1')
@@ -27,24 +26,24 @@ global submitBtn
 
 def loadLatticePannel():
     global gui, latticeGui, supercellGui
-    LatticeFrame=tk.LabelFrame(gui,text='Lattice')
+    LatticeFrame=LabelFrame(gui,text='Lattice')
     LatticeFrame.grid(row=0,column=0)
 
-    a0_base=tk.Frame(LatticeFrame)
+    a0_base=Frame(LatticeFrame)
     noteFrame0=toolbox.NoteFrm(a0_base, init_notes=['a1:','',''],init_data=[1,0,0],row=True)
     a0_base.grid(row=0,column=0)
 
-    a1_base=tk.Frame(LatticeFrame)
+    a1_base=Frame(LatticeFrame)
     noteFrame1=toolbox.NoteFrm(a1_base, init_notes=['a2:','',''],init_data=[0,1,0],row=True)
     a1_base.grid(row=1,column=0)
 
-    a2_base=tk.Frame(LatticeFrame)
+    a2_base=Frame(LatticeFrame)
     noteFrame2=toolbox.NoteFrm(a2_base, init_notes=['a3:','',''],init_data=[0,0,1],row=True)
     a2_base.grid(row=2,column=0)
 
     latticeGui=[noteFrame0,noteFrame1,noteFrame2]
 
-    supercell_base=tk.Frame(LatticeFrame)
+    supercell_base=Frame(LatticeFrame)
     supercellGui=toolbox.NoteFrm(supercell_base,init_notes=['SC:','x','x'],init_data=[16,16,1],row=True,entryWidth=3)
     supercell_base.grid(row=0,column=1,sticky='SE')
     
@@ -110,29 +109,29 @@ def orbitalDataFormat(info):
 
 def loadOrbitals():
     global gui, OrbListBox, IDandTypeNote, PosNote
-    OrbFrame=tk.LabelFrame(gui,text='Orbital list')
+    OrbFrame=LabelFrame(gui,text='Orbital list')
     OrbFrame.grid(row=1,column=0,columnspan=1)
 
-    list_base=tk.Frame(OrbFrame)
+    list_base=Frame(OrbFrame)
     list_base.grid(row=0,column=0,columnspan=2)
     OrbListBox=toolbox.InfoList(list_base, correspondToOrbList, orbitalDataFormat, initialInfo=[[0,0,1,(0.,0.,0.)]],width=45,height=5)
 
-    addOrbFrameBase=tk.Frame(OrbFrame)
+    addOrbFrameBase=Frame(OrbFrame)
     addOrbFrameBase.grid(row=1,column=0)
 
-    id_base=tk.Frame(addOrbFrameBase)
+    id_base=Frame(addOrbFrameBase)
     id_base.grid(row=0,column=0)
     IDandTypeNote=toolbox.NoteFrm(id_base, init_notes=['ID:','Type:','Init spin:'],init_data=[0,0,1],row=True,entryWidth=5)
     IDandTypeNote.entry_list[0].config(state='disabled')
-    pos_base=tk.Frame(addOrbFrameBase)
+    pos_base=Frame(addOrbFrameBase)
     pos_base.grid(row=1,column=0,sticky='W')
     PosNote=toolbox.NoteFrm(pos_base, init_notes=['pos','',''],init_data=[0.,0.,0.],row=True,entryWidth=6)
 
-    addBtn=tk.Button(addOrbFrameBase,text='add',command=addOrb)
+    addBtn=Button(addOrbFrameBase,text='add',command=addOrb)
     addBtn.grid(row=0,column=1,rowspan=2)
-    resetBtn=tk.Button(addOrbFrameBase,text='reset',command=resetOrb)
+    resetBtn=Button(addOrbFrameBase,text='reset',command=resetOrb)
     resetBtn.grid(row=0,column=2,rowspan=2)
-    delBtn=tk.Button(addOrbFrameBase,text='delet',command=deletOrb)
+    delBtn=Button(addOrbFrameBase,text='delet',command=deletOrb)
     delBtn.grid(row=0,column=3,rowspan=2)
 
 
@@ -191,33 +190,37 @@ def bondDataFormat(info):
     return 'ID: %d J: %.3f source: %d target: %d overLat: %d %d %d'%(info[0],info[1][0],info[2][0],info[2][1],info[2][2][0],info[2][2][1],info[2][2][2])
 
 def loadBonds():
-    global gui, BondBox, IDandTypeOfBondNote, BondDetailNote
-    BondFrame=tk.LabelFrame(gui,text='Bond list')
+    global gui, BondBox, IDandTypeOfBondNote, BondDetailNote, AnisotropyOfBondNote
+    BondFrame=LabelFrame(gui,text='Bond list')
     BondFrame.grid(row=2,column=0,columnspan=1)
 
-    list_base=tk.Frame(BondFrame)
+    list_base=Frame(BondFrame)
     list_base.grid(row=0,column=0,columnspan=2)
     BondBox=toolbox.InfoList(list_base, correspondToBondList, bondDataFormat, 
                              initialInfo=[[0,[-1,-1,-1],[0,0,(1,0,0)]],[1,[-1,-1,-1],[0,0,(0,1,0)]]],
                              width=45,height=5)
 
-    addBondFrameBase=tk.Frame(BondFrame)
+    addBondFrameBase=Frame(BondFrame)
     addBondFrameBase.grid(row=1,column=0)
 
-    id_base=tk.Frame(addBondFrameBase)
+    id_base=Frame(addBondFrameBase)
     id_base.grid(row=0,column=0)
     IDandTypeOfBondNote=toolbox.NoteFrm(id_base, init_notes=['ID:','Jz','Jx','Jy'],init_data=[1,-1,-1,-1],row=True,entryWidth=5)
     IDandTypeOfBondNote.entry_list[0].config(state='disabled')
 
-    detail_base=tk.Frame(addBondFrameBase)
-    detail_base.grid(row=1,column=0,sticky=(tk.W,tk.E))
+    detail_base=Frame(addBondFrameBase)
+    detail_base.grid(row=1,column=0,sticky=(W,E))
     BondDetailNote=toolbox.NoteFrm(detail_base, init_notes=['s','t','over lat.','',''],init_data=[0,0,1,0,0],row=True,entryWidth=2)
 
-    addBtn=tk.Button(addBondFrameBase,text='add',command=addBond)
+    anis_base=Frame(addBondFrameBase)
+    anis_base.grid(row=2,column=0)
+    AnisotropyOfBondNote=toolbox.NoteFrm(anis_base, init_notes=['Orb Ani:','Dz','Dx','Dy'],init_data=[0,0,0,0],row=True,entryWidth=4)
+
+    addBtn=Button(addBondFrameBase,text='add',command=addBond)
     addBtn.grid(row=0,column=1,rowspan=2,sticky='E')
-    resetBtn=tk.Button(addBondFrameBase,text='reset',command=resetBond)
+    resetBtn=Button(addBondFrameBase,text='reset',command=resetBond)
     resetBtn.grid(row=0,column=2,rowspan=2,sticky='E')
-    delBtn=tk.Button(addBondFrameBase,text='delet',command=deletBond)
+    delBtn=Button(addBondFrameBase,text='delet',command=deletBond)
     delBtn.grid(row=0,column=3,rowspan=2,sticky='E')
 
 ###############
@@ -226,40 +229,40 @@ def loadBonds():
 
 def loadMCSettings():
     global gui, TListGui, MCparamGui, modelGui, algorithmGui, coreGui
-    SettingFrame=tk.LabelFrame(gui,text='Other settings')
-    SettingFrame.grid(row=3,column=0,sticky=(tk.W,tk.E))
+    SettingFrame=LabelFrame(gui,text='Other settings')
+    SettingFrame.grid(row=3,column=0,sticky=(W,E))
 
-    temp_base=tk.Frame(SettingFrame)
+    temp_base=Frame(SettingFrame)
     temp_base.grid(row=0,column=0)
     TListGui=toolbox.NoteFrm(temp_base, init_notes=['T start:','T end','total points:'], init_data=[2.0,2.4,20],row=True,entryWidth=6)
 
-    MCparam_base=tk.Frame(SettingFrame)
+    MCparam_base=Frame(SettingFrame)
     MCparam_base.grid(row=1,column=0,sticky='W')
     MCparamGui=toolbox.NoteFrm(MCparam_base, init_notes=['nthermal:','nsweep:'], init_data=[20000,40000],row=True)
 
-    model_base=tk.Frame(SettingFrame)
+    model_base=Frame(SettingFrame)
     model_base.grid(row=2,column=0,sticky='W')
-    label1=tk.Label(model_base,text='Model:')
+    label1=Label(model_base,text='Model:')
     label1.grid(row=0,column=0)
-    modelGui=tk.Spinbox(model_base,from_=1, to=3, values=['Ising','XY','Heisenberg'],width=12)
+    modelGui=Spinbox(model_base,from_=1, to=3, values=['Ising','XY','Heisenberg'],width=12)
     modelGui.grid(row=0,column=1)
     
-    label2=tk.Label(model_base,text='Algorithm:')
+    label2=Label(model_base,text='Algorithm:')
     label2.grid(row=0,column=2)
-    algorithmGui=tk.Spinbox(model_base,from_=1, to=3, values=['Wolff','Metroplis','Sweden-Wang'],width=12)
+    algorithmGui=Spinbox(model_base,from_=1, to=3, values=['Wolff','Metroplis','Sweden-Wang'],width=12)
     algorithmGui.grid(row=0,column=3)
 
-    core_base=tk.Frame(SettingFrame)
+    core_base=Frame(SettingFrame)
     core_base.grid(row=3,column=0,sticky='W')
-    coreGui=toolbox.NoteFrm(core_base, init_notes=['core:'], init_data=[np.max([1,int(multiprocessing.cpu_count()/2)])])
+    coreGui=toolbox.NoteFrm(core_base, init_notes=['core:'], init_data=[np.max([1,int(cpu_count()/2)])])
 
 ########################
 # Structure visualizer #
 ########################
 
 def loadStructureViewer():
-    global gui, latticeGui, OrbListBox, BondBox, supercellGui, structureFrame, structureViewer
-    structureFrame=tk.LabelFrame(gui, text='Structure viewer')
+    global gui, latticeGui, OrbListBox, BondBox, supercellGui, structureFrame, structureViewer, structureAxis
+    structureFrame=LabelFrame(gui, text='Structure viewer')
     structureFrame.grid(row=0,column=1,rowspan=2)
 
     tb=wan.TBmodel()
@@ -273,16 +276,18 @@ def loadStructureViewer():
     tb.nhoppings=len(tb.hopping)
     Lx, Ly, Lz=[4 if x>1 else 1 for x in supercellGui.report() ]
     tb.make_supercell([Lx,0,0],[0,Ly,0],[0,0,Lz])
-    f, ax=tb.viewStructure()
+    f, structureAxis=tb.viewStructure()
     
-    structureViewer=tkagg.FigureCanvasTkAgg(f,structureFrame)
+    structureViewer=FigureCanvasTkAgg(f,structureFrame)
     structureViewer.draw()
-    structureViewer.get_tk_widget().pack()
-    ax.figure.canvas=structureViewer
-    ax.mouse_init()
+    structureViewer.get_tk_widget().grid(row=0,column=0)
+    structureAxis.figure.canvas=structureViewer
+    structureAxis.mouse_init()
 
 def updateStructureViewer(lightID=-1,lightOrb=-1):
-    global gui, latticeGui, OrbListBox, BondBox, supercellGui, structureFrame, structureViewer
+    global gui, latticeGui, OrbListBox, BondBox, supercellGui, structureFrame, structureViewer, structureAxis
+    elev, azim = structureAxis.elev, structureAxis.azim
+
     tb=wan.TBmodel()
     a1=latticeGui[0].report()
     a2=latticeGui[1].report()
@@ -294,14 +299,15 @@ def updateStructureViewer(lightID=-1,lightOrb=-1):
     tb.nhoppings=len(tb.hopping)
     Lx, Ly, Lz=[4 if x>1 else 1 for x in supercellGui.report() ]
     tb.make_supercell([Lx,0,0],[0,Ly,0],[0,0,Lz])
-    f, ax=tb.viewStructure()
+    f, structureAxis=tb.viewStructure()
+    structureAxis.view_init(elev=elev,azim=azim)
     
     structureViewer.get_tk_widget().destroy()
-    structureViewer=tkagg.FigureCanvasTkAgg(f,structureFrame)
+    structureViewer=FigureCanvasTkAgg(f,structureFrame)
     structureViewer.draw()
     structureViewer.get_tk_widget().pack()
-    ax.figure.canvas=structureViewer
-    ax.mouse_init()
+    structureAxis.figure.canvas=structureViewer
+    structureAxis.mouse_init()
 
 #####################
 # Resutl visualizer #
@@ -309,24 +315,24 @@ def updateStructureViewer(lightID=-1,lightOrb=-1):
 
 def loadResultViewer():
     global gui, resultViewerBase, resultViewer
-    resultViewerBase=tk.LabelFrame(gui, text='Result viewer')
+    resultViewerBase=LabelFrame(gui, text='Result viewer')
     resultViewerBase.grid(row=2,column=1,rowspan=2)
 
-    f=fig.Figure(figsize=(4,3))
+    f=Figure(figsize=(4,3))
     f.add_subplot(111).plot([0,2],[0,0],color='black')
-    resultViewer=tkagg.FigureCanvasTkAgg(f,resultViewerBase)
+    resultViewer=FigureCanvasTkAgg(f,resultViewerBase)
     resultViewer.draw()
     resultViewer.get_tk_widget().pack()
 
 def updateResultViewer(TList=[],magList=[]):
     global gui, resultViewerBase, resultViewer
     #print('updating:',TList,magList)
-    f=fig.Figure(figsize=(4,3))
-    plt=f.add_subplot(111)
-    plt.scatter(TList,magList,color='red')
-    plt.set_title('<Spin> per cell')
+    f=Figure(figsize=(4,3))
+    ax=f.add_subplot(111)
+    ax.scatter(TList,magList,color='red')
+    ax.set_title('<Spin> per cell')
     resultViewer.get_tk_widget().destroy()
-    resultViewer=tkagg.FigureCanvasTkAgg(f,resultViewerBase)
+    resultViewer=FigureCanvasTkAgg(f,resultViewerBase)
     resultViewer.draw()
     resultViewer.get_tk_widget().pack()
 
@@ -336,14 +342,14 @@ def updateResultViewer(TList=[],magList=[]):
 
 def loadStartBtn(submitFunc):
     global gui, submitBtn
-    submit_base=tk.Frame(gui)
+    submit_base=Frame(gui)
     submit_base.grid(row=4,column=0,columnspan=2)
 
-    note=tk.Label(submit_base, text='Thanks for your attention and wish you find sth. helpful. \n\
+    note=Label(submit_base, text='Thanks for your attention and wish you find sth. helpful. \n\
                         Please cite Ref: Magnetic switches via electric field in BN nanoribbons. Applied Surface Science 480(2019)\n\
                         Thank you very much!')
     note.grid(row=0,column=1)
-    submitBtn=tk.Button(submit_base,text='Submit',command=submitFunc)
+    submitBtn=Button(submit_base,text='Submit',command=submitFunc)
     submitBtn.grid(row=0,column=0)
 
 def loadEverything(root,submitFunc):
