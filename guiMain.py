@@ -291,6 +291,9 @@ def loadStructureViewer():
 def updateStructureViewer(lightID=-1,lightOrb=-1):
     global gui, latticeGui, OrbListBox, BondBox, supercellGui, structureFrame, structureViewer, structureAxis
     elev, azim = structureAxis.elev, structureAxis.azim
+    x0, x1 = structureAxis.get_xlim()
+    y0, y1 = structureAxis.get_ylim()
+    z0, z1 = structureAxis.get_zlim()
 
     tb=wan.TBmodel()
     a1=latticeGui[0].report()
@@ -305,6 +308,9 @@ def updateStructureViewer(lightID=-1,lightOrb=-1):
     tb.make_supercell([Lx,0,0],[0,Ly,0],[0,0,Lz])
     f, structureAxis=tb.viewStructure()
     structureAxis.view_init(elev=elev,azim=azim)
+    structureAxis.set_xlim(x0,x1)
+    structureAxis.set_ylim(y0,y1)
+    structureAxis.set_zlim(z0,z1)
     
     structureViewer.get_tk_widget().destroy()
     structureViewer=FigureCanvasTkAgg(f,structureFrame)
