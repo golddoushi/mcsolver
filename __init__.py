@@ -7,7 +7,7 @@ import mcMain as mc
 
 global bondList,LMatrix,pos,nsweep,nthermal,Lx,Ly,Lz,algorithm
 
-def startMC(param):
+def startMC(param): # start MC for Ising model
     global bondList,LMatrix,pos,nsweep,nthermal,Lx,Ly,Lz,algorithm
     # unzip all global parameters for every processing
     ID, T, bondList,LMatrix,pos,S,nsweep,nthermal,Lx,Ly,Lz,algorithm=param
@@ -16,6 +16,15 @@ def startMC(param):
     mData=abs(mData)/Lx/Ly/Lz
     eData/=(Lx*Ly*Lz)
     return ID, T, mData, eData
+
+def startMCForOn(param): # start MC for O(n) model
+    #global bondList,LMatrix,pos,nsweep,nthermal,Lx,Ly,Lz,algorithm
+    # unzip all global parameters for every processing
+    ID, T, bondList,LMatrix,pos,S,nsweep,nthermal,Lx,Ly,Lz,algorithm=param
+    mcslave=mc.MC(ID,LMatrix,pos,S,bondList,T,Lx,Ly,Lz)
+    mcslave.mainLoopViaCLib_On(nsweep=nsweep,nthermal=nthermal,algo=algorithm)
+    #mData=abs(mData)/Lx/Ly/Lz
+    #eData/=(Lx*Ly*Lz)
 
 def startSimulaton():
     global bondList,LMatrix,pos,nsweep,nthermal,Lx,Ly,Lz,algorithm
@@ -41,7 +50,11 @@ def startSimulaton():
     print('spin state:',S)
 
     # get bonds
-    bondList=[lat.Bond(bond_data[2][0],bond_data[2][1],np.array(bond_data[2][2]),bond_data[1][0]) for bond_data in gui.BondBox.infoData]
+    bondList=[lat.Bond(bond_data[2][0],bond_data[2][1],\
+                       np.array(bond_data[2][2]),\
+                       bond_data[1][0],bond_data[1][1],bond_data[1][2]) \
+                        for bond_data in gui.BondBox.infoData]
+        
     print('bonds:')
     print(bondList)
 
@@ -65,6 +78,8 @@ def startSimulaton():
     # get ncores
     ncores= int(gui.coreGui.report()[0])
     print('using %d cores'%ncores)
+
+    # model and algorithm branches
     if(modelType=='Ising'):
         if algorithm!='Metroplis' and algorithm!='Wolff':
             print('For now, only Metroplis and Wolff algorithm is supported for Ising model')
@@ -95,6 +110,45 @@ def startSimulaton():
 
         gui.submitBtn.config(state='normal')
         return
+    elif(modelType=='XY' or modelType=='Heisenberg'):
+        gui.submitBtn.config(state='normal')
+        return
+        for orb in gui.OrbListBox.infoData:  # add the single ion anisotropy via self-bonding method
+            bondList.append(lat.Bond(orb[0],orb[0],np.array([0,0,0]),orb[4][0],orb[4][1],orb[4][2]))
+        for bond in bondList:
+            bond.On=True # switch on the vector type bonding
+        if algorithm!='Metroplis':
+            print('For now, only Metroplis algorithm is supported for O(n) model')
+            gui.submitBtn.config(state='normal')
+            return
+
+        paramPack=[]
+        for iT, T in enumerate(TList):
+            paramPack.append([iT,T,bondList,LMatrix,pos,S,nsweep,nthermal,Lx,Ly,Lz,algorithm])
+        
+        startMCForOn(paramPack[0])
+
+        #TResult=[];magResult=[];susResult=[];energyResult=[];capaResult=[]
+        #pool=Pool(processes=ncores)
+        #for result in pool.imap_unordered(startMC,paramPack):
+        #    ID, T, mData, eData =result
+        #    TResult.append(T)
+        #    magResult.append(np.mean(mData))
+        #    susResult.append(np.std(mData))
+        #    energyResult.append(np.mean(eData))
+        #    capaResult.append(np.std(eData))
+        #pool.close()
+        #gui.updateResultViewer(TList=TResult, magList=magResult)
+
+        #f=open('./result.txt','w')
+        #f.write('#Temp #Spin    #Susc      #energy  #capacity\n')
+        #for T, mag, sus, energy, capa in zip(TResult, magResult, susResult, energyResult, capaResult):
+        #    f.write('%.3f %.6f %.6f %.6f %.6f\n'%(T, mag, sus, energy, capa))
+        #f.close()
+
+        gui.submitBtn.config(state='normal')
+        return
+        
 
     print('For now, only Ising model is supported')
     gui.submitBtn.config(state='normal')

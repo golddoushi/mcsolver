@@ -18,6 +18,7 @@ class Orbital:
         self.z=z
     
     def addLinking(self,targetOrb,strength):
+        #print(strength)
         # check redundancy
         for orb in self.linkedOrb:
             if targetOrb.id==orb.id:
@@ -33,7 +34,7 @@ class Orbital:
         for linkStrength in self.linkStrength:
             findType=False
             for itype, StrengthType in enumerate(self.classStrength):
-                if abs(linkStrength-StrengthType)<0.0001:
+                if abs(linkStrength-StrengthType).all()<0.0001:
                     self.linkedOrbType.append(itype)
                     findType=True
                     break
@@ -41,7 +42,6 @@ class Orbital:
                 initialType+=1
                 self.linkedOrbType.append(initialType)
                 self.classStrength.append(linkStrength)
-        #print(self.classStrength,self.linkedOrbType)
         self.totLinkingTypes=initialType+1
 
     def getCorrEnergy(self,corrList=[]):
@@ -75,11 +75,18 @@ class Bond:
     '''
     represent the bond
     '''
-    def __init__(self,source,target,overLat,strength):
+    def __init__(self,source,target,overLat,strength,strength1=0.,strength2=0.,On=False):
         self.source=source
         self.target=target
         self.overLat=overLat
         self.strength=strength
+
+        self.On=On
+        self.strength1=strength1 # for xy and heisenberg model
+        self.strength2=strength2 # for xy and heisenberg model
+    
+    def copy(self):
+        return Bond(self.source,self.target,self.overLat,self.strength,self.strength1,self.strength2,self.On)
 
 def establishLattice(Lx=1,Ly=1,Lz=1,norb=1,Lmatrix=np.array([[1,0,0],[0,1,0],[0,0,1]]),bmatrix=[np.array([0.,0.,0.])],SpinList=[1]):
     '''
@@ -127,8 +134,15 @@ def establishLinking(lattice,bondList):
                     for bond in bondList:
                         if o==bond.source:
                             targetOrb=lattice[(x+bond.overLat[0])%Lx][(y+bond.overLat[1])%Ly][(z+bond.overLat[2])%Lz][bond.target]
-                            sourceOrb.addLinking(targetOrb,bond.strength)
-                            targetOrb.addLinking(sourceOrb,bond.strength)
+                            if bond.On:
+                                sourceOrb.addLinking(targetOrb,np.array([bond.strength,bond.strength1,bond.strength2]))
+                            else:
+                                sourceOrb.addLinking(targetOrb,bond.strength)
+                            if sourceOrb.id!=targetOrb.id:
+                                if bond.On:
+                                    targetOrb.addLinking(sourceOrb,np.array([bond.strength,bond.strength1,bond.strength2]))
+                                else:
+                                    targetOrb.addLinking(sourceOrb,bond.strength)
     # after process
     for x in range(Lx):
         for y in range(Ly):

@@ -14,7 +14,8 @@ class MC:
         # create bond list for manual temperature
         bondT=[]
         for bond in bondList:
-            bond_tmp=lat.Bond(bond.source,bond.target,bond.overLat,bond.strength/T)
+            bond_tmp=bond.copy()#lat.Bond(bond.source,bond.target,bond.overLat,bond.strength/T)
+            bond_tmp.strength/=T;bond_tmp.strength1/=T;bond_tmp.strength2/=T
             bondT.append(bond_tmp)
         lat.establishLinking(lattice_array,bondT)
         self.ID=ID
@@ -31,26 +32,97 @@ class MC:
 
         # initial spin
         initSpin=(c_float*self.totOrbs)()
+        nlinking=(c_int*self.totOrbs)()
+        nlinking_list=[]
         for iorb, orb in enumerate(self.lattice):
-            #print(orb.spin)
             initSpin[iorb]=c_float(orb.spin)
+            nlinking[iorb]=c_int(len(orb.linkedOrb))
+            nlinking_list.append(len(orb.linkedOrb))
         
         # link strength
-        nlinking=len(orb.linkedOrb)
-        linkStrength=(c_float*nlinking)()
-        for istrength, strength in enumerate(orb.linkStrength):
-            linkStrength[istrength]=c_float(strength)
+        maxNLinking=np.max(nlinking_list)
+        #nlinking=len(orb.linkedOrb)
+        linkStrength=(c_float*(self.totOrbs*maxNLinking))()
+        cnt=0
+        for iorb, orb in enumerate(self.lattice):
+            for ilinking in range(maxNLinking):
+                if ilinking>=nlinking_list[iorb]:
+                    linkStrength[cnt]=c_float(0.)
+                    cnt+=1
+                else:
+                    linkStrength[cnt]=c_float(orb.linkStrength[ilinking])
+                    cnt+=1
+        #for istrength, strength in enumerate(orb.linkStrength):
+        #    linkStrength[istrength]=c_float(strength)
 
         # linking info.
-        linkData=(c_int*(self.totOrbs*nlinking))()
+        linkData=(c_int*(self.totOrbs*maxNLinking))()
         cnt=0
         for orb in self.lattice:
             for linkedOrb in orb.linkedOrb:
                 linkData[cnt]=linkedOrb.id
                 cnt+=1
-
+        
+        maxNLinking=c_int(maxNLinking)
         time0=time.time()
         mylib=CDLL("isinglib.so")
+        if algo=='Wolff':
+            cMC=mylib.blockUpdateMC
+            cMC.restype=py_object
+            data=cMC(self.totOrbs, initSpin, nthermal, nsweep, maxNLinking, nlinking, linkStrength, linkData)
+            print(np.mean(np.abs(data[0]))/self.totOrbs,np.mean(data[1])/self.totOrbs,time.time()-time0)
+            return data[0], data[1]
+        elif algo=='Metroplis':
+            cMC=mylib.localUpdateMC
+            cMC.restype=py_object
+            data=cMC(self.totOrbs, initSpin, nthermal, nsweep, maxNLinking, nlinking, linkStrength, linkData)
+            print(np.mean(np.abs(data[0]))/self.totOrbs,np.mean(data[1])/self.totOrbs,time.time()-time0)
+            return data[0], data[1]
+
+    def mainLoopViaCLib_On(self,nsweep=1000,nthermal=5000,algo='Metroplis'):
+        self.nsweep=nsweep
+        self.nthermal=nthermal
+
+        # initial spin
+        initSpin=(c_float*self.totOrbs)()
+        nlinking=(c_int*self.totOrbs)()
+        nlinking_list=[]
+        for iorb, orb in enumerate(self.lattice):
+            #print(orb.spin)
+            initSpin[iorb]=c_float(orb.spin)
+            nlinking[iorb]=c_int(len(orb.linkedOrb))
+            nlinking_list.append(len(orb.linkedOrb))
+        # link strength
+        maxNLinking=np.max(nlinking_list)
+        linkStrength=(c_float*(self.totOrbs*maxNLinking*3))() # thus the nlinking of every orbs are the same
+        cnt=0
+        for iorb, orb in enumerate(self.lattice):
+            for ilinking in range(maxNLinking):
+                if ilinking>=nlinking_list[iorb]:
+                    for i in range(3):
+                        linkStrength[cnt]=c_float(0.)
+                        cnt+=1
+                else:
+                    for i in range(3):
+                        linkStrength[cnt]=c_float(orb.linkStrength[ilinking][i])
+                        cnt+=1
+
+        # linking info.
+        linkData=(c_int*(self.totOrbs*maxNLinking))()
+        cnt=0
+        for iorb, orb in enumerate(self.lattice):
+            for ilinking in range(maxNLinking):
+                if ilinking>=nlinking_list[iorb]:
+                    linkData[cnt]=-1
+                    cnt+=1
+                else:
+                    linkData[cnt]=orb.linkedOrb[ilinking].id
+                    cnt+=1
+        
+        maxNLinking=c_int(maxNLinking)
+        On=c_int(2)
+        mylib=CDLL("Onlib.so")
+        time0=time.time()
         if algo=='Wolff':
             cMC=mylib.blockUpdateMC
             cMC.restype=py_object
@@ -59,10 +131,11 @@ class MC:
             return data[0], data[1]
         elif algo=='Metroplis':
             cMC=mylib.localUpdateMC
-            cMC.restype=py_object
-            data=cMC(self.totOrbs, initSpin, nthermal, nsweep, nlinking, linkStrength, linkData)
-            print(np.mean(np.abs(data[0]))/self.totOrbs,np.mean(data[1])/self.totOrbs,time.time()-time0)
-            return data[0], data[1]
+            #cMC.restype=py_object
+            cMC(self.totOrbs, initSpin, nthermal, nsweep, maxNLinking, nlinking, linkStrength, linkData, On)
+            #print(np.mean(np.abs(data[0]))/self.totOrbs,np.mean(data[1])/self.totOrbs,time.time()-time0)
+            #return data[0], data[1]
+        
         
 
     def mainLoop(self,nsweep=10000,nthermal=5000):

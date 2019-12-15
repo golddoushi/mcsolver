@@ -11,8 +11,8 @@ global gui  # root gui
 global latticeGui, supercellGui, latticeData # read lattice matrix
 global nOrbnBondGui, nOrb, nBonds  # read number of orbitals and bonds
 
-global OrbListBox, IDandTypeNote, PosNote
-global BondBox, IDandTypeOfBondNote, BondDetailNote, AnisotropyOfBondNote
+global OrbListBox, IDandTypeNote, PosNote, AnisotropyNote
+global BondBox, IDandTypeOfBondNote, BondDetailNote
 
 global TlistGui, MCparamGui, modelGui, algorithmGui, coreGui
 global resultViewerBase, resultViewer, structureFrame, structureViewer, structureAxis
@@ -70,12 +70,12 @@ def correspondToOrbList(*arg):
         updateStructureViewer(lightOrb=data[0])
 
 def addOrb():
-    global OrbListBox, IDandTypeNote, PosNote
+    global OrbListBox, IDandTypeNote, PosNote, AnisotropyNote
     newData=list(OrbListBox.infoData)
     idAndType=IDandTypeNote.report()
     pos=PosNote.report()
-    #idAndType.append(pos)
-    newData.append([len(newData),int(idAndType[1]),idAndType[2],tuple(pos)])
+    ani=AnisotropyNote.report()
+    newData.append([len(newData),int(idAndType[1]),idAndType[2],tuple(pos),tuple(ani)])
     OrbListBox.updateInfo(newData)
     updateStructureViewer()
     
@@ -91,30 +91,31 @@ def deletOrb():
     updateStructureViewer()
 
 def resetOrb():
-    global OrbListBox, IDandTypeNote, PosNote
+    global OrbListBox, IDandTypeNote, PosNote, AnisotropyNote
     newData=list(OrbListBox.infoData)
     if len(newData)==0:
         return
     idAndType=IDandTypeNote.report()
     pos=PosNote.report()
+    ani=AnisotropyNote.report()
     idxs=int(idAndType[0])
     #print(idxs)
     newData.pop(idxs)
-    newData.insert(idxs,[int(idAndType[0]),int(idAndType[1]),idAndType[2],tuple(pos)])
+    newData.insert(idxs,[int(idAndType[0]),int(idAndType[1]),idAndType[2],tuple(pos),tuple(ani)])
     OrbListBox.updateInfo(newData)
     updateStructureViewer()
 
 def orbitalDataFormat(info):
-    return 'ID: %d Type: %d Spin: %.1f FracX: %.4f %.4f %.4f'%(info[0],info[1],info[2],info[3][0],info[3][1],info[3][2])
+    return 'ID: %d Spin: %.1f FracX: %.3f %.3f %.3f Ani: %.2f %.2f %.2f'%(info[0],info[2],info[3][0],info[3][1],info[3][2],info[4][0],info[4][1],info[4][2])
 
 def loadOrbitals():
-    global gui, OrbListBox, IDandTypeNote, PosNote
+    global gui, OrbListBox, IDandTypeNote, PosNote, AnisotropyNote
     OrbFrame=LabelFrame(gui,text='Orbital list')
     OrbFrame.grid(row=1,column=0,columnspan=1)
 
     list_base=Frame(OrbFrame)
     list_base.grid(row=0,column=0,columnspan=2)
-    OrbListBox=toolbox.InfoList(list_base, correspondToOrbList, orbitalDataFormat, initialInfo=[[0,0,1,(0.,0.,0.)]],width=45,height=5)
+    OrbListBox=toolbox.InfoList(list_base, correspondToOrbList, orbitalDataFormat, initialInfo=[[0,0,1,(0.,0.,0.),(0.,0.,0.)]],width=45,height=5)
 
     addOrbFrameBase=Frame(OrbFrame)
     addOrbFrameBase.grid(row=1,column=0)
@@ -127,12 +128,16 @@ def loadOrbitals():
     pos_base.grid(row=1,column=0,sticky='W')
     PosNote=toolbox.NoteFrm(pos_base, init_notes=['pos','',''],init_data=[0.,0.,0.],row=True,entryWidth=6)
 
+    anis_base=Frame(addOrbFrameBase)
+    anis_base.grid(row=2,column=0,sticky=(W,E))
+    AnisotropyNote=toolbox.NoteFrm(anis_base, init_notes=['Ani: Dz','Dx','Dy'],init_data=[0,0,0],row=True,entryWidth=6)
+
     addBtn=Button(addOrbFrameBase,text='add',command=addOrb)
-    addBtn.grid(row=0,column=1,rowspan=2)
+    addBtn.grid(row=0,column=1,rowspan=3)
     resetBtn=Button(addOrbFrameBase,text='reset',command=resetOrb)
-    resetBtn.grid(row=0,column=2,rowspan=2)
+    resetBtn.grid(row=0,column=2,rowspan=3)
     delBtn=Button(addOrbFrameBase,text='delet',command=deletOrb)
-    delBtn.grid(row=0,column=3,rowspan=2)
+    delBtn.grid(row=0,column=3,rowspan=3)
 
 
 ##################
@@ -190,7 +195,7 @@ def bondDataFormat(info):
     return 'ID: %d J: %.3f source: %d target: %d overLat: %d %d %d'%(info[0],info[1][0],info[2][0],info[2][1],info[2][2][0],info[2][2][1],info[2][2][2])
 
 def loadBonds():
-    global gui, BondBox, IDandTypeOfBondNote, BondDetailNote, AnisotropyOfBondNote
+    global gui, BondBox, IDandTypeOfBondNote, BondDetailNote
     BondFrame=LabelFrame(gui,text='Bond list')
     BondFrame.grid(row=2,column=0,columnspan=1)
 
@@ -211,10 +216,6 @@ def loadBonds():
     detail_base=Frame(addBondFrameBase)
     detail_base.grid(row=1,column=0,sticky=(W,E))
     BondDetailNote=toolbox.NoteFrm(detail_base, init_notes=['s','t','over lat.','',''],init_data=[0,0,1,0,0],row=True,entryWidth=2)
-
-    anis_base=Frame(addBondFrameBase)
-    anis_base.grid(row=2,column=0,sticky=(W,E))
-    AnisotropyOfBondNote=toolbox.NoteFrm(anis_base, init_notes=['Orb Ani:','Dz','Dx','Dy'],init_data=[0,0,0,0],row=True,entryWidth=4)
 
     unitLabel=Label(BondFrame,text='Note all energy units are in Kelvin (1meV=11.58875K)')
     unitLabel.grid(row=2,column=0,sticky=(W,E))

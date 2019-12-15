@@ -13,19 +13,19 @@ typedef struct Orb
     struct Orb **linkedOrb;
 }Orb;
 
-void establishLattice(Orb *lattice, int totOrbs, float initSpin[totOrbs], int nlink, float linkStrength[nlink]){
+void establishLattice(Orb *lattice, int totOrbs, float initSpin[totOrbs], int maxNLinking, int nlink[maxNLinking], float linkStrength[totOrbs][maxNLinking]){
     for(int i=0;i<totOrbs;i++){
         lattice[i].id=i;
         lattice[i].spin=initSpin[i];
-        lattice[i].nlink=nlink;
-        lattice[i].linkStrength=linkStrength;
+        lattice[i].nlink=nlink[i];
+        lattice[i].linkStrength=linkStrength[i];
     }
 }
 
-void establishLinking(Orb *lattice, int totOrbs, int nlink, int linkedOrb[totOrbs][nlink]){
+void establishLinking(Orb *lattice, int totOrbs, int maxNLinking, int nlink[maxNLinking], int linkedOrb[totOrbs][maxNLinking]){
     for(int iorb=0;iorb<totOrbs;iorb++){
-        lattice[iorb].linkedOrb=(Orb**)malloc(nlink*sizeof(Orb*));
-        for(int ilink=0;ilink<nlink;ilink++){
+        lattice[iorb].linkedOrb=(Orb**)malloc(nlink[iorb]*sizeof(Orb*));
+        for(int ilink=0;ilink<nlink[iorb];ilink++){
             lattice[iorb].linkedOrb[ilink]=lattice+linkedOrb[iorb][ilink];
         }
     }
@@ -117,12 +117,12 @@ void localUpdate(int totOrbs, Orb lattice[], float *p_energy, float *p_totSpin){
 }
 
 PyObject * blockUpdateMC(int totOrbs, float initSpin[totOrbs], int nthermal, int nsweep, 
-                   int nlink, float linkStrength[nlink], int linkedOrb[totOrbs][nlink]){
+                   int maxNLinking, int nlink[totOrbs], float linkStrength[totOrbs][maxNLinking], int linkedOrb[totOrbs][maxNLinking]){
     //printf("hello block algorithm!\n");
     // initialize lattice
     Orb lattice[totOrbs];
-    establishLattice(lattice, totOrbs, initSpin, nlink, linkStrength);
-    establishLinking(lattice, totOrbs, nlink, linkedOrb);
+    establishLattice(lattice, totOrbs, initSpin, maxNLinking, nlink, linkStrength);
+    establishLinking(lattice, totOrbs, maxNLinking, nlink, linkedOrb);
 
     // initialize measurement
     float energy=0, totSpin=0;
@@ -151,11 +151,11 @@ PyObject * blockUpdateMC(int totOrbs, float initSpin[totOrbs], int nthermal, int
 }
 
 PyObject * localUpdateMC(int totOrbs, float initSpin[totOrbs], int nthermal, int nsweep, 
-                   int nlink, float linkStrength[nlink], int linkedOrb[totOrbs][nlink]){
+                   int maxNLinking, int nlink[totOrbs], float linkStrength[totOrbs][maxNLinking], int linkedOrb[totOrbs][maxNLinking]){
     // initialize lattice
     Orb lattice[totOrbs];
-    establishLattice(lattice, totOrbs, initSpin, nlink, linkStrength);
-    establishLinking(lattice, totOrbs, nlink, linkedOrb);
+    establishLattice(lattice, totOrbs, initSpin, maxNLinking, nlink, linkStrength);
+    establishLinking(lattice, totOrbs, maxNLinking, nlink, linkedOrb);
 
     // initialize measurement
     float energy=0, totSpin=0;
