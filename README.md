@@ -1,5 +1,5 @@
 # mcsolver
-A user friendly tools implementing Monte Carlo simulations to estimate of Curie/Neel temperature
+A user friendly tools implementing Monte Carlo simulations to estimate Curie/Neel temperature
 
 Original version contributor： Dr. Liang Liu* 1.Shenzheng University 2.Shandong University
 Email: liangliu@mail.sdu.edu.cn
