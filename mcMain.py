@@ -79,7 +79,7 @@ class MC:
             print(np.mean(np.abs(data[0]))/self.totOrbs,np.mean(data[1])/self.totOrbs,time.time()-time0)
             return data[0], data[1]
 
-    def mainLoopViaCLib_On(self,nsweep=1000,nthermal=5000,algo='Metroplis'):
+    def mainLoopViaCLib_On(self,nsweep=1000,nthermal=5000,algo='Metroplis',On=3,flunc=0.1):
         self.nsweep=nsweep
         self.nthermal=nthermal
 
@@ -119,25 +119,27 @@ class MC:
                     linkData[cnt]=orb.linkedOrb[ilinking].id
                     cnt+=1
         
-        maxNLinking=c_int(maxNLinking)
-        On=c_int(2)
+        maxNLinking_=c_int(maxNLinking)
+        On_=c_int(On)
+        flunc_=c_float(flunc)
         mylib=CDLL("Onlib.so")
-        time0=time.time()
         if algo=='Wolff':
+            #print('Wolff')
             cMC=mylib.blockUpdateMC
             cMC.restype=py_object
-            data=cMC(self.totOrbs, initSpin, nthermal, nsweep, nlinking, linkStrength, linkData)
-            print(np.mean(np.abs(data[0]))/self.totOrbs,np.mean(data[1])/self.totOrbs,time.time()-time0)
-            return data[0], data[1]
+            xspin, yspin, zspin, energy = cMC(self.totOrbs, initSpin, nthermal, nsweep, maxNLinking_, nlinking, linkStrength, linkData, On_, flunc_)
+            #spin, energy = data[0], data[1], data[2], data[3]
+            spin=np.sqrt(np.array(xspin)**2+np.array(yspin)**2+np.array(zspin)**2)
+            print('<x> %.3f <y> %.3f <z> %.3f <tot> %.3f <energy> %.3f'%(np.mean(xspin)/self.totOrbs,np.mean(yspin)/self.totOrbs,np.mean(zspin)/self.totOrbs,np.mean(spin)/self.totOrbs,np.mean(energy)/self.totOrbs))
+            #return data[0], data[1]
         elif algo=='Metroplis':
             cMC=mylib.localUpdateMC
-            #cMC.restype=py_object
-            cMC(self.totOrbs, initSpin, nthermal, nsweep, maxNLinking, nlinking, linkStrength, linkData, On)
-            #print(np.mean(np.abs(data[0]))/self.totOrbs,np.mean(data[1])/self.totOrbs,time.time()-time0)
+            cMC.restype=py_object
+            xspin, yspin, zspin, energy = cMC(self.totOrbs, initSpin, nthermal, nsweep, maxNLinking_, nlinking, linkStrength, linkData, On_, flunc_)
+            spin = np.sqrt(np.array(xspin)**2+np.array(yspin)**2+np.array(zspin)**2)
+            print('<x> %.3f <y> %.3f <z> %.3f <tot> %.3f <energy> %.3f'%(np.mean(np.abs(xspin))/self.totOrbs,np.mean(np.abs(yspin))/self.totOrbs,np.mean(np.abs(zspin))/self.totOrbs,np.mean(np.abs(spin))/self.totOrbs,np.mean(energy)/self.totOrbs))
             #return data[0], data[1]
         
-        
-
     def mainLoop(self,nsweep=10000,nthermal=5000):
         self.nsweep=nsweep
         self.nthermal=nthermal
