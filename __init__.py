@@ -11,7 +11,7 @@ def startMC(param): # start MC for Ising model
     global bondList,LMatrix,pos,nsweep,nthermal,Lx,Ly,Lz,algorithm
     # unzip all global parameters for every processing
     ID, T, bondList,LMatrix,pos,S,nsweep,nthermal,Lx,Ly,Lz,algorithm=param
-    mcslave=mc.MC(ID,LMatrix,pos,S,bondList,T,Lx,Ly,Lz)
+    mcslave=mc.MC(ID,LMatrix,pos=pos,S=S,bondList=bondList,T=T,Lx=Lx,Ly=Ly,Lz=Lz)
     mData, eData=np.array(mcslave.mainLoopViaCLib(nsweep=nsweep,nthermal=nthermal,algo=algorithm))
     mData=abs(mData)/Lx/Ly/Lz
     eData/=(Lx*Ly*Lz)
@@ -21,7 +21,7 @@ def startMCForOn(param): # start MC for O(n) model
     #global bondList,LMatrix,pos,nsweep,nthermal,Lx,Ly,Lz,algorithm
     # unzip all global parameters for every processing
     ID, T, bondList,LMatrix,pos,S,nsweep,nthermal,Lx,Ly,Lz,algorithm=param
-    mcslave=mc.MC(ID,LMatrix,pos,S,bondList,T,Lx,Ly,Lz)
+    mcslave=mc.MC(ID,LMatrix,pos=pos,S=S,bondList=bondList,T=T,Lx=Lx,Ly=Ly,Lz=Lz)
     mcslave.mainLoopViaCLib_On(nsweep=nsweep,nthermal=nthermal,algo=algorithm)
     #mData=abs(mData)/Lx/Ly/Lz
     #eData/=(Lx*Ly*Lz)

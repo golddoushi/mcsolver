@@ -5,10 +5,10 @@ import numpy as np
 import time
 
 class MC:
-    def __init__(self,ID,LMatrix,pos,S,bondList,T=1,Lx=1,Ly=1,Lz=1): # init for specified temperature
+    def __init__(self,ID,LMatrix,pos=[],S=[],D=[],bondList=[],T=1,Lx=1,Ly=1,Lz=1): # init for specified temperature
         norb=len(pos)
         totOrbs=Lx*Ly*Lz*norb
-        lattice_array, lattice=lat.establishLattice(Lx=Lx,Ly=Ly,Lz=Lz,norb=norb,Lmatrix=np.array(LMatrix),bmatrix=np.array(pos),SpinList=S)
+        lattice_array, lattice=lat.establishLattice(Lx=Lx,Ly=Ly,Lz=Lz,norb=norb,Lmatrix=np.array(LMatrix),bmatrix=np.array(pos),SpinList=S,DList=D)
         # to aviod 0K
         T=0.1 if T<0.1 else T
         # create bond list for manual temperature
@@ -20,7 +20,7 @@ class MC:
         lat.establishLinking(lattice_array,bondT)
         self.ID=ID
         self.T=T
-        self.Sz=totOrbs
+        self.Sz=Lx*Ly*Lz*sum(S)
         self.Energy=0.
         self.lattice=lattice
         self.totOrbs=totOrbs
@@ -83,15 +83,21 @@ class MC:
         self.nsweep=nsweep
         self.nthermal=nthermal
 
-        # initial spin
+        # initial spin, single ion anisotropy and number of linking
         initSpin=(c_float*self.totOrbs)()
+        initD=(c_float*(3*self.totOrbs))()
         nlinking=(c_int*self.totOrbs)()
         nlinking_list=[]
         for iorb, orb in enumerate(self.lattice):
             #print(orb.spin)
             initSpin[iorb]=c_float(orb.spin)
+            initD[iorb*3]=c_float(orb.D[0])
+            initD[iorb*3+1]=c_float(orb.D[1])
+            initD[iorb*3+2]=c_float(orb.D[2])
+
             nlinking[iorb]=c_int(len(orb.linkedOrb))
             nlinking_list.append(len(orb.linkedOrb))
+        
         # link strength
         maxNLinking=np.max(nlinking_list)
         linkStrength=(c_float*(self.totOrbs*maxNLinking*3))() # thus the nlinking of every orbs are the same
@@ -133,18 +139,18 @@ class MC:
             #print('Wolff')
             cMC=mylib.blockUpdateMC
             cMC.restype=py_object
-            xspin, yspin, zspin, energy = cMC(self.totOrbs, initSpin, nthermal, nsweep, maxNLinking_, nlinking, linkStrength, linkData, flunc_)
+            xspin, yspin, zspin, energy = cMC(self.totOrbs, initSpin, initD, nthermal, nsweep, maxNLinking_, nlinking, linkStrength, linkData, flunc_)
             #spin, energy = data[0], data[1], data[2], data[3]
             spin=np.sqrt(np.array(xspin)**2+np.array(yspin)**2+np.array(zspin)**2)
             print('<x> %.3f <y> %.3f <z> %.3f <tot> %.3f <energy> %.3f'%(np.mean(xspin)/self.totOrbs,np.mean(yspin)/self.totOrbs,np.mean(zspin)/self.totOrbs,np.mean(spin)/self.totOrbs,np.mean(energy)/self.totOrbs))
-            #return data[0], data[1]
+            return spin, energy
         elif algo=='Metroplis':
             cMC=mylib.localUpdateMC
             cMC.restype=py_object
-            xspin, yspin, zspin, energy = cMC(self.totOrbs, initSpin, nthermal, nsweep, maxNLinking_, nlinking, linkStrength, linkData, flunc_)
+            xspin, yspin, zspin, energy = cMC(self.totOrbs, initSpin, initD, nthermal, nsweep, maxNLinking_, nlinking, linkStrength, linkData, flunc_)
             spin = np.sqrt(np.array(xspin)**2+np.array(yspin)**2+np.array(zspin)**2)
             print('<x> %.3f <y> %.3f <z> %.3f <tot> %.3f <energy> %.3f'%(np.mean(np.abs(xspin))/self.totOrbs,np.mean(np.abs(yspin))/self.totOrbs,np.mean(np.abs(zspin))/self.totOrbs,np.mean(np.abs(spin))/self.totOrbs,np.mean(energy)/self.totOrbs))
-            #return data[0], data[1]
+            return spin, energy
         
     def mainLoop(self,nsweep=10000,nthermal=5000):
         self.nsweep=nsweep

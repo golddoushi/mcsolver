@@ -5,11 +5,12 @@ class Orbital:
     '''
     represent the orbital, it is linked to many other orbitals
     '''
-    def __init__(self,id,spin=1.,x=0.,y=0.,z=0.):
+    def __init__(self,id,spin=1.,D=[],x=0.,y=0.,z=0.):
         self.id=id
         self.linkedOrb=[]
         self.linkStrength=[]
         self.spin=spin
+        self.D=D
         self.inBlock=False
 
         #use to plot on screen
@@ -70,7 +71,6 @@ class Orbital:
                 corr+=self.spin*targetOrb.spin*bondStrengh
         return corr
     
-
 class Bond:
     '''
     represent the bond
@@ -88,7 +88,7 @@ class Bond:
     def copy(self):
         return Bond(self.source,self.target,self.overLat,self.strength,self.strength1,self.strength2,self.On)
 
-def establishLattice(Lx=1,Ly=1,Lz=1,norb=1,Lmatrix=np.array([[1,0,0],[0,1,0],[0,0,1]]),bmatrix=[np.array([0.,0.,0.])],SpinList=[1]):
+def establishLattice(Lx=1,Ly=1,Lz=1,norb=1,Lmatrix=np.array([[1,0,0],[0,1,0],[0,0,1]]),bmatrix=[np.array([0.,0.,0.])],SpinList=[1],DList=[0.,0.,0.]):
     '''
     create a Lx X Ly X Lz lattice, and create norb orbitals
     for each cell
@@ -110,7 +110,8 @@ def establishLattice(Lx=1,Ly=1,Lz=1,norb=1,Lmatrix=np.array([[1,0,0],[0,1,0],[0,
                 lattice_z=[]
                 for o in range(norb):
                     pos=np.dot(np.array([x,y,z])+bmatrix[o],Lmatrix)
-                    orbital=Orbital(id,spin=SpinList[o],x=pos[0],y=pos[1],z=pos[2])
+                    orbital=Orbital(id,spin=SpinList[o],D=DList[o],
+                                    x=pos[0],y=pos[1],z=pos[2])
                     lattice_z.append(orbital)
                     lattice_flatten.append(orbital)
                     id+=1
