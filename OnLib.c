@@ -3,6 +3,8 @@
 #include <stdlib.h>
 #include <math.h>
 
+int On;
+
 typedef struct Vec
 {
     int dimension;
@@ -61,19 +63,13 @@ float diagonalDot(Vec vec1, Vec vec2, Vec vec3){
            vec1.coor[2]*vec2.coor[2]*vec3.coor[2];
 }
 
-float diagonalDot4(Vec vec1, Vec vec2, Vec vec3, Vec vec4){
-    return vec1.coor[0]*vec2.coor[0]*vec3.coor[0]*vec4.coor[0]+
-           vec1.coor[1]*vec2.coor[1]*vec3.coor[1]*vec4.coor[1]+
-           vec1.coor[2]*vec2.coor[2]*vec3.coor[2]*vec4.coor[2];
-}
-
 Vec generateRandomVec(){
     // O(3) case
     Vec direction;
     direction.coor=(float*)malloc(3*sizeof(float));
     direction.coor[0]=rand()/32767.0-0.5;
     direction.coor[1]=rand()/32767.0-0.5;
-    direction.coor[2]=rand()/32767.0-0.5;
+    direction.coor[2]=0;//rand()/32767.0-0.5;
     float len2=dot(direction, direction);
     if (len2>0.5)
     {
@@ -280,6 +276,7 @@ void localUpdate(int totOrbs, Orb lattice[], float *p_energy, Vec *p_totSpin){
 PyObject * blockUpdateMC(int totOrbs, float initSpin[totOrbs], int nthermal, int nsweep, 
                    int maxNLinking, int nlink[totOrbs], float linkStrength[totOrbs][maxNLinking][3], int linkedOrb[totOrbs][maxNLinking],
                    int On, float flunc){
+    On=On;
     // initialize lattice
     Orb lattice[totOrbs];
     //printf("hello here is C lib\n");
@@ -329,6 +326,7 @@ PyObject * blockUpdateMC(int totOrbs, float initSpin[totOrbs], int nthermal, int
 PyObject * localUpdateMC(int totOrbs, float initSpin[totOrbs], int nthermal, int nsweep, 
                    int maxNLinking, int nlink[totOrbs], float linkStrength[totOrbs][maxNLinking][3], int linkedOrb[totOrbs][maxNLinking],
                    int On, float flunc){
+    On=On;
     // initialize lattice
     Orb lattice[totOrbs];
     //printf("hello here is C lib\n");

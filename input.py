@@ -9,12 +9,12 @@ LMatrix=[[1,0,0],
 # magnetic orbitals in fractional coordinates
 pos=[[0,0,0]] 
 # couplings   #source #target #edge  #J(meV) negative for FM coupling
-bond1=lat.Bond(0,0,np.array([1,0,0]),-4.2,-3.8,-3.8, True)
-bond2=lat.Bond(0,0,np.array([0,1,0]),-4.2,-3.8,-3.8, True)
+bond1=lat.Bond(0,0,np.array([1,0,0]),-1.0,-1.0,-1.0, True)
+bond2=lat.Bond(0,0,np.array([0,1,0]),-1.0,-1.0,-1.0, True)
 bondList=[bond1,bond2]
 
-mcslave=mc.MC(0,LMatrix,pos,[1.],bondList,T=1.0,Lx=128,Ly=128,Lz=1)
-mcslave.mainLoopViaCLib_On(nsweep=8000,nthermal=4000,algo='Metroplis',flunc=0.0)
+mcslave=mc.MC(0,LMatrix,pos,[1.],bondList,T=1.0,Lx=64,Ly=64,Lz=1)
+mcslave.mainLoopViaCLib_On(nsweep=8000,nthermal=4000,algo='Wolff',On=2,flunc=0.0)
 '''
 TList=np.linspace(2.2,2.3,10)
 U4_list=[]
