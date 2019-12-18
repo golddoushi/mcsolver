@@ -120,14 +120,20 @@ class MC:
                     cnt+=1
         
         maxNLinking_=c_int(maxNLinking)
-        On_=c_int(On)
         flunc_=c_float(flunc)
-        mylib=CDLL("Onlib.so")
+        if On==2:
+            mylib=CDLL("xylib.so")
+        elif On==3:
+            mylib=CDLL("heisenberglib.so")
+        else:
+            print("Error: undefined O(n)")
+            return
+        
         if algo=='Wolff':
             #print('Wolff')
             cMC=mylib.blockUpdateMC
             cMC.restype=py_object
-            xspin, yspin, zspin, energy = cMC(self.totOrbs, initSpin, nthermal, nsweep, maxNLinking_, nlinking, linkStrength, linkData, On_, flunc_)
+            xspin, yspin, zspin, energy = cMC(self.totOrbs, initSpin, nthermal, nsweep, maxNLinking_, nlinking, linkStrength, linkData, flunc_)
             #spin, energy = data[0], data[1], data[2], data[3]
             spin=np.sqrt(np.array(xspin)**2+np.array(yspin)**2+np.array(zspin)**2)
             print('<x> %.3f <y> %.3f <z> %.3f <tot> %.3f <energy> %.3f'%(np.mean(xspin)/self.totOrbs,np.mean(yspin)/self.totOrbs,np.mean(zspin)/self.totOrbs,np.mean(spin)/self.totOrbs,np.mean(energy)/self.totOrbs))
@@ -135,7 +141,7 @@ class MC:
         elif algo=='Metroplis':
             cMC=mylib.localUpdateMC
             cMC.restype=py_object
-            xspin, yspin, zspin, energy = cMC(self.totOrbs, initSpin, nthermal, nsweep, maxNLinking_, nlinking, linkStrength, linkData, On_, flunc_)
+            xspin, yspin, zspin, energy = cMC(self.totOrbs, initSpin, nthermal, nsweep, maxNLinking_, nlinking, linkStrength, linkData, flunc_)
             spin = np.sqrt(np.array(xspin)**2+np.array(yspin)**2+np.array(zspin)**2)
             print('<x> %.3f <y> %.3f <z> %.3f <tot> %.3f <energy> %.3f'%(np.mean(np.abs(xspin))/self.totOrbs,np.mean(np.abs(yspin))/self.totOrbs,np.mean(np.abs(zspin))/self.totOrbs,np.mean(np.abs(spin))/self.totOrbs,np.mean(energy)/self.totOrbs))
             #return data[0], data[1]

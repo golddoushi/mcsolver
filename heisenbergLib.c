@@ -3,83 +3,68 @@
 #include <stdlib.h>
 #include <math.h>
 
-int On;
-
 typedef struct Vec
 {
     int dimension;
-    float *coor;
+    float x,y,z;
 }Vec;
 // vec1=abs(vec1)
-void normalize(Vec vec1){
-    float len=sqrt(vec1.coor[0]*vec1.coor[0]+vec1.coor[1]*vec1.coor[1]+vec1.coor[2]*vec1.coor[2]);
+void normalize(Vec *vec1){
+    float len=sqrt(vec1->x*vec1->x+vec1->y*vec1->y+vec1->z*vec1->z);
     if (len<1e-5) return;
-    vec1.coor[0]/=len;
-    vec1.coor[1]/=len;
-    vec1.coor[2]/=len;
+    vec1->x/=len;
+    vec1->y/=len;
+    vec1->z/=len;
 }
 // vec1=vec2
-void equal(Vec vec1, Vec vec2){
-    vec1.coor[0]=vec2.coor[0];
-    vec1.coor[1]=vec2.coor[1];
-    vec1.coor[2]=vec2.coor[2];
+void equal(Vec *vec1, Vec vec2){
+    vec1->x=vec2.x;
+    vec1->y=vec2.y;
+    vec1->z=vec2.z;
 }
 // vec1*=c
-void cTimes(Vec vec1, float c){
-    vec1.coor[0]*=c;
-    vec1.coor[1]*=c;
-    vec1.coor[2]*=c;
+void cTimes(Vec *vec1, float c){
+    vec1->x*=c;
+    vec1->y*=c;
+    vec1->z*=c;
 }
 // vec1+=vec2
-void plusEqual(Vec vec1, Vec vec2){
-    vec1.coor[0]+=vec2.coor[0];
-    vec1.coor[1]+=vec2.coor[1];
-    vec1.coor[2]+=vec2.coor[2];
+void plusEqual(Vec *vec1, Vec vec2){
+    vec1->x+=vec2.x;
+    vec1->y+=vec2.y;
+    vec1->z+=vec2.z;
 }
 // vec1-=vec2
-void minusEqual(Vec vec1, Vec vec2){
-    vec1.coor[0]-=vec2.coor[0];
-    vec1.coor[1]-=vec2.coor[1];
-    vec1.coor[2]-=vec2.coor[2];
-}
-// reverse vec1 over the plane which is nomalizing to vec2
-void reverseAlongAxis(Vec *vec1, Vec *vec2){
-    vec1->coor[0]-=(vec1->coor[0]*vec2->coor[0]*2);
-    vec1->coor[1]-=(vec1->coor[1]*vec2->coor[1]*2);
-    vec1->coor[2]-=(vec1->coor[2]*vec2->coor[2]*2);
+void minusEqual(Vec *vec1, Vec vec2){
+    vec1->x-=vec2.x;
+    vec1->y-=vec2.y;
+    vec1->z-=vec2.z;
 }
 // vec1 dot vec2
 float dot(Vec vec1, Vec vec2){
-    return vec1.coor[0]*vec2.coor[0]+vec1.coor[1]*vec2.coor[1]+vec1.coor[2]*vec2.coor[2];
+    return vec1.x*vec2.x+vec1.y*vec2.y+vec1.z*vec2.z;
 }
 
 float diagonalDot(Vec vec1, Vec vec2, Vec vec3){
-    return vec1.coor[0]*vec2.coor[0]*vec3.coor[0]+
-           vec1.coor[1]*vec2.coor[1]*vec3.coor[1]+
-           vec1.coor[2]*vec2.coor[2]*vec3.coor[2];
+    return vec1.x*vec2.x*vec3.x+
+           vec1.y*vec2.y*vec3.y+
+           vec1.z*vec2.z*vec3.z;
 }
-Vec generateRandomVec(){
-    Vec direction;
-    direction.coor=(float*)malloc(3*sizeof(float));
-    direction.coor[0]=rand()/32767.0-0.5;
-    direction.coor[1]=rand()/32767.0-0.5;
-    if (On==3)
-    {
-        direction.coor[2]=rand()/32767.0-0.5;// O(2) case
-    }else
-    {
-        direction.coor[2]=0; // O(3) case
-    }
-    float len2=dot(direction, direction);
+Vec *generateRandomVec(){
+    Vec *direction=(Vec*)malloc(sizeof(Vec));
+    direction->x=rand()/32767.0-0.5;
+    direction->y=rand()/32767.0-0.5;
+    direction->z=rand()/32767.0-0.5;
+    float len2=dot(*direction, *direction);
     if (len2>0.5)
     {
         return generateRandomVec();
     }else
     {
         float len=sqrt(len2);
-        direction.coor[0]/=len;
-        direction.coor[1]/=len;
-        direction.coor[2]/=len;
+        direction->x/=len;
+        direction->y/=len;
+        direction->z/=len;
         return direction;
     }
 }
@@ -103,26 +88,31 @@ void establishLattice(Orb *lattice, int totOrbs, float initSpin[totOrbs], float 
     for(int i=0;i<totOrbs;i++){
         //printf("check point-1, entering setting %d",i);
         lattice[i].id=i;
-        lattice[i].spin.coor=(float*)malloc(3*sizeof(float));  // allocate spin vector for each orb
-        lattice[i].spin.coor[0]=initSpin[i];
-        lattice[i].spin.coor[1]=0;
-        lattice[i].spin.coor[2]=0;
-        Vec fluncSpin=generateRandomVec();
+        //lattice[i].spin.coor=(float*)malloc(3*sizeof(float));  // allocate spin vector for each orb
+        lattice[i].spin.x=initSpin[i];
+        lattice[i].spin.y=0;
+        lattice[i].spin.z=0;
+
+        Vec *fluncSpin=generateRandomVec();
         cTimes(fluncSpin, flunc);
-        plusEqual(lattice[i].spin,fluncSpin);
-        normalize(lattice[i].spin);
-        cTimes(lattice[i].spin,abs(initSpin[i]));
-        free(fluncSpin.coor);
+        plusEqual(&lattice[i].spin,*fluncSpin);
+        normalize(&lattice[i].spin);
+        cTimes(&lattice[i].spin,abs(initSpin[i]));
+        free(fluncSpin);
         //printf("orb %d spin: %.3f %.3f %.3f\n",i,lattice[i].spin.coor[0],lattice[i].spin.coor[1],lattice[i].spin.coor[2]);
-        lattice[i].transSpin.coor=(float*)malloc(3*sizeof(float));  // allocate trans spin vector for each orb
+        lattice[i].transSpin.x=0;  // allocate trans spin vector for each orb
+        lattice[i].transSpin.y=0;
+        lattice[i].transSpin.z=0;
         lattice[i].nlink=nlink[i];
         //printf("check point 1, orb: %d\n",lattice[i].id);
         lattice[i].linkStrength=(Vec*)malloc(nlink[i]*sizeof(Vec)); // allocate strength for each linking
         //printf("check point 2, total links:%d\n",nlink[i]);
         for(int j=0;j<nlink[i];j++){
-            lattice[i].linkStrength[j].coor=(float*)malloc(3*sizeof(float));
+            //lattice[i].linkStrength[j].coor=(float*)malloc(3*sizeof(float));
             //printf("check point 3\n");
-            lattice[i].linkStrength[j].coor=linkStrength[i][j];
+            lattice[i].linkStrength[j].x=linkStrength[i][j][0];
+            lattice[i].linkStrength[j].y=linkStrength[i][j][1];
+            lattice[i].linkStrength[j].z=linkStrength[i][j][2];
             //printf("check point 4, link:%d, strength: %.3f %.3f %.3f\n",j,lattice[i].linkStrength[j].coor[0],lattice[i].linkStrength[j].coor[1],lattice[i].linkStrength[j].coor[2]);
         }
     }
@@ -166,8 +156,8 @@ int expandBlock(int*beginIndex, int*endIndex, Orb *buffer[], int*blockLen, Orb *
     //*endIndex-=1; // pop out the last element
 
     float s1n=-2*dot(outOrb->spin,refDirection);
-    equal(outOrb->transSpin, refDirection);
-    cTimes(outOrb->transSpin, s1n);
+    equal(&outOrb->transSpin, refDirection);
+    cTimes(&outOrb->transSpin, s1n);
     //printf("center orb: %d\n", outOrb->id);
     //printf("projection along axis: %.3f\n", -s1n/2);
     //printf("variation of spin: %.3f %.3f %.3f\n",outOrb->transSpin.coor[0],outOrb->transSpin.coor[1],outOrb->transSpin.coor[2]);
@@ -210,7 +200,7 @@ void blockUpdate(int totOrbs, Orb lattice[], float*p_energy, Vec *p_totSpin){
     int beginIndex=0, endIndex=0, blockLen=1, i;
     int *p_beginIndex=&beginIndex, *p_endIndex=&endIndex, *p_blockLen=&blockLen;
 
-    Vec refDirection=generateRandomVec();
+    Vec *refDirection=generateRandomVec();
     //refDirection.coor=(float*)malloc(3*sizeof(float));
     //equal(&refDirection, &block[0]->spin);
     //normalize(&refDirection);
@@ -219,24 +209,23 @@ void blockUpdate(int totOrbs, Orb lattice[], float*p_energy, Vec *p_totSpin){
     //printf("trial normal direction %.3f %.3f %.3f\n",refDirection.coor[0],refDirection.coor[1],refDirection.coor[2]);
     //float effectiveJ=diagonalDot(block[0]->linkStrength[0], refDirection, refDirection);
     //printf("the 0 linking has strength %.3f %.3f %.3f (original) %.3f (effective)\n",block[0]->linkStrength[0].coor[0],block[0]->linkStrength[1].coor[1],block[0]->linkStrength[2].coor[2],effectiveJ);
-    while (expandBlock(p_beginIndex, p_endIndex, buffer, p_blockLen, block, refDirection)==1)
+    while (expandBlock(p_beginIndex, p_endIndex, buffer, p_blockLen, block, *refDirection)==1)
     {
         // no code here
     }
     //printf("    Block size is %d\n",*p_blockLen);
     for(i=0;i<*p_blockLen;i++){
-        plusEqual(block[i]->spin, block[i]->transSpin);
+        plusEqual(&block[i]->spin, block[i]->transSpin);
         //printf("    after update orb %d spin converted to %.3f %.3f %.3f\n",block[i]->id,block[i]->spin.coor[0],block[i]->spin.coor[1],block[i]->spin.coor[2]);
         block[i]->inBlock=0;
-        plusEqual(*p_totSpin,block[i]->transSpin);
+        plusEqual(p_totSpin,block[i]->transSpin);
     }
     *p_energy=0.;
     for(i=0;i<totOrbs;i++){
         *p_energy+=getCorrEnergy(lattice+i);
     }
     *p_energy/=2;
-
-    free(refDirection.coor);
+    free(refDirection);
 }
 
 void localUpdate(int totOrbs, Orb lattice[], float *p_energy, Vec *p_totSpin){
@@ -244,30 +233,30 @@ void localUpdate(int totOrbs, Orb lattice[], float *p_energy, Vec *p_totSpin){
     int seedID=rand()%totOrbs;  // chose one orb
     //printf("considering %d orb, its spin is %.3f %.3f %.3f\n",
     //         seedID,lattice[seedID].spin.coor[0],lattice[seedID].spin.coor[1],lattice[seedID].spin.coor[2]);
-    Vec refDirection=generateRandomVec(); // chose new direction
+    Vec *refDirection=generateRandomVec(); // chose new direction
     //printf("try new spin direction, ref: %.3f %.3f %.3f\n",
     //       refDirection.coor[0],refDirection.coor[1],refDirection.coor[2]);
-    float s1n=-2*dot(lattice[seedID].spin,refDirection);
+    float s1n=-2*dot(lattice[seedID].spin,*refDirection);
     //printf("projection s1n: %.3f\n",s1n);
-    equal(lattice[seedID].transSpin,refDirection);
-    cTimes(lattice[seedID].transSpin,s1n);
+    equal(&lattice[seedID].transSpin,*refDirection);
+    cTimes(&lattice[seedID].transSpin,s1n);
     float corr=getDeltaCorrEnergy(lattice+seedID);
     
     //printf("lead to the translation spin vector: %.3f %.3f %.3f and delta Ecorr: %.3f\n",
     //      lattice[seedID].transSpin.coor[0],lattice[seedID].transSpin.coor[1],lattice[seedID].transSpin.coor[2],corr);
     
     if(corr<=0){  // new direction is energertically favoured thus accept directly
-        plusEqual(*p_totSpin,lattice[seedID].transSpin);
-        plusEqual(lattice[seedID].spin,lattice[seedID].transSpin);
+        plusEqual(p_totSpin,lattice[seedID].transSpin);
+        plusEqual(&lattice[seedID].spin,lattice[seedID].transSpin);
         *p_energy+=corr;
         //printf("since new direction is energertically lowerd thus we accept, energy: %.3f\n",*p_energy);
     }else if (exp(-corr)>rand()/32767.0){  // accept unfavored direction by chance
-        plusEqual(*p_totSpin,lattice[seedID].transSpin);
-        plusEqual(lattice[seedID].spin,lattice[seedID].transSpin);
+        plusEqual(p_totSpin,lattice[seedID].transSpin);
+        plusEqual(&lattice[seedID].spin,lattice[seedID].transSpin);
         *p_energy+=corr;
         //printf("accepted by chance, energy: %.3f\n",*p_energy);
     }
-    free(refDirection.coor);
+    free(refDirection);
     return;
 }
 
@@ -275,8 +264,7 @@ void localUpdate(int totOrbs, Orb lattice[], float *p_energy, Vec *p_totSpin){
 
 PyObject * blockUpdateMC(int totOrbs, float initSpin[totOrbs], int nthermal, int nsweep, 
                    int maxNLinking, int nlink[totOrbs], float linkStrength[totOrbs][maxNLinking][3], int linkedOrb[totOrbs][maxNLinking],
-                   int On, float flunc){
-    On=On;
+                   float flunc){
     // initialize lattice
     Orb lattice[totOrbs];
     //printf("hello here is C lib\n");
@@ -287,10 +275,9 @@ PyObject * blockUpdateMC(int totOrbs, float initSpin[totOrbs], int nthermal, int
     float energy=0;
     float *p_energy=&energy;
     Vec totSpin;
-    float spin_coor[3]={0.,0.,0.};
-    totSpin.coor=spin_coor;
+    totSpin.x=0;totSpin.y=0;totSpin.z=0;
     Vec*p_totSpin=&totSpin;
-    for(int i=0;i<totOrbs;i++) plusEqual(*p_totSpin, lattice[i].spin);
+    for(int i=0;i<totOrbs;i++) plusEqual(p_totSpin, lattice[i].spin);
     
     // initialize block
     for(int i=0;i<totOrbs;i++) lattice[i].inBlock=0;
@@ -307,9 +294,9 @@ PyObject * blockUpdateMC(int totOrbs, float initSpin[totOrbs], int nthermal, int
     for(int i=0;i<nsweep;i++){
         blockUpdate(totOrbs, lattice, p_energy, p_totSpin);
         //len=sqrt(dot(*p_totSpin, *p_totSpin));
-        PyTuple_SetItem(xspinData, i, PyFloat_FromDouble(p_totSpin->coor[0]));
-        PyTuple_SetItem(yspinData, i, PyFloat_FromDouble(p_totSpin->coor[1]));
-        PyTuple_SetItem(zspinData, i, PyFloat_FromDouble(p_totSpin->coor[2]));
+        PyTuple_SetItem(xspinData, i, PyFloat_FromDouble(p_totSpin->x));
+        PyTuple_SetItem(yspinData, i, PyFloat_FromDouble(p_totSpin->y));
+        PyTuple_SetItem(zspinData, i, PyFloat_FromDouble(p_totSpin->z));
         PyTuple_SetItem(energyData, i, PyFloat_FromDouble(*p_energy));
     }
     PyObject *Data;
@@ -325,8 +312,7 @@ PyObject * blockUpdateMC(int totOrbs, float initSpin[totOrbs], int nthermal, int
 // self.totOrbs, initSpin, nthermal, nsweep, maxNLinking, nlinking, linkStrength, linkData
 PyObject * localUpdateMC(int totOrbs, float initSpin[totOrbs], int nthermal, int nsweep, 
                    int maxNLinking, int nlink[totOrbs], float linkStrength[totOrbs][maxNLinking][3], int linkedOrb[totOrbs][maxNLinking],
-                   int On, float flunc){
-    On=On;
+                   float flunc){
     // initialize lattice
     Orb lattice[totOrbs];
     //printf("hello here is C lib\n");
@@ -341,13 +327,15 @@ PyObject * localUpdateMC(int totOrbs, float initSpin[totOrbs], int nthermal, int
     }
     *p_energy/=2;
     Vec totSpin;
-    float spin_coor[3]={0.,0.,0.};
-    totSpin.coor=spin_coor;
+    totSpin.x=0;totSpin.y=0;totSpin.z=0;
     Vec*p_totSpin=&totSpin;
-    for(int i=0;i<totOrbs;i++) plusEqual(*p_totSpin,lattice[i].spin);
+    for(int i=0;i<totOrbs;i++) {
+        //printf("%.3f %.3f %.3f\n",lattice[i].spin.x,lattice[i].spin.y,lattice[i].spin.y);
+        plusEqual(&totSpin, lattice[i].spin);
+    }
     
     //localUpdate(totOrbs, lattice, p_energy, p_totSpin);
-    //printf("initial total spin: %.3f %.3f %.3f energy: %.3f\n",p_totSpin->coor[0],p_totSpin->coor[1],p_totSpin->coor[2],*p_energy);
+    //printf("initial total spin: %.3f %.3f %.3f energy: %.3f\n",totSpin.x,totSpin.y,totSpin.z,*p_energy);
     for(int i=0;i<totOrbs*nthermal;i++) localUpdate(totOrbs, lattice, p_energy, p_totSpin); //thermalization
 
     PyObject *xspinData, *yspinData, *zspinData, *energyData;
@@ -360,9 +348,9 @@ PyObject * localUpdateMC(int totOrbs, float initSpin[totOrbs], int nthermal, int
         for(int j=0;j<totOrbs;j++) localUpdate(totOrbs, lattice, p_energy, p_totSpin);
         //printf("after local updates, total spin is: %.3f %.3f %.3f\n",p_totSpin->coor[0],p_totSpin->coor[1],p_totSpin->coor[2]);
         //len=sqrt(dot(*p_totSpin, *p_totSpin));
-        PyTuple_SetItem(xspinData, i, PyFloat_FromDouble(p_totSpin->coor[0]));
-        PyTuple_SetItem(yspinData, i, PyFloat_FromDouble(p_totSpin->coor[1]));
-        PyTuple_SetItem(zspinData, i, PyFloat_FromDouble(p_totSpin->coor[2]));
+        PyTuple_SetItem(xspinData, i, PyFloat_FromDouble(p_totSpin->x));
+        PyTuple_SetItem(yspinData, i, PyFloat_FromDouble(p_totSpin->y));
+        PyTuple_SetItem(zspinData, i, PyFloat_FromDouble(p_totSpin->z));
         PyTuple_SetItem(energyData, i, PyFloat_FromDouble(*p_energy));
     }
     
@@ -372,5 +360,5 @@ PyObject * localUpdateMC(int totOrbs, float initSpin[totOrbs], int nthermal, int
     PyTuple_SetItem(Data, 1, yspinData);
     PyTuple_SetItem(Data, 2, zspinData);
     PyTuple_SetItem(Data, 3, energyData);
-    return Data;   
+    return Data;
 }
