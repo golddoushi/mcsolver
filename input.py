@@ -18,22 +18,22 @@ bondList=[bond1,bond2]
 
 
 #time0=time.time()
-#mcslave=mc.MC(0,LMatrix,pos=pos,S=Spin,D=D,bondList=bondList,T=9.0,Lx=32,Ly=32,Lz=1)
+#mcslave=mc.MC(0,LMatrix,pos=pos,S=Spin,D=D,bondList=bondList,T=11.0,Lx=32,Ly=32,Lz=1)
 #mcslave.mainLoopViaCLib_On(nsweep=40000,nthermal=20000,algo='Wolff',On=3,flunc=0.0)
 #print('time elapsed: %.3f s'%(time.time()-time0))
 
-'''
+
 TList=np.linspace(9,11,10)
 U4_list=[]
-for L in [32,64]:
+for L in [32]:
     U4_L=[]
     for T in TList:
         mcslave=mc.MC(0,LMatrix,pos=pos,S=Spin,D=D,bondList=bondList,T=T,Lx=L,Ly=L,Lz=1)
-        mData, eData=np.array(mcslave.mainLoopViaCLib_On(nsweep=40000,nthermal=20000,algo='Wolff',On=3,flunc=0.0))
-        U4_L.append(np.mean(mData*mData)**2/np.mean(mData**4))
+        mData, eData=np.array(mcslave.mainLoopViaCLib_On(nsweep=80000,nthermal=40000,algo='Metroplis',On=3,flunc=0.0))
+        #U4_L.append(np.mean(mData*mData)**2/np.mean(mData**4))
+        U4_L.append(np.mean(mData))
     U4_list.append(U4_L)
     
-plt.plot(TList,U4_list[0])
-plt.plot(TList,U4_list[1])
+plt.scatter(TList,U4_list[0])
+#plt.plot(TList,U4_list[1])
 plt.show()
-'''

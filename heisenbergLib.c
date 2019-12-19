@@ -226,7 +226,7 @@ void blockUpdate(int totOrbs, Orb lattice[], float*p_energy, Vec *p_totSpin){
     block[0]=lattice+seedID;
     buffer[0]=lattice+seedID;
     block[0]->inBlock=1;
-    block[0]->d_onsiteEnergy=getDeltaOnsiteEnergy(block[0]);
+    
     int beginIndex=0, endIndex=0, blockLen=1, i, j;
     int *p_beginIndex=&beginIndex, *p_endIndex=&endIndex, *p_blockLen=&blockLen;
 
@@ -258,9 +258,9 @@ void blockUpdate(int totOrbs, Orb lattice[], float*p_energy, Vec *p_totSpin){
             cTimes(&Sj_parallel,0.5);
             plusEqual(&originalSj,Sj_parallel);
             tot_d_onsiteEnergy+=block[i]->sDotN*diagonalDot(originalSj,block[i]->linkStrength[j],*refDirection);
-            // single-ion anisotropy
-            tot_d_onsiteEnergy-=getDeltaOnsiteEnergy(block[i]);
         }
+        // single-ion anisotropy
+        tot_d_onsiteEnergy-=getDeltaOnsiteEnergy(block[i]);
         
     }
     for(i=0;i<*p_blockLen;i++) block[i]->inBlock=0;
