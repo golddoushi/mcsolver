@@ -64,19 +64,18 @@ class MC:
                 cnt+=1
         
         maxNLinking=c_int(maxNLinking)
-        time0=time.time()
         mylib=CDLL("isinglib.so")
         if algo=='Wolff':
             cMC=mylib.blockUpdateMC
             cMC.restype=py_object
             data=cMC(self.totOrbs, initSpin, nthermal, nsweep, maxNLinking, nlinking, linkStrength, linkData)
-            print(np.mean(np.abs(data[0]))/self.totOrbs,np.mean(data[1])/self.totOrbs,time.time()-time0)
+            print(np.mean(np.abs(data[0]))/self.totOrbs,np.mean(data[1])/self.totOrbs)
             return data[0], data[1]
         elif algo=='Metroplis':
             cMC=mylib.localUpdateMC
             cMC.restype=py_object
             data=cMC(self.totOrbs, initSpin, nthermal, nsweep, maxNLinking, nlinking, linkStrength, linkData)
-            print(np.mean(np.abs(data[0]))/self.totOrbs,np.mean(data[1])/self.totOrbs,time.time()-time0)
+            print(np.mean(np.abs(data[0]))/self.totOrbs,np.mean(data[1])/self.totOrbs)
             return data[0], data[1]
 
     def mainLoopViaCLib_On(self,nsweep=1000,nthermal=5000,algo='Metroplis',On=3,flunc=0.1):

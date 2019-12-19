@@ -260,7 +260,7 @@ void blockUpdate(int totOrbs, Orb lattice[], float*p_energy, Vec *p_totSpin){
             tot_d_onsiteEnergy+=block[i]->sDotN*diagonalDot(originalSj,block[i]->linkStrength[j],*refDirection);
         }
         // single-ion anisotropy
-        tot_d_onsiteEnergy-=getDeltaOnsiteEnergy(block[i]);
+        tot_d_onsiteEnergy+=getDeltaOnsiteEnergy(block[i]);
         
     }
     for(i=0;i<*p_blockLen;i++) block[i]->inBlock=0;

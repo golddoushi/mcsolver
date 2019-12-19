@@ -28,14 +28,15 @@ class Orbital:
         self.linkedOrb.append(targetOrb)
         self.linkStrength.append(strength)
 
-    def classifyTheLinking(self):
+    def classifyTheLinking(self,On=False):
         initialType=-1
         self.classStrength=[]
         self.linkedOrbType=[]
         for linkStrength in self.linkStrength:
             findType=False
             for itype, StrengthType in enumerate(self.classStrength):
-                if abs(linkStrength-StrengthType).all()<0.0001:
+                condition=sum(abs(linkStrength-StrengthType)) if On else abs(linkStrength-StrengthType)
+                if condition<0.0001:#abs(linkStrength-StrengthType).all()<0.0001:
                     self.linkedOrbType.append(itype)
                     findType=True
                     break
@@ -126,6 +127,7 @@ def establishLinking(lattice,bondList):
     Lz=len(lattice[0][0])
     Lo=len(lattice[0][0][0])
     # uncode every orbitals
+    On=False
     for x in range(Lx):
         for y in range(Ly):
             for z in range(Lz):
@@ -136,6 +138,7 @@ def establishLinking(lattice,bondList):
                         if o==bond.source:
                             targetOrb=lattice[(x+bond.overLat[0])%Lx][(y+bond.overLat[1])%Ly][(z+bond.overLat[2])%Lz][bond.target]
                             if bond.On:
+                                On=True
                                 sourceOrb.addLinking(targetOrb,np.array([bond.strength,bond.strength1,bond.strength2]))
                             else:
                                 sourceOrb.addLinking(targetOrb,bond.strength)
@@ -149,7 +152,7 @@ def establishLinking(lattice,bondList):
         for y in range(Ly):
             for z in range(Lz):
                 for o in range(Lo):
-                    lattice[x][y][z][o].classifyTheLinking()
+                    lattice[x][y][z][o].classifyTheLinking(On=On)
 
 def plotLattice(lattice):
     '''
