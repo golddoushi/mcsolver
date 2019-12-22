@@ -138,7 +138,7 @@ void establishLinking(Orb *lattice, int totOrbs, int maxNLinking, int nlink[totO
 float getCorrEnergy(Orb *source){
     float corr=0;
     for(int i=0;i<source->nlink;i++){
-        corr+=diagonalDot(source->linkStrength[i],source->spin,source->linkedOrb[i]->spin);//(source->linkStrength[i])*(source->spin)*(source->linkedOrb[i]->spin);
+        corr+=diagonalDot(source->linkStrength[i],source->spin,source->linkedOrb[i]->spin);
     }
     return corr;
 }
@@ -308,8 +308,6 @@ void localUpdate(int totOrbs, Orb lattice[], float *p_energy, Vec *p_totSpin){
     free(refDirection);
     return;
 }
-
-
 
 PyObject * blockUpdateMC(int totOrbs, float initSpin[totOrbs], float initD[totOrbs][3], int nthermal, int nsweep, 
                    int maxNLinking, int nlink[totOrbs], float linkStrength[totOrbs][maxNLinking][3], int linkedOrb[totOrbs][maxNLinking],

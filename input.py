@@ -10,9 +10,11 @@ LMatrix=[[1,0,0],
 # magnetic orbitals in fractional coordinates
 pos=[[2./3,1./3,0],
      [1./3,2./3,0]] 
+# spin number
 Spin=[1.5,1.5]
+# single ion anisotropy
 D=[[-2.4144,0.0,0.0],
-   [-2.4144,0.0,0.0]]  # single ion anisotropy
+   [-2.4144,0.0,0.0]]
 # couplings   #source #target #edge  #J(meV) negative for FM coupling
 bond1=lat.Bond(0,1,np.array([0,0,0]),-31.3542,-29.857,-29.857, False)
 bond2=lat.Bond(0,1,np.array([1,0,0]),-31.3542,-29.857,-29.857, False)
@@ -22,14 +24,13 @@ bond4=lat.Bond(0,0,np.array([1,0,0]),-7.4988,-7.5219,-7.5219, False)
 bond5=lat.Bond(0,0,np.array([1,1,0]),-7.4988,-7.5219,-7.5219, False)
 bond6=lat.Bond(0,0,np.array([0,1,0]),-7.4988,-7.5219,-7.5219, False)
 
-bond10=lat.Bond(1,1,np.array([1,0,0]),-7.4988,-7.5219,-7.5219, False)
-bond11=lat.Bond(1,1,np.array([1,1,0]),-7.4988,-7.5219,-7.5219, False)
-bond12=lat.Bond(1,1,np.array([0,1,0]),-7.4988,-7.5219,-7.5219, False)
+bond7=lat.Bond(1,1,np.array([1,0,0]),-7.4988,-7.5219,-7.5219, False)
+bond8=lat.Bond(1,1,np.array([1,1,0]),-7.4988,-7.5219,-7.5219, False)
+bond9=lat.Bond(1,1,np.array([0,1,0]),-7.4988,-7.5219,-7.5219, False)
 
 bondList=[bond1,bond2,bond3,
-          bond4,bond5,bond6,#bond7,bond8,bond9,
-          bond10,bond11,bond12#,bond13,bond14,bond15
-          ]
+          bond4,bond5,bond6,bond7,bond8,bond9
+        ]
 
 
 time0=time.time()

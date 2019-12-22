@@ -282,6 +282,18 @@ def loadStructureViewer():
     tb.make_supercell([Lx,0,0],[0,Ly,0],[0,0,Lz])
     f, structureAxis=tb.viewStructure()
     
+    x0, x1 = structureAxis.get_xlim()
+    y0, y1 = structureAxis.get_ylim()
+    z0, z1 = structureAxis.get_zlim()
+
+    ox=(x0+x1)/2;oy=(y0+y1)/2;oz=(z0+z1)/2
+    xlen=abs(x1-x0);ylen=abs(y1-y0);zlen=abs(z1-z0)
+    lenMax_half=np.max([xlen,ylen,zlen])/2
+    structureAxis.set_xlim(ox-lenMax_half,ox+lenMax_half)
+    structureAxis.set_ylim(oy-lenMax_half,oy+lenMax_half)
+    structureAxis.set_zlim(oz-lenMax_half,oz+lenMax_half)
+    #structureAxis.view_init(elev=0,azim=0)
+
     structureViewer=FigureCanvasTkAgg(f,structureFrame)
     structureViewer.draw()
     structureViewer.get_tk_widget().grid(row=0,column=0)
