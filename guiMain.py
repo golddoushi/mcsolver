@@ -348,13 +348,18 @@ def loadResultViewer():
     resultViewer.draw()
     resultViewer.get_tk_widget().pack()
 
-def updateResultViewer(TList=[],magList=[]):
+def updateResultViewer(TList=[],magList=[], susList=[]):
     global gui, resultViewerBase, resultViewer
     #print('updating:',TList,magList)
     f=Figure(figsize=(4,3))
-    ax=f.add_subplot(111)
-    ax.scatter(TList,magList,color='red')
-    ax.set_title('<Spin> per cell')
+    ax=f.add_subplot(111,label=0)
+    ax.scatter(TList,magList,color='red',label='<spin>')
+
+    ax2=ax.twinx()
+    ax2.scatter(TList,susList,color='blue',label=r'$\chi$')
+
+    f.legend()
+
     resultViewer.get_tk_widget().destroy()
     resultViewer=FigureCanvasTkAgg(f,resultViewerBase)
     resultViewer.draw()

@@ -100,7 +100,7 @@ def startSimulaton():
             energyResult.append(np.mean(eData))
             capaResult.append(np.std(eData))
         pool.close()
-        gui.updateResultViewer(TList=TResult, magList=magResult)
+        gui.updateResultViewer(TList=TResult, magList=magResult, susList=susResult)
     # continuous model settings
     elif(modelType=='XY' or modelType=='Heisenberg'):
         for bond in bondList:
@@ -125,7 +125,7 @@ def startSimulaton():
             energyResult.append(np.mean(eData))
             capaResult.append(np.std(eData))
         pool.close()
-        gui.updateResultViewer(TList=TResult, magList=magResult)
+        gui.updateResultViewer(TList=TResult, magList=magResult, susList=susResult)
     else:
         print("for now only Ising, XY and Heisenberg model is supported")
         gui.submitBtn.config(state='normal')
