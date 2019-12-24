@@ -340,7 +340,6 @@ PyObject * blockUpdateMC(int totOrbs, float initSpin[totOrbs], float initD[totOr
     energyData=PyTuple_New(nsweep);
     for(int i=0;i<nsweep;i++){
         blockUpdate(totOrbs, lattice, p_energy, p_totSpin);
-        //len=sqrt(dot(*p_totSpin, *p_totSpin));
         PyTuple_SetItem(xspinData, i, PyFloat_FromDouble(p_totSpin->x));
         PyTuple_SetItem(yspinData, i, PyFloat_FromDouble(p_totSpin->y));
         PyTuple_SetItem(zspinData, i, PyFloat_FromDouble(p_totSpin->z));
@@ -392,13 +391,20 @@ PyObject * localUpdateMC(int totOrbs, float initSpin[totOrbs], float initD[totOr
     zspinData=PyTuple_New(nsweep);
     energyData=PyTuple_New(nsweep);
     for(int i=0;i<nsweep;i++){
-        for(int j=0;j<totOrbs;j++) localUpdate(totOrbs, lattice, p_energy, p_totSpin);
+        float energyAvg=0.0;
+        Vec spinAvg;
+        spinAvg.x=0;spinAvg.y=0;spinAvg.z=0;
+        for(int j=0;j<totOrbs;j++){
+            localUpdate(totOrbs, lattice, p_energy, p_totSpin);
+            energyAvg+=*p_energy;
+            plusEqual(&spinAvg, *p_totSpin);
+        }
         //printf("after local updates, total spin is: %.3f %.3f %.3f\n",p_totSpin->coor[0],p_totSpin->coor[1],p_totSpin->coor[2]);
         //len=sqrt(dot(*p_totSpin, *p_totSpin));
-        PyTuple_SetItem(xspinData, i, PyFloat_FromDouble(p_totSpin->x));
-        PyTuple_SetItem(yspinData, i, PyFloat_FromDouble(p_totSpin->y));
-        PyTuple_SetItem(zspinData, i, PyFloat_FromDouble(p_totSpin->z));
-        PyTuple_SetItem(energyData, i, PyFloat_FromDouble(*p_energy));
+        PyTuple_SetItem(xspinData, i, PyFloat_FromDouble(spinAvg.x/totOrbs));
+        PyTuple_SetItem(yspinData, i, PyFloat_FromDouble(spinAvg.y/totOrbs));
+        PyTuple_SetItem(zspinData, i, PyFloat_FromDouble(spinAvg.z/totOrbs));
+        PyTuple_SetItem(energyData, i, PyFloat_FromDouble(energyAvg/totOrbs));
     }
     
     PyObject *Data;

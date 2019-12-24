@@ -1,6 +1,7 @@
 from tkinter import Tk
 from multiprocessing import Pool, freeze_support
 import numpy as np
+import time
 import guiMain as gui
 import Lattice as lat
 import mcMain as mc
@@ -26,6 +27,7 @@ def startMCForOn(param): # start MC for O(n) model
     return ID, T, mData, eData
 
 def startSimulaton():
+    time0=time.time()
     global bondList,LMatrix,pos,nsweep,nthermal,Lx,Ly,Lz,algorithm
     gui.submitBtn.config(state='disabled')
     # get lattice
@@ -138,6 +140,7 @@ def startSimulaton():
         f.write('%.3f %.6f %.6f %.6f %.6f\n'%(T, mag, sus, energy, capa))
     f.close()
     gui.submitBtn.config(state='normal')
+    print("time elapsed %.3f s"%(time.time()-time0))
     return
             
 if __name__ == '__main__': # crucial for multiprocessing in Windows

@@ -168,9 +168,15 @@ PyObject * localUpdateMC(int totOrbs, float initSpin[totOrbs], int nthermal, int
     spinData=PyTuple_New(nsweep);
     energyData=PyTuple_New(nsweep);
     for(int i=0;i<nsweep;i++){
-        for(int j=0;j<totOrbs;j++) localUpdate(totOrbs, lattice, p_energy, p_totSpin);
-        PyTuple_SetItem(spinData, i, PyFloat_FromDouble(*p_totSpin));
-        PyTuple_SetItem(energyData, i, PyFloat_FromDouble(*p_energy));
+        float energyAvg=0.0;
+        float spinAvg=0.0;
+        for(int j=0;j<totOrbs;j++){
+            localUpdate(totOrbs, lattice, p_energy, p_totSpin);
+            energyAvg+=*p_energy;
+            spinAvg+=*p_totSpin;
+        }
+        PyTuple_SetItem(spinData, i, PyFloat_FromDouble(spinAvg/totOrbs));
+        PyTuple_SetItem(energyData, i, PyFloat_FromDouble(energyAvg/totOrbs));
     }
     
     PyObject *Data;
