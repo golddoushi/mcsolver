@@ -50,7 +50,7 @@ def startSimulaton():
 
     # get bonds
     bondList=[lat.Bond(bond_data[2][0],bond_data[2][1],\
-                       np.array(bond_data[2][2]),\
+                       np.array([int(x) for x in bond_data[2][2]]),\
                        bond_data[1][0],bond_data[1][1],bond_data[1][2]) \
                         for bond_data in gui.BondBox.infoData]
         

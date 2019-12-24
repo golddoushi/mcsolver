@@ -1,8 +1,9 @@
-from tkinter import Label, LabelFrame, Frame, Spinbox, Button, END, VERTICAL, N, S, W, E, StringVar
+from tkinter import Label, LabelFrame, Frame, Spinbox, Button, END, VERTICAL, N, S, W, E, StringVar, filedialog
 from multiprocessing import cpu_count
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg#,NavigationToolbar2Tk
 from matplotlib.figure import Figure
 from mpl_toolkits.mplot3d.axes3d import Axes3D
+from re import findall, match
 import numpy as np
 import toolbox as toolbox
 import WannierKit as wan
@@ -14,7 +15,7 @@ global nOrbnBondGui, nOrb, nBonds  # read number of orbitals and bonds
 global OrbListBox, IDandTypeNote, PosNote, AnisotropyNote
 global BondBox, IDandTypeOfBondNote, BondDetailNote
 
-global TlistGui, MCparamGui, modelGui, algorithmGui, coreGui
+global TlistGui, MCparamGui, modelGui, modelStr, algorithmGui, algoStr, coreGui
 global resultViewerBase, resultViewer, structureFrame, structureViewer, structureAxis
 global submitBtn
 
@@ -47,7 +48,6 @@ def loadLatticePannel():
     supercellGui=toolbox.NoteFrm(supercell_base,init_notes=['SC:','x','x'],init_data=[16,16,1],row=True,entryWidth=3)
     supercell_base.grid(row=0,column=1,sticky='SE')
     
-
 def updateLatticeData():
     global latticeGui, latticeData
     latticeData=[]
@@ -151,7 +151,7 @@ def correspondToBondList(*arg):
         IDandTypeOfBondNote.entry_list[0].config(state='normal')
         IDandTypeOfBondNote.setValue([data[0],data[1][0],data[1][1],data[1][2]]) # id, [Jz, Jx, Jy]
         IDandTypeOfBondNote.entry_list[0].config(state='disabled')
-        BondDetailNote.setValue([data[2][0],data[2][1],data[2][2][0],data[2][2][1],data[2][2][2]])        # fractional coordinates
+        BondDetailNote.setValue([data[2][0],data[2][1],int(data[2][2][0]),int(data[2][2][1]),int(data[2][2][2])])        # fractional coordinates
         updateStructureViewer(lightID=data[0])
 
 def addBond():
@@ -215,7 +215,7 @@ def loadBonds():
 
     detail_base=Frame(addBondFrameBase)
     detail_base.grid(row=1,column=0,sticky=(W,E))
-    BondDetailNote=toolbox.NoteFrm(detail_base, init_notes=['s','t','over lat.','',''],init_data=[0,0,1,0,0],row=True,entryWidth=2)
+    BondDetailNote=toolbox.NoteFrm(detail_base, init_notes=['s','t','over lat.','',''],init_data=[0,0,1,0,0],row=True,entryWidth=3)
 
     unitLabel=Label(BondFrame,text='Note all energy units are in Kelvin (1meV=11.58875K)')
     unitLabel.grid(row=2,column=0,sticky=(W,E))
@@ -232,7 +232,7 @@ def loadBonds():
 ###############
 
 def loadMCSettings():
-    global gui, TListGui, MCparamGui, modelGui, algorithmGui, coreGui
+    global gui, TListGui, MCparamGui, modelGui, modelStr, algorithmGui, algoStr, coreGui
     SettingFrame=LabelFrame(gui,text='Other settings')
     SettingFrame.grid(row=3,column=0,sticky=(W,E))
 
@@ -248,12 +248,14 @@ def loadMCSettings():
     model_base.grid(row=2,column=0,sticky='W')
     label1=Label(model_base,text='Model:')
     label1.grid(row=0,column=0)
-    modelGui=Spinbox(model_base,from_=1, to=3, values=['Ising','XY','Heisenberg'],width=12)
+    modelStr=StringVar()
+    modelGui=Spinbox(model_base,from_=1, to=3, values=['Ising','XY','Heisenberg'],textvariable=modelStr,width=12)
     modelGui.grid(row=0,column=1)
     
     label2=Label(model_base,text='Algorithm:')
     label2.grid(row=0,column=2)
-    algorithmGui=Spinbox(model_base,from_=1, to=3, values=['Wolff','Metroplis','Sweden-Wang'],width=12)
+    algoStr=StringVar()
+    algorithmGui=Spinbox(model_base,from_=1, to=3, values=['Wolff','Metroplis','Sweden-Wang'],textvariable=algoStr,width=12)
     algorithmGui.grid(row=0,column=3)
 
     core_base=Frame(SettingFrame)
@@ -362,17 +364,178 @@ def updateResultViewer(TList=[],magList=[]):
 # start btn #
 #############
 
+def saveParam():
+    global latticeGui, supercellGui, OrbListBox, BondBox, TListGui, MCparamGui, modelGui, algorithmGui, coreGui
+
+    # get lattice
+    a1=latticeGui[0].report()
+    a2=latticeGui[1].report()
+    a3=latticeGui[2].report()
+    LMatrix=np.array([a1,a2,a3])
+    print('Lattice matrix:')
+    print(LMatrix)
+
+    # get supercell size
+    Lx, Ly, Lz=[int(x) for x in supercellGui.report()]
+    print('supercell:')
+    print(Lx,Ly,Lz)
+
+    # get oribtal position and spin state and onsite-anisotropy
+    pos=np.array([ele[3] for ele in OrbListBox.infoData])
+    S=[ele[2] for ele in OrbListBox.infoData]
+    DList=[ele[4] for ele in OrbListBox.infoData]
+    for ipos, iS, iD in zip(pos,S,DList):
+        print('positions:',ipos,'Spin:',iS,'onsite-Anisotropy:',iD)
+
+    # get bonds
+    bondList=[
+              [bond_data[2][0],bond_data[2][1],\
+               np.array(bond_data[2][2]),\
+               bond_data[1][0],bond_data[1][1],bond_data[1][2]] \
+               for bond_data in BondBox.infoData
+             ]
+        
+    print('bonds:')
+    print(bondList)
+
+    # get TList
+    T0, T1, nT=TListGui.report()
+    TList=np.linspace(T0,T1,int(nT))
+    print('Temperature:')
+    print(TList)
+
+    # get thermalizations and sweeps
+    nthermal, nsweep = [int(x) for x in MCparamGui.report()]
+    print('thermalizations and sweeps:')
+    print(nthermal, nsweep)
+
+    # get model and algorithm
+    modelType = modelGui.get()
+    print('Model:',modelType)
+    algorithm = algorithmGui.get()
+    print('Algorithm:',algorithm)
+
+    # get ncores
+    ncores= int(coreGui.report()[0])
+    print('using %d cores'%ncores)
+
+    filePath=filedialog.asksaveasfilename()
+    f=open(filePath,'w')
+    f.write("This is mcsolver's save file, version: 1.0\n")
+    f.write("Lattice:\n")
+    f.write("%.9f %.9f %.9f\n"%(a1[0],a1[1],a1[2]))
+    f.write("%.9f %.9f %.9f\n"%(a2[0],a2[1],a2[2]))
+    f.write("%.9f %.9f %.9f\n"%(a3[0],a3[1],a3[2]))
+    f.write("Supercell used in MC simulations:\n")
+    f.write("%d %d %d\n"%(Lx,Ly,Lz))
+    f.write("total orbitals in cell:\n")
+    f.write("%d\n"%len(pos))
+    f.write("postions, initial spin states and onsite-anisotropy of every orbitals:\n")
+    for ele in OrbListBox.infoData:
+        f.write("orb %d: type %d spin %.9f pos [%.9f %.9f %.9f] Dz %.9f Dx %.9f Dy %.9f\n"%(ele[0],ele[1],ele[2],\
+                                                                                            ele[3][0],ele[3][1],ele[3][2],\
+                                                                                            ele[4][0],ele[4][1],ele[4][2]))
+    f.write("total bonds:\n")
+    f.write("%d\n"%len(bondList))
+    f.write("id, source, target, overLat, Jz, Jx, Jy of each bond:\n")
+    for bond_data in BondBox.infoData:
+        f.write("bond %d: Jz %.9f Jx %.9f Jy %.9f orb %d to orb %d over [%d %d %d]\n"%\
+            (bond_data[0],\
+             bond_data[1][0],bond_data[1][1],bond_data[1][2],\
+             bond_data[2][0],bond_data[2][1],bond_data[2][2][0],bond_data[2][2][1],bond_data[2][2][2]\
+            ))
+
+    f.write("Temperature scanning region:\n")
+    f.write("Tmin %.9f Tmax %.9f nT %d\n"%(T0, T1, nT))
+    f.write("num. of sweeps for thermalization and statistics:\n")
+    f.write("%d %d\n"%(nthermal, nsweep))
+    f.write("Model type:\n")
+    f.write(modelType+'\n')
+    f.write("Algorithm:\n")
+    f.write(algorithm+'\n')
+    f.write("using cores:\n")
+    f.write("%d\n"%ncores)
+    f.close()
+
+def loadParam():
+    global latticeGui, supercellGui, OrbListBox, BondBox, TListGui, MCparamGui, modelGui, modelStr, algorithmGui, algoStr, coreGui
+
+    filePath=filedialog.askopenfilename()
+    f=open(filePath,'r')
+    data=[line for line in f.read().split('\n') if line]
+    f.close()
+    # load version info.
+    version=findall(r"[0-9\.]+",data[0])[0]
+    if version!="1.0":
+        print("unknown file or version (only support v1.0)")
+        return
+    # load lattice
+    for i in range(3):
+        latVec=findall(r"[0-9\.\-]+",data[2+i])
+        latticeGui[i].setValue([float(x) for x in latVec])
+    updateLatticeData()
+    # load supercell
+    LPack=findall(r"[0-9]+",data[6])
+    supercellGui.setValue([int(x) for x in LPack])
+    # load orbitals
+    norb=int(findall(r"[0-9]+",data[8])[0])
+    orbInfo=[]
+    for i in range(norb):
+        ele=findall(r"[0-9\.\-]+",data[10+i])
+        orbInfo.append([int(ele[0]),int(ele[1]),float(ele[2]),\
+                       (float(ele[3]),float(ele[4]),float(ele[5])),\
+                       (float(ele[6]),float(ele[7]),float(ele[8]))])
+    OrbListBox.updateInfo(orbInfo)
+    # load bonds
+    bondLineIndex=10+i+1
+    nbonds=int(findall(r"[0-9]+",data[bondLineIndex+1])[0])
+    bondInfo=[]
+    for i in range(nbonds):
+        ele=findall(r"[0-9\.\-]+",data[bondLineIndex+3+i])
+        bondInfo.append([int(ele[0]),
+                         [float(ele[1]),float(ele[2]),float(ele[3])],
+                         [int(ele[4]),int(ele[5]),(float(ele[6]),float(ele[7]),float(ele[8]))]
+                        ])
+    BondBox.updateInfo(bondInfo)
+    # load other parameters
+    miscIndex=bondLineIndex+3+i+1
+    Tpack=findall(r"[0-9\.]+",data[miscIndex+1])
+    TListGui.setValue(Tpack)
+
+    nTermSweep=findall(r"[0-9\.]+",data[miscIndex+3])
+    MCparamGui.setValue(nTermSweep)
+
+    modelType=data[miscIndex+5]
+    modelStr.set(modelType)
+    algorithm=data[miscIndex+7]
+    algoStr.set(algorithm)
+    ncores=int(data[miscIndex+9])
+    coreGui.setValue([ncores])
+    
+    updateStructureViewer()
+
 def loadStartBtn(submitFunc):
-    global gui, submitBtn
+    global gui, saveBtn, loadBtn, submitBtn
     submit_base=Frame(gui)
     submit_base.grid(row=4,column=0,columnspan=2)
 
-    note=Label(submit_base, text='Thanks for your attention and wish you find sth. helpful. \n\
-                        Please cite Ref: Magnetic switches via electric field in BN nanoribbons. Applied Surface Science 480(2019)\n\
-                        Thank you very much!')
-    note.grid(row=0,column=1)
-    submitBtn=Button(submit_base,text='Submit',command=submitFunc)
-    submitBtn.grid(row=0,column=0)
+    saveBtn=Button(submit_base,text='Save',command=saveParam)
+    saveBtn.grid(row=0,column=0,rowspan=3)
+
+    loadBtn=Button(submit_base,text='Load',command=loadParam)
+    loadBtn.grid(row=0,column=1,rowspan=3)
+
+    submitBtn=Button(submit_base,text='StartMC',command=submitFunc)
+    submitBtn.grid(row=0,column=2,rowspan=3)
+
+    note1=Label(submit_base, text='Thanks for your attention and I wish you would find sth. helpful.', width=80)
+    note1.grid(row=0,column=3)
+                        
+    note2=Label(submit_base, text='Please cite: Magnetic switches via electric field in BN nanoribbons. Appl. Surf. Sci. 480(2019)', width=80)
+    note2.grid(row=1,column=3)
+
+    note3=Label(submit_base, text='Thank you very much!', width=80)
+    note3.grid(row=2,column=3)
 
 def loadEverything(root,submitFunc):
     global gui
