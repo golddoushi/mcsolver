@@ -60,13 +60,14 @@ def updateLatticeData():
 ####################
 
 def correspondToOrbList(*arg):
-    global OrbListBox, IDandTypeNote, PosNote
+    global OrbListBox, IDandTypeNote, PosNote, AnisotropyNote
     data=OrbListBox.report()
     if len(data)>0:
         IDandTypeNote.entry_list[0].config(state='normal')
         IDandTypeNote.setValue([data[0],data[1],data[2]]) # id, type, spin
         IDandTypeNote.entry_list[0].config(state='disabled')
         PosNote.setValue(data[3])                         # fractional coordinates
+        AnisotropyNote.setValue(data[4])
         updateStructureViewer(lightOrb=data[0])
 
 def addOrb():

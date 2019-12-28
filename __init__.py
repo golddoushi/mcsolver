@@ -92,7 +92,7 @@ def startSimulaton():
         for iT, T in enumerate(TList):
             paramPack.append([iT,T,bondList,LMatrix,pos,S,DList,nsweep,nthermal,Lx,Ly,Lz,algorithm])
         
-        TResult=[];magResult=[];susResult=[];energyResult=[];capaResult=[]
+        TResult=[];magResult=[];susResult=[];energyResult=[];capaResult=[];u4Result=[]
         pool=Pool(processes=ncores)
         for result in pool.imap_unordered(startMC,paramPack):
             ID, T, mData, eData =result
@@ -101,6 +101,7 @@ def startSimulaton():
             susResult.append(np.std(mData))
             energyResult.append(np.mean(eData))
             capaResult.append(np.std(eData))
+            u4Result.append(np.mean(mData*mData)**2/np.mean(mData**4))
         pool.close()
         gui.updateResultViewer(TList=TResult, magList=magResult, susList=susResult)
     # continuous model settings
@@ -117,7 +118,7 @@ def startSimulaton():
         for iT, T in enumerate(TList):
             paramPack.append([iT,T,bondList,LMatrix,pos,S,DList,nsweep,nthermal,Lx,Ly,Lz,algorithm,On])
 
-        TResult=[];magResult=[];susResult=[];energyResult=[];capaResult=[]
+        TResult=[];magResult=[];susResult=[];energyResult=[];capaResult=[];u4Result=[]
         pool=Pool(processes=ncores)
         for result in pool.imap_unordered(startMCForOn,paramPack):
             ID, T, mData, eData =result
@@ -126,6 +127,7 @@ def startSimulaton():
             susResult.append(np.std(mData))
             energyResult.append(np.mean(eData))
             capaResult.append(np.std(eData))
+            u4Result.append(np.mean(mData*mData)**2/np.mean(mData**4))
         pool.close()
         gui.updateResultViewer(TList=TResult, magList=magResult, susList=susResult)
     else:
@@ -135,9 +137,9 @@ def startSimulaton():
 
     # writting result file
     f=open('./result.txt','w')
-    f.write('#Temp #Spin    #Susc      #energy  #capacity\n')
-    for T, mag, sus, energy, capa in zip(TResult, magResult, susResult, energyResult, capaResult):
-        f.write('%.3f %.6f %.6f %.6f %.6f\n'%(T, mag, sus, energy, capa))
+    f.write('#Temp #Spin    #Susc      #energy  #capacity #Binder cumulante\n')
+    for T, mag, sus, energy, capa, u4 in zip(TResult, magResult, susResult, energyResult, capaResult, u4Result):
+        f.write('%.3f %.6f %.6f %.6f %.6f %.6f\n'%(T, mag, sus, energy, capa, u4))
     f.close()
     gui.submitBtn.config(state='normal')
     print("time elapsed %.3f s"%(time.time()-time0))
