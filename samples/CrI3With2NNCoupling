@@ -8,8 +8,8 @@ Supercell used in MC simulations:
 total orbitals in cell:
 2
 postions, initial spin states and onsite-anisotropy of every orbitals:
-orb 0: type 0 spin 1.000000000 pos [0.666666667 0.333333333 0.000000000] Dz -2.414400000 Dx 0.000000000 Dy 0.000000000
-orb 1: type 0 spin 1.000000000 pos [0.333333333 0.666666667 0.000000000] Dz -2.414400000 Dx 0.000000000 Dy 0.000000000
+orb 0: type 0 spin 1.500000000 pos [0.666666667 0.333333333 0.000000000] Dz -2.414400000 Dx 0.000000000 Dy 0.000000000
+orb 1: type 0 spin 1.500000000 pos [0.333333333 0.666666667 0.000000000] Dz -2.414400000 Dx 0.000000000 Dy 0.000000000
 total bonds:
 9
 id, source, target, overLat, Jz, Jx, Jy of each bond:

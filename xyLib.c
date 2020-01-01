@@ -92,7 +92,7 @@ void establishLattice(Orb *lattice, int totOrbs, float initSpin[totOrbs], float 
         cTimes(fluncSpin, flunc);
         plusEqual(&lattice[i].spin,*fluncSpin);
         normalize(&lattice[i].spin);
-        cTimes(&lattice[i].spin,abs(initSpin[i]));
+        cTimes(&lattice[i].spin,fabs(initSpin[i]));
         free(fluncSpin);
 
         lattice[i].onsiteAnisotropy.x=initD[i][0];

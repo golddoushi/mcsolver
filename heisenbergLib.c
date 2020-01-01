@@ -101,9 +101,9 @@ void establishLattice(Orb *lattice, int totOrbs, float initSpin[totOrbs], float 
         cTimes(fluncSpin, flunc);
         plusEqual(&lattice[i].spin,*fluncSpin);
         normalize(&lattice[i].spin);
-        cTimes(&lattice[i].spin,abs(initSpin[i]));
+        cTimes(&lattice[i].spin,fabs(initSpin[i]));
         free(fluncSpin);
-
+        //printf("%.3f %.3f \n",lattice[i].spin.x, fabs(initSpin[i]));
         lattice[i].onsiteAnisotropy.x=initD[i][0];
         lattice[i].onsiteAnisotropy.y=initD[i][1];
         lattice[i].onsiteAnisotropy.z=initD[i][2];

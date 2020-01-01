@@ -16,17 +16,17 @@ Spin=[1.5,1.5]
 D=[[-2.4144,0.0,0.0],
    [-2.4144,0.0,0.0]]
 # couplings   #source #target #edge  #J(meV) negative for FM coupling
-bond1=lat.Bond(0,1,np.array([0,0,0]),-31.3542,-29.857,-29.857, False)
-bond2=lat.Bond(0,1,np.array([1,0,0]),-31.3542,-29.857,-29.857, False)
-bond3=lat.Bond(0,1,np.array([0,-1,0]),-31.3542,-29.857,-29.857, False)
+bond1=lat.Bond(0,1,np.array([0,0,0]),-31.3542,-29.857,-29.857, True)
+bond2=lat.Bond(0,1,np.array([1,0,0]),-31.3542,-29.857,-29.857, True)
+bond3=lat.Bond(0,1,np.array([0,-1,0]),-31.3542,-29.857,-29.857, True)
 
-bond4=lat.Bond(0,0,np.array([1,0,0]),-7.4988,-7.5219,-7.5219, False)
-bond5=lat.Bond(0,0,np.array([1,1,0]),-7.4988,-7.5219,-7.5219, False)
-bond6=lat.Bond(0,0,np.array([0,1,0]),-7.4988,-7.5219,-7.5219, False)
+bond4=lat.Bond(0,0,np.array([1,0,0]),-7.4988,-7.5219,-7.5219, True)
+bond5=lat.Bond(0,0,np.array([1,1,0]),-7.4988,-7.5219,-7.5219, True)
+bond6=lat.Bond(0,0,np.array([0,1,0]),-7.4988,-7.5219,-7.5219, True)
 
-bond7=lat.Bond(1,1,np.array([1,0,0]),-7.4988,-7.5219,-7.5219, False)
-bond8=lat.Bond(1,1,np.array([1,1,0]),-7.4988,-7.5219,-7.5219, False)
-bond9=lat.Bond(1,1,np.array([0,1,0]),-7.4988,-7.5219,-7.5219, False)
+bond7=lat.Bond(1,1,np.array([1,0,0]),-7.4988,-7.5219,-7.5219, True)
+bond8=lat.Bond(1,1,np.array([1,1,0]),-7.4988,-7.5219,-7.5219, True)
+bond9=lat.Bond(1,1,np.array([0,1,0]),-7.4988,-7.5219,-7.5219, True)
 
 bondList=[bond1,bond2,bond3,
           bond4,bond5,bond6,bond7,bond8,bond9
@@ -34,8 +34,8 @@ bondList=[bond1,bond2,bond3,
 
 
 time0=time.time()
-mcslave=mc.MC(0,LMatrix,pos=pos,S=Spin,D=D,bondList=bondList,T=50,Lx=32,Ly=32,Lz=1)
-mcslave.mainLoopViaCLib_On(nsweep=320000,nthermal=80000,algo='Wolff',On=3,flunc=0.0)
+mcslave=mc.MC(0,LMatrix,pos=pos,S=Spin,D=D,bondList=bondList,T=50,Lx=16,Ly=16,Lz=1)
+mcslave.mainLoopViaCLib_On(nsweep=1,nthermal=1,algo='Wolff',On=3,flunc=0.0)
 #mcslave.mainLoopViaCLib(nsweep=80000,nthermal=40000,algo='Wolff')
 print('time elapsed: %.3f s'%(time.time()-time0))
 
