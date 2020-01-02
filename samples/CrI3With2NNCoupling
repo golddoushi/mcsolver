@@ -23,7 +23,7 @@ bond 6: Jz -3.633000000 Jx -3.757000000 Jy -3.757000000 orb 1 to orb 1 over [1 0
 bond 7: Jz -3.633000000 Jx -3.757000000 Jy -3.757000000 orb 1 to orb 1 over [1 1 0]
 bond 8: Jz -3.633000000 Jx -3.757000000 Jy -3.757000000 orb 1 to orb 1 over [0 1 0]
 Temperature scanning region:
-Tmin 40.000000000 Tmax 60.000000000 nT 11
+Tmin 70.000000000 Tmax 90.000000000 nT 11
 num. of sweeps for thermalization and statistics:
 80000 640000
 Model type:
