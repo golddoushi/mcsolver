@@ -30,23 +30,34 @@ def loadLatticePannel():
     LatticeFrame=LabelFrame(gui,text='Lattice')
     LatticeFrame.grid(row=0,column=0)
 
+    f=Figure(figsize=(2.2,0.4))
+    ax=f.add_subplot(1,1,1)
+    ax.axis('off')
+    ax.text(-0.15,0.4,r"$H=\sum_{mn\alpha}J_{mn}^\alpha S_m^\alpha S_n^\alpha + \sum_{m\alpha} D_m^\alpha(S_m^\alpha S_m^\alpha)$")
+    Hamiltonian=FigureCanvasTkAgg(f,LatticeFrame)
+    Hamiltonian.draw()
+    Hamiltonian.get_tk_widget().grid(row=0,column=0,columnspan=2)
+
+    #HamiltonianLable=Label(LatticeFrame,text=r"$H=\sum_{ij}J_{i,j}S_i\dotS_j + \sum_i D_i(S_i\dot S_i)$")
+    #HamiltonianLable.grid(row=0,column=0,columnspan=2)
+
     a0_base=Frame(LatticeFrame)
     noteFrame0=toolbox.NoteFrm(a0_base, init_notes=['a1:','',''],init_data=[1,0,0],row=True)
-    a0_base.grid(row=0,column=0)
+    a0_base.grid(row=1,column=0)
 
     a1_base=Frame(LatticeFrame)
     noteFrame1=toolbox.NoteFrm(a1_base, init_notes=['a2:','',''],init_data=[0,1,0],row=True)
-    a1_base.grid(row=1,column=0)
+    a1_base.grid(row=2,column=0)
 
     a2_base=Frame(LatticeFrame)
     noteFrame2=toolbox.NoteFrm(a2_base, init_notes=['a3:','',''],init_data=[0,0,1],row=True)
-    a2_base.grid(row=2,column=0)
+    a2_base.grid(row=3,column=0)
 
     latticeGui=[noteFrame0,noteFrame1,noteFrame2]
 
     supercell_base=Frame(LatticeFrame)
     supercellGui=toolbox.NoteFrm(supercell_base,init_notes=['SC:','x','x'],init_data=[16,16,1],row=True,entryWidth=3)
-    supercell_base.grid(row=0,column=1,sticky='SE')
+    supercell_base.grid(row=1,column=1,sticky='SE')
     
 def updateLatticeData():
     global latticeGui, latticeData
