@@ -5,8 +5,7 @@ import time
 import guiMain as gui
 import Lattice as lat
 import mcMain as mc
-
-global bondList,LMatrix,pos,nsweep,nthermal,Lx,Ly,Lz,algorithm
+import fileio as io
 
 def startMC(param): # start MC for Ising model
     # unzip all global parameters for every processing
@@ -28,72 +27,29 @@ def startMCForOn(param): # start MC for O(n) model
 
 def startSimulaton():
     time0=time.time()
-    global bondList,LMatrix,pos,nsweep,nthermal,Lx,Ly,Lz,algorithm
     gui.submitBtn.config(state='disabled')
-    # get lattice
-    a1=gui.latticeGui[0].report()
-    a2=gui.latticeGui[1].report()
-    a3=gui.latticeGui[2].report()
-    LMatrix=np.array([a1,a2,a3])
-    print('Lattice matrix:')
-    print(LMatrix)
-
-    # get supercell size
-    Lx, Ly, Lz=[int(x) for x in gui.supercellGui.report()]
-    print('supercell:')
-    print(Lx,Ly,Lz)
-
-    # get oribtal position and spin state and onsite-anisotropy
-    pos=np.array([ele[3] for ele in gui.OrbListBox.infoData])
-    S=[ele[2] for ele in gui.OrbListBox.infoData]
-    DList=[ele[4] for ele in gui.OrbListBox.infoData]
-    for ipos, iS, iD in zip(pos,S,DList):
-        print('positions:',ipos,'Spin:',iS,'onsite-Anisotropy:',iD)
-
-    # get bonds
-    bondList=[lat.Bond(bond_data[2][0],bond_data[2][1],\
-                       np.array([int(x) for x in bond_data[2][2]]),\
-                       bond_data[1][0],bond_data[1][1],bond_data[1][2]) \
-                        for bond_data in gui.BondBox.infoData]
-        
-    print('bonds:')
-    print(bondList)
-
-    # get TList
-    T0, T1, nT=gui.TListGui.report()
-    TList=np.linspace(T0,T1,int(nT))
-    print('Temperature:')
-    print(TList)
-
-    # get thermalizations and sweeps
-    nthermal, nsweep = [int(x) for x in gui.MCparamGui.report()]
-    print('thermalizations and sweeps:')
-    print(nthermal, nsweep)
-
-    # get model and algorithm
-    modelType = gui.modelGui.get()
-    print('Model:',modelType)
-    algorithm = gui.algorithmGui.get()
-    print('Algorithm:',algorithm)
-
-    # get ncores
-    ncores= int(gui.coreGui.report()[0])
-    print('using %d cores'%ncores)
-
-    # model and algorithm branches
-    # Ising model settings
-    if(modelType=='Ising'):
-        if algorithm!='Metroplis' and algorithm!='Wolff':
+    io.collectParam()
+    
+    TList=np.linspace(io.T0,io.T1,io.nT)
+    bondList=[lat.Bond(bond_data[0],bond_data[1],\
+                       np.array([int(x) for x in bond_data[2]]),\
+                       bond_data[3],bond_data[4],bond_data[5]) \
+                        for bond_data in io.bondList]
+    LMatrix=np.array(io.LMatrix)
+    pos=np.array(io.pos)
+    
+    if(io.modelType=='Ising'):
+        if io.algorithm!='Metroplis' and io.algorithm!='Wolff':
             print('For now, only Metroplis and Wolff algorithm is supported for Ising model')
             gui.submitBtn.config(state='normal')
             return
         
         paramPack=[]
         for iT, T in enumerate(TList):
-            paramPack.append([iT,T,bondList,LMatrix,pos,S,DList,nsweep,nthermal,Lx,Ly,Lz,algorithm])
+            paramPack.append([iT,T,bondList,LMatrix,pos,io.S,io.DList,io.nsweep,io.nthermal,io.LPack[0],io.LPack[1],io.LPack[2],io.algorithm])
         
         TResult=[];magResult=[];susResult=[];energyResult=[];capaResult=[];u4Result=[]
-        pool=Pool(processes=ncores)
+        pool=Pool(processes=io.ncores)
         for result in pool.imap_unordered(startMC,paramPack):
             ID, T, mData, eData =result
             TResult.append(T)
@@ -105,21 +61,21 @@ def startSimulaton():
         pool.close()
         gui.updateResultViewer(TList=TResult, magList=magResult, susList=susResult)
     # continuous model settings
-    elif(modelType=='XY' or modelType=='Heisenberg'):
+    elif(io.modelType=='XY' or io.modelType=='Heisenberg'):
         for bond in bondList:
             bond.On=True # switch on the vector type bonding
-        if algorithm!='Metroplis' and algorithm!='Wolff':
+        if io.algorithm!='Metroplis' and io.algorithm!='Wolff':
             print('For now, only Metroplis and Wolff algorithm is supported for O(n) model')
             gui.submitBtn.config(state='normal')
             return
 
-        On=2 if modelType=='XY' else 3
+        On=2 if io.modelType=='XY' else 3
         paramPack=[]
         for iT, T in enumerate(TList):
-            paramPack.append([iT,T,bondList,LMatrix,pos,S,DList,nsweep,nthermal,Lx,Ly,Lz,algorithm,On])
+            paramPack.append([iT,T,bondList,LMatrix,pos,io.S,io.DList,io.nsweep,io.nthermal,io.LPack[0],io.LPack[1],io.LPack[2],io.algorithm,On])
 
         TResult=[];magResult=[];susResult=[];energyResult=[];capaResult=[];u4Result=[]
-        pool=Pool(processes=ncores)
+        pool=Pool(processes=io.ncores)
         for result in pool.imap_unordered(startMCForOn,paramPack):
             ID, T, mData, eData =result
             TResult.append(T)
