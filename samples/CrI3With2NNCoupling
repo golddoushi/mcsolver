@@ -5,12 +5,12 @@ Lattice:
 0.000000000 0.000000000 1.000000000
 Supercell used in MC simulations:
 16 16 1
-total orbitals in cell:
+Orbitals in cell:
 2
-postions, initial spin states and onsite-anisotropy of every orbitals:
+Postions, initial spin states and onsite-anisotropy of every orbitals:
 orb 0: type 0 spin 1.500000000 pos [0.666666667 0.333333333 0.000000000] Dz -2.394700000 Dx 0.000000000 Dy 0.000000000
 orb 1: type 0 spin 1.500000000 pos [0.333333333 0.666666667 0.000000000] Dz -2.394700000 Dx 0.000000000 Dy 0.000000000
-total bonds:
+Bonds:
 9
 id, source, target, overLat, Jz, Jx, Jy of each bond:
 bond 0: Jz -16.637900000 Jx -15.881300000 Jy -15.881300000 orb 0 to orb 1 over [0 0 0]
@@ -24,11 +24,11 @@ bond 7: Jz -3.633000000 Jx -3.757000000 Jy -3.757000000 orb 1 to orb 1 over [1 1
 bond 8: Jz -3.633000000 Jx -3.757000000 Jy -3.757000000 orb 1 to orb 1 over [0 1 0]
 Temperature scanning region:
 Tmin 70.000000000 Tmax 90.000000000 nT 11
-num. of sweeps for thermalization and statistics:
+Sweeps for thermalization and statistics:
 80000 640000
 Model type:
 Heisenberg
 Algorithm:
 Metroplis
-using cores:
+Ncores:
 6
