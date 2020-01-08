@@ -5,7 +5,7 @@ import numpy as np
 import time
 
 class MC:
-    def __init__(self,ID,LMatrix,pos=[],S=[],D=[],bondList=[],T=1,Lx=1,Ly=1,Lz=1): # init for specified temperature
+    def __init__(self,ID,LMatrix,pos=[],S=[],D=[],bondList=[],T=1,Lx=1,Ly=1,Lz=1,h=[0.1,0,0]): # init for specified temperature
         norb=len(pos)
         totOrbs=Lx*Ly*Lz*norb
         lattice_array, lattice=lat.establishLattice(Lx=Lx,Ly=Ly,Lz=Lz,norb=norb,Lmatrix=np.array(LMatrix),bmatrix=np.array(pos),SpinList=S,DList=D)
@@ -25,6 +25,7 @@ class MC:
         self.lattice=lattice
         self.totOrbs=totOrbs
         self.blockLen=0
+        self.h=h
 
     def mainLoopViaCLib(self,nsweep=1000,nthermal=5000,algo='Wolff'):
         self.nsweep=nsweep
@@ -62,19 +63,22 @@ class MC:
             for linkedOrb in orb.linkedOrb:
                 linkData[cnt]=linkedOrb.id
                 cnt+=1
-        
         maxNLinking=c_int(maxNLinking)
+        
+        # field info.
+        h=c_float(self.h[0])
+
         mylib=CDLL("isinglib.so")
         if algo=='Wolff':
             cMC=mylib.blockUpdateMC
             cMC.restype=py_object
-            data=cMC(self.totOrbs, initSpin, nthermal, nsweep, maxNLinking, nlinking, linkStrength, linkData)
+            data=cMC(self.totOrbs, initSpin, nthermal, nsweep, maxNLinking, nlinking, linkStrength, linkData, h)
             print(np.mean(np.abs(data[0]))/self.totOrbs,np.mean(data[1])/self.totOrbs)
             return data[0], np.array(data[1])*self.T
         elif algo=='Metroplis':
             cMC=mylib.localUpdateMC
             cMC.restype=py_object
-            data=cMC(self.totOrbs, initSpin, nthermal, nsweep, maxNLinking, nlinking, linkStrength, linkData)
+            data=cMC(self.totOrbs, initSpin, nthermal, nsweep, maxNLinking, nlinking, linkStrength, linkData, h)
             print(np.mean(np.abs(data[0]))/self.totOrbs,np.mean(data[1])/self.totOrbs)
             return data[0], np.array(data[1])*self.T
 
