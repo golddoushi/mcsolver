@@ -25,7 +25,7 @@ bondList=[bond1,bond2,bond3
 
 
 time0=time.time()
-mcslave=mc.MC(0,LMatrix,pos=pos,S=Spin,D=D,bondList=bondList,T=50,Lx=16,Ly=16,Lz=1)
+mcslave=mc.MC(0,LMatrix,pos=pos,S=Spin,D=D,bondList=bondList,T=50,Lx=16,Ly=16,Lz=1,h=0.2)
 #mcslave.mainLoopViaCLib_On(nsweep=1,nthermal=1,algo='Wolff',On=3,flunc=0.0)
 mcslave.mainLoopViaCLib(nsweep=1,nthermal=1,algo='Wolff')
 print('time elapsed: %.3f s'%(time.time()-time0))
