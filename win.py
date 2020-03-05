@@ -19,7 +19,7 @@ def startMC(param): # start MC for Ising model
 def startMCForOn(param): # start MC for O(n) model
     # unzip all global parameters for every processing
     ID, T, bondList,LMatrix,pos,S,DList,nsweep,nthermal,Lx,Ly,Lz,algorithm,On=param
-    mcslave=mc.MC(ID,LMatrix,pos=pos,S=S,D=DList,bondList=bondList,T=T,Lx=Lx,Ly=Ly,Lz=Lz)
+    mcslave=mc.MC(ID,LMatrix,pos=pos,S=S,D=DList,bondList=bondList,T=T,Lx=Lx,Ly=Ly,Lz=Lz,h=0.1)
     mData, eData=mcslave.mainLoopViaCLib_On(nsweep=nsweep,nthermal=nthermal,algo=algorithm,On=On)
     mData=abs(mData)/Lx/Ly/Lz
     eData/=(Lx*Ly*Lz)
@@ -49,16 +49,25 @@ def startSimulaton():
             paramPack.append([iT,T,bondList,LMatrix,pos,io.S,io.DList,io.nsweep,io.nthermal,io.LPack[0],io.LPack[1],io.LPack[2],io.algorithm])
         
         TResult=[];magResult=[];susResult=[];energyResult=[];capaResult=[];u4Result=[]
-        pool=Pool(processes=io.ncores)
-        for result in pool.imap_unordered(startMC,paramPack):
-            ID, T, mData, eData =result
-            TResult.append(T)
-            magResult.append(np.mean(mData))
-            susResult.append(np.std(mData))
-            energyResult.append(np.mean(eData))
-            capaResult.append(np.std(eData))
-            u4Result.append(np.mean(mData*mData)**2/np.mean(mData**4))
-        pool.close()
+        while(True): # using pump strategy to reduce the costs of RAM
+            if len(paramPack)==0:
+                break
+            # pump tasks
+            paramPack_tmp=[]
+            for index in range(io.ncores):
+                paramPack_tmp.append(paramPack.pop(0))
+                if len(paramPack)==0:
+                    break
+            pool=Pool(processes=io.ncores)
+            for result in pool.imap_unordered(startMC,paramPack):
+                ID, T, mData, eData =result
+                TResult.append(T)
+                magResult.append(np.mean(mData))
+                susResult.append(np.std(mData))
+                energyResult.append(np.mean(eData))
+                capaResult.append(np.std(eData))
+                u4Result.append(np.mean(mData*mData)**2/np.mean(mData**4))
+            pool.close()
         gui.updateResultViewer(TList=TResult, magList=magResult, susList=susResult)
     # continuous model settings
     elif(io.modelType=='XY' or io.modelType=='Heisenberg'):
@@ -75,16 +84,25 @@ def startSimulaton():
             paramPack.append([iT,T,bondList,LMatrix,pos,io.S,io.DList,io.nsweep,io.nthermal,io.LPack[0],io.LPack[1],io.LPack[2],io.algorithm,On])
 
         TResult=[];magResult=[];susResult=[];energyResult=[];capaResult=[];u4Result=[]
-        pool=Pool(processes=io.ncores)
-        for result in pool.imap_unordered(startMCForOn,paramPack):
-            ID, T, mData, eData =result
-            TResult.append(T)
-            magResult.append(np.mean(mData))
-            susResult.append(np.std(mData))
-            energyResult.append(np.mean(eData))
-            capaResult.append(np.std(eData))
-            u4Result.append(np.mean(mData*mData)**2/np.mean(mData**4))
-        pool.close()
+        while(True): # using pump strategy to reduce the costs of RAM
+            if len(paramPack)==0:
+                break
+            # pump tasks
+            paramPack_tmp=[]
+            for index in range(io.ncores):
+                paramPack_tmp.append(paramPack.pop(0))
+                if len(paramPack)==0:
+                    break
+            pool=Pool(processes=io.ncores)
+            for result in pool.imap_unordered(startMCForOn,paramPack_tmp):
+                ID, T, mData, eData =result
+                TResult.append(T)
+                magResult.append(np.mean(mData))
+                susResult.append(np.std(mData))
+                energyResult.append(np.mean(eData))
+                capaResult.append(np.std(eData))
+                u4Result.append(np.mean(mData*mData)**2/np.mean(mData**4))
+            pool.close()
         gui.updateResultViewer(TList=TResult, magList=magResult, susList=susResult)
     else:
         print("for now only Ising, XY and Heisenberg model is supported")
