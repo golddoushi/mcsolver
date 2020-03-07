@@ -59,13 +59,13 @@ def startSimulaton():
                 if len(paramPack)==0:
                     break
             pool=Pool(processes=io.ncores)
-            for result in pool.imap_unordered(startMC,paramPack):
+            for result in pool.imap_unordered(startMC,paramPack_tmp):
                 ID, T, mData, eData =result
                 TResult.append(T)
                 magResult.append(np.mean(mData))
-                susResult.append(np.std(mData))
+                susResult.append(np.std(mData)**2/T)
                 energyResult.append(np.mean(eData))
-                capaResult.append(np.std(eData))
+                capaResult.append(np.std(eData)**2/T**2)
                 u4Result.append(np.mean(mData*mData)**2/np.mean(mData**4))
             pool.close()
         gui.updateResultViewer(TList=TResult, magList=magResult, susList=susResult)
@@ -98,9 +98,9 @@ def startSimulaton():
                 ID, T, mData, eData =result
                 TResult.append(T)
                 magResult.append(np.mean(mData))
-                susResult.append(np.std(mData))
+                susResult.append(np.std(mData)**2/T)
                 energyResult.append(np.mean(eData))
-                capaResult.append(np.std(eData))
+                capaResult.append(np.std(eData)**2/T**2)
                 u4Result.append(np.mean(mData*mData)**2/np.mean(mData**4))
             pool.close()
         gui.updateResultViewer(TList=TResult, magList=magResult, susList=susResult)

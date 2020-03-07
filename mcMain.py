@@ -74,13 +74,13 @@ class MC:
             cMC.restype=py_object
             data=cMC(self.totOrbs, initSpin, nthermal, nsweep, maxNLinking, nlinking, linkStrength, linkData, h)
             print(np.mean(np.abs(data[0]))/self.totOrbs,np.mean(data[1])/self.totOrbs)
-            return data[0], np.array(data[1])*self.T
+            return data[0], np.array(data[1])*self.totOrbs
         elif algo=='Metroplis':
             cMC=mylib.localUpdateMC
             cMC.restype=py_object
             data=cMC(self.totOrbs, initSpin, nthermal, nsweep, maxNLinking, nlinking, linkStrength, linkData, h)
             print(np.mean(np.abs(data[0]))/self.totOrbs,np.mean(data[1])/self.totOrbs)
-            return data[0], np.array(data[1])*self.T
+            return data[0], np.array(data[1])*self.totOrbs
 
     def mainLoopViaCLib_On(self,nsweep=1000,nthermal=5000,algo='Metroplis',On=3,flunc=0.0,h=0.,binGraph=False):
         self.nsweep=nsweep
@@ -157,7 +157,7 @@ class MC:
                 plt.imshow(data)
                 plt.show()
             print('<x> %.3f <y> %.3f <z> %.3f <tot> %.3f <energy> %.3f'%(np.mean(xspin)/self.totOrbs,np.mean(yspin)/self.totOrbs,np.mean(zspin)/self.totOrbs,np.mean(spin)/self.totOrbs,np.mean(energy)/self.totOrbs))
-            return spin, np.array(energy)*self.T
+            return spin, np.array(energy)*self.totOrbs
         elif algo=='Metroplis':
             cMC=mylib.localUpdateMC
             cMC.restype=py_object
@@ -172,7 +172,7 @@ class MC:
                 plt.imshow(data)
                 plt.show()
             print('<x> %.3f <y> %.3f <z> %.3f <tot> %.3f <energy> %.3f'%(np.mean(np.abs(xspin))/self.totOrbs,np.mean(np.abs(yspin))/self.totOrbs,np.mean(np.abs(zspin))/self.totOrbs,np.mean(np.abs(spin))/self.totOrbs,np.mean(energy)/self.totOrbs))
-            return spin, np.array(energy)*self.T
+            return spin, np.array(energy)*self.totOrbs
         
     def mainLoop(self,nsweep=10000,nthermal=5000):
         self.nsweep=nsweep
