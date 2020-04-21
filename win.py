@@ -9,21 +9,21 @@ import fileio as io
 
 def startMC(param): # start MC for Ising model
     # unzip all global parameters for every processing
-    ID, T, bondList,LMatrix,pos,S,DList,nsweep,nthermal,Lx,Ly,Lz,algorithm=param
+    ID, T, bondList,LMatrix,pos,S,DList,nsweep,nthermal,ninterval,Lx,Ly,Lz,algorithm=param
     mcslave=mc.MC(ID,LMatrix,pos=pos,S=S,D=DList,bondList=bondList,T=T,Lx=Lx,Ly=Ly,Lz=Lz)
-    mData, eData=np.array(mcslave.mainLoopViaCLib(nsweep=nsweep,nthermal=nthermal,algo=algorithm))
+    mData, eData, corr=np.array(mcslave.mainLoopViaCLib(nsweep=nsweep,nthermal=nthermal,ninterval=ninterval,algo=algorithm))
     mData=abs(mData)/Lx/Ly/Lz
-    eData/=(Lx*Ly*Lz)
-    return ID, T, mData, eData
+    #eData/=(Lx*Ly*Lz)
+    return ID, T, mData, eData, mcslave.totOrbs
 
 def startMCForOn(param): # start MC for O(n) model
     # unzip all global parameters for every processing
-    ID, T, bondList,LMatrix,pos,S,DList,nsweep,nthermal,Lx,Ly,Lz,algorithm,On=param
+    ID, T, bondList,LMatrix,pos,S,DList,nsweep,nthermal,ninterval,Lx,Ly,Lz,algorithm,On=param
     mcslave=mc.MC(ID,LMatrix,pos=pos,S=S,D=DList,bondList=bondList,T=T,Lx=Lx,Ly=Ly,Lz=Lz,h=0.1)
-    mData, eData=mcslave.mainLoopViaCLib_On(nsweep=nsweep,nthermal=nthermal,algo=algorithm,On=On)
+    mData, eData=mcslave.mainLoopViaCLib_On(nsweep=nsweep,nthermal=nthermal,ninterval=ninterval,algo=algorithm,On=On)
     mData=abs(mData)/Lx/Ly/Lz
-    eData/=(Lx*Ly*Lz)
-    return ID, T, mData, eData
+    #eData/=(Lx*Ly*Lz)
+    return ID, T, mData, eData, mcslave.totOrbs
 
 def startSimulaton():
     time0=time.time()
@@ -46,7 +46,7 @@ def startSimulaton():
         
         paramPack=[]
         for iT, T in enumerate(TList):
-            paramPack.append([iT,T,bondList,LMatrix,pos,io.S,io.DList,io.nsweep,io.nthermal,io.LPack[0],io.LPack[1],io.LPack[2],io.algorithm])
+            paramPack.append([iT,T,bondList,LMatrix,pos,io.S,io.DList,io.nsweep,io.nthermal,io.ninterval,io.LPack[0],io.LPack[1],io.LPack[2],io.algorithm])
         
         TResult=[];magResult=[];susResult=[];energyResult=[];capaResult=[];u4Result=[]
         while(True): # using pump strategy to reduce the costs of RAM
@@ -60,15 +60,15 @@ def startSimulaton():
                     break
             pool=Pool(processes=io.ncores)
             for result in pool.imap_unordered(startMC,paramPack_tmp):
-                ID, T, mData, eData =result
+                ID, T, mData, eData, N=result
                 TResult.append(T)
                 magResult.append(np.mean(mData))
-                susResult.append(np.std(mData)**2/T)
+                susResult.append(np.std(mData)**2/T*N)
                 energyResult.append(np.mean(eData))
                 capaResult.append(np.std(eData)**2/T**2)
                 u4Result.append(np.mean(mData*mData)**2/np.mean(mData**4))
             pool.close()
-        gui.updateResultViewer(TList=TResult, magList=magResult, susList=susResult)
+        gui.updateResultViewer(TList=TResult, magList=magResult, susList=capaResult)
     # continuous model settings
     elif(io.modelType=='XY' or io.modelType=='Heisenberg'):
         for bond in bondList:
@@ -81,7 +81,7 @@ def startSimulaton():
         On=2 if io.modelType=='XY' else 3
         paramPack=[]
         for iT, T in enumerate(TList):
-            paramPack.append([iT,T,bondList,LMatrix,pos,io.S,io.DList,io.nsweep,io.nthermal,io.LPack[0],io.LPack[1],io.LPack[2],io.algorithm,On])
+            paramPack.append([iT,T,bondList,LMatrix,pos,io.S,io.DList,io.nsweep,io.nthermal,io.ninterval,io.LPack[0],io.LPack[1],io.LPack[2],io.algorithm,On])
 
         TResult=[];magResult=[];susResult=[];energyResult=[];capaResult=[];u4Result=[]
         while(True): # using pump strategy to reduce the costs of RAM
@@ -95,15 +95,15 @@ def startSimulaton():
                     break
             pool=Pool(processes=io.ncores)
             for result in pool.imap_unordered(startMCForOn,paramPack_tmp):
-                ID, T, mData, eData =result
+                ID, T, mData, eData, N =result
                 TResult.append(T)
                 magResult.append(np.mean(mData))
-                susResult.append(np.std(mData)**2/T)
+                susResult.append(np.std(mData)**2/T*N)
                 energyResult.append(np.mean(eData))
                 capaResult.append(np.std(eData)**2/T**2)
                 u4Result.append(np.mean(mData*mData)**2/np.mean(mData**4))
             pool.close()
-        gui.updateResultViewer(TList=TResult, magList=magResult, susList=susResult)
+        gui.updateResultViewer(TList=TResult, magList=magResult, susList=capaResult)
     else:
         print("for now only Ising, XY and Heisenberg model is supported")
         gui.submitBtn.config(state='normal')

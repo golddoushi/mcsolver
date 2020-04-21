@@ -2,10 +2,10 @@ from tkinter import filedialog
 from re import findall
 import guiMain as gui
 
-global LMatrix, LPack, pos, S, DList, bondList, T0, T1, nT, nthermal, nsweep, modelType, algorithm, ncores
+global LMatrix, LPack, pos, S, DList, bondList, T0, T1, nT, nthermal, nsweep, ninterval, modelType, algorithm, ncores
 
 def collectParam():
-    global LMatrix, LPack, pos, S, DList, bondList, T0, T1, nT, nthermal, nsweep, modelType, algorithm, ncores
+    global LMatrix, LPack, pos, S, DList, bondList, T0, T1, nT, nthermal, nsweep, ninterval, modelType, algorithm, ncores
     # get lattice
     a1=gui.latticeGui[0].report()
     a2=gui.latticeGui[1].report()
@@ -45,9 +45,9 @@ def collectParam():
     print('Temperature range: %.2f ~ %.2f with %d sampling points'%(T0, T1, nT))
 
     # get thermalizations and sweeps
-    nthermal, nsweep = [int(x) for x in gui.MCparamGui.report()]
-    print('thermalizations and sweeps:')
-    print(nthermal, nsweep)
+    nthermal, nsweep, ninterval= [int(x) for x in gui.MCparamGui.report()]
+    print('thermalizations, sweeps and tau:')
+    print(nthermal, nsweep, ninterval)
 
     # get model and algorithm
     modelType = gui.modelGui.get()
@@ -60,7 +60,7 @@ def collectParam():
     print('using %d cores'%ncores)
 
 def saveParam():
-    global LMatrix, LPack, pos, S, DList, bondList, T0, T1, nT, nthermal, nsweep, modelType, algorithm, ncores
+    global LMatrix, LPack, pos, S, DList, bondList, T0, T1, nT, nthermal, nsweep, ninterval, modelType, algorithm, ncores
     collectParam()
     # write into files
     filePath=filedialog.asksaveasfilename()
@@ -93,8 +93,8 @@ def saveParam():
 
     f.write("Temperature scanning region:\n")
     f.write("Tmin %.9f Tmax %.9f nT %d\n"%(T0, T1, nT))
-    f.write("Sweeps for thermalization and statistics:\n")
-    f.write("%d %d\n"%(nthermal, nsweep))
+    f.write("Sweeps for thermalization and statistics, and relaxiation step for each sweep:\n")
+    f.write("%d %d %d\n"%(nthermal, nsweep, ninterval))
     f.write("Model type:\n")
     f.write(modelType+'\n')
     f.write("Algorithm:\n")
@@ -110,8 +110,8 @@ def loadParam():
     f.close()
     # load version info.
     version=findall(r"[0-9\.]+",data[0])[0]
-    if version!="1.0":
-        print("unknown file or version (only support v1.0)")
+    if version!="1.1":
+        print("unknown file or version (only support v1.1)")
         return False
     
     # decide position of each tag
@@ -166,7 +166,7 @@ def loadParam():
                         ])
     # load other parameters
     Tpack=findall(r"[0-9\.]+",data[tagTemperature+1])
-    nTermSweep=findall(r"[0-9\.]+",data[tagSweeps+1])
+    nTermSweep=findall(r"[0-9\.\-]+",data[tagSweeps+1])
     modelType=data[tagModel+1]
     algorithm=data[tagAlgorithm+1]
     ncores=[int(data[tagNcores+1])]

@@ -255,7 +255,7 @@ def loadMCSettings():
 
     MCparam_base=Frame(SettingFrame)
     MCparam_base.grid(row=1,column=0,sticky='W')
-    MCparamGui=toolbox.NoteFrm(MCparam_base, init_notes=['nthermal:','nsweep:'], init_data=[20000,40000],row=True)
+    MCparamGui=toolbox.NoteFrm(MCparam_base, init_notes=['nthermal:','nsweep:','tau:'], init_data=[20000,40000,1],row=True)
 
     model_base=Frame(SettingFrame)
     model_base.grid(row=2,column=0,sticky='W')
@@ -369,7 +369,7 @@ def updateResultViewer(TList=[],magList=[], susList=[]):
     ax.scatter(TList,magList,color='red',label='<spin>')
 
     ax2=ax.twinx()
-    ax2.scatter(TList,susList,color='blue',label=r'$\chi$')
+    ax2.scatter(TList,susList,color='blue',label=r'Capa')
 
     f.legend()
 

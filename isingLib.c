@@ -146,10 +146,10 @@ void localUpdate(int totOrbs, Orb lattice[], float *p_energy, float *p_totSpin, 
         *p_energy-=corr;
     }
 }
-
+ 
 PyObject * blockUpdateMC(int totOrbs, float initSpin[totOrbs], int nthermal, int nsweep, 
                    int maxNLinking, int nlink[totOrbs], float linkStrength[totOrbs][maxNLinking], int linkedOrb[totOrbs][maxNLinking],
-                   float h){
+                   int ninterval, int nLat, int corrOrbPair[nLat][2], float h){
     //printf("hello block algorithm!\n");
     // initialize lattice including one ghost spin
     totOrbs+=1;
@@ -166,28 +166,34 @@ PyObject * blockUpdateMC(int totOrbs, float initSpin[totOrbs], int nthermal, int
     for(int i=0;i<totOrbs;i++) lattice[i].inBlock=0;
     //printf("initialization success\n");
 
-    for(int i=0;i<nthermal;i++) blockUpdate(totOrbs, lattice, p_energy, p_totSpin); //thermalization
+    for(int i=0;i<nthermal*ninterval;i++) blockUpdate(totOrbs, lattice, p_energy, p_totSpin); //thermalization
     //printf("thermalization finished\n");
 
     // printf("start sweeping\n");
-    PyObject *spinData, *energyData;
+    PyObject *spinData, *energyData, *corrData;
     spinData=PyTuple_New(nsweep);
     energyData=PyTuple_New(nsweep);
+    corrData=PyTuple_New(nsweep);
     for(int i=0;i<nsweep;i++){
-        blockUpdate(totOrbs, lattice, p_energy, p_totSpin);
+        float corrAvg=0.0;
+        for(int j=0;j<nLat;j++) corrAvg+=lattice[corrOrbPair[j][0]].spin*lattice[corrOrbPair[j][1]].spin;
+        //blockUpdate(totOrbs, lattice, p_energy, p_totSpin);
+        for(int j=0;j<ninterval;j++) blockUpdate(totOrbs, lattice, p_energy, p_totSpin);
         PyTuple_SetItem(spinData, i, PyFloat_FromDouble(*p_totSpin));
         PyTuple_SetItem(energyData, i, PyFloat_FromDouble(*p_energy));
+        PyTuple_SetItem(corrData, i, PyFloat_FromDouble(corrAvg/nLat));
     }
     PyObject *Data;
-    Data=PyTuple_New(2);
+    Data=PyTuple_New(3);
     PyTuple_SetItem(Data, 0, spinData);
     PyTuple_SetItem(Data, 1, energyData);
+    PyTuple_SetItem(Data, 2, corrData);
     return Data;
 }
 
 PyObject * localUpdateMC(int totOrbs, float initSpin[totOrbs], int nthermal, int nsweep, 
                    int maxNLinking, int nlink[totOrbs], float linkStrength[totOrbs][maxNLinking], int linkedOrb[totOrbs][maxNLinking],
-                   float h){
+                   int ninterval, int nLat, int corrOrbPair[nLat][2], float h){
     // initialize lattice
     Orb lattice[totOrbs];
     establishLattice(lattice, totOrbs, initSpin, maxNLinking, nlink, linkStrength);
@@ -196,28 +202,28 @@ PyObject * localUpdateMC(int totOrbs, float initSpin[totOrbs], int nthermal, int
     // initialize measurement
     float energy=0, totSpin=0;
     float *p_energy=&energy, *p_totSpin=&totSpin;
-    for(int i=0;i<totOrbs;i++) totSpin+=initSpin[i];
+    for(int i=0;i<ninterval;i++) totSpin+=initSpin[i];
     
-    for(int i=0;i<totOrbs*nthermal;i++) localUpdate(totOrbs, lattice, p_energy, p_totSpin, h); //thermalization
+    for(int i=0;i<nthermal*ninterval;i++) localUpdate(totOrbs, lattice, p_energy, p_totSpin, h); //thermalization
 
-    PyObject *spinData, *energyData;
+    PyObject *spinData, *energyData, *corrData;
     spinData=PyTuple_New(nsweep);
     energyData=PyTuple_New(nsweep);
+    corrData=PyTuple_New(nsweep);
     for(int i=0;i<nsweep;i++){
-        float energyAvg=0.0;
-        float spinAvg=0.0;
-        for(int j=0;j<totOrbs;j++){
-            localUpdate(totOrbs, lattice, p_energy, p_totSpin, h);
-            energyAvg+=*p_energy;
-            spinAvg+=*p_totSpin;
-        }
-        PyTuple_SetItem(spinData, i, PyFloat_FromDouble(spinAvg/totOrbs));
-        PyTuple_SetItem(energyData, i, PyFloat_FromDouble(energyAvg/totOrbs));
+        float corrAvg=0.0;
+        for(int j=0;j<nLat;j++) corrAvg+=lattice[corrOrbPair[j][0]].spin*lattice[corrOrbPair[j][1]].spin;
+        for(int j=0;j<ninterval;j++) localUpdate(totOrbs, lattice, p_energy, p_totSpin, h);
+        
+        PyTuple_SetItem(spinData, i, PyFloat_FromDouble(*p_totSpin/ninterval));
+        PyTuple_SetItem(energyData, i, PyFloat_FromDouble(*p_energy/ninterval));
+        PyTuple_SetItem(corrData, i, PyFloat_FromDouble(corrAvg/nLat));
     }
     
     PyObject *Data;
-    Data=PyTuple_New(2);
+    Data=PyTuple_New(3);
     PyTuple_SetItem(Data, 0, spinData);
     PyTuple_SetItem(Data, 1, energyData);
+    PyTuple_SetItem(Data, 2, corrData);
     return Data;
 }

@@ -321,7 +321,7 @@ void localUpdate(int totOrbs, Orb lattice[], float *p_energy, Vec *p_totSpin){
 
 PyObject * blockUpdateMC(int totOrbs, float initSpin[totOrbs], float initD[totOrbs][3], int nthermal, int nsweep, 
                    int maxNLinking, int nlink[totOrbs], float linkStrength[totOrbs][maxNLinking][3], int linkedOrb[totOrbs][maxNLinking],
-                   float flunc, float h){
+                   int ninterval, float flunc, float h){
     // initialize lattice add one ghost spin for mimicing external field
     Orb lattice[totOrbs+1];
     //printf("hello here is C lib\n");
@@ -339,7 +339,7 @@ PyObject * blockUpdateMC(int totOrbs, float initSpin[totOrbs], float initD[totOr
     // initialize block
     for(int i=0;i<totOrbs+1;i++) {lattice[i].inBlock=0;lattice[i].isProjected=0;};
 
-    for(int i=0;i<nthermal;i++) blockUpdate(totOrbs+1, lattice, p_energy, p_totSpin); //thermalization
+    for(int i=0;i<nthermal*ninterval;i++) blockUpdate(totOrbs+1, lattice, p_energy, p_totSpin); //thermalization
 
     // printf("start sweeping\n");
     PyObject *xspinData, *yspinData, *zspinData, *energyData;
@@ -349,7 +349,7 @@ PyObject * blockUpdateMC(int totOrbs, float initSpin[totOrbs], float initD[totOr
     zspinData=PyTuple_New(nsweep);
     energyData=PyTuple_New(nsweep);
     for(int i=0;i<nsweep;i++){
-        blockUpdate(totOrbs+1, lattice, p_energy, p_totSpin);
+        for(int j=0;j<ninterval;j++) blockUpdate(totOrbs+1, lattice, p_energy, p_totSpin);
         PyTuple_SetItem(xspinData, i, PyFloat_FromDouble(p_totSpin->x));
         PyTuple_SetItem(yspinData, i, PyFloat_FromDouble(p_totSpin->y));
         PyTuple_SetItem(zspinData, i, PyFloat_FromDouble(0));
@@ -368,7 +368,7 @@ PyObject * blockUpdateMC(int totOrbs, float initSpin[totOrbs], float initD[totOr
 // self.totOrbs, initSpin, nthermal, nsweep, maxNLinking, nlinking, linkStrength, linkData
 PyObject * localUpdateMC(int totOrbs, float initSpin[totOrbs], float initD[totOrbs][3], int nthermal, int nsweep, 
                    int maxNLinking, int nlink[totOrbs], float linkStrength[totOrbs][maxNLinking][3], int linkedOrb[totOrbs][maxNLinking],
-                   float flunc, float h){
+                   int ninterval, float flunc, float h){
     // initialize lattice add one ghost spin for mimicing external field
     Orb lattice[totOrbs+1];
     //printf("hello here is C lib\n");
@@ -392,7 +392,7 @@ PyObject * localUpdateMC(int totOrbs, float initSpin[totOrbs], float initD[totOr
     
     //localUpdate(totOrbs, lattice, p_energy, p_totSpin);
     //printf("initial total spin: %.3f %.3f %.3f energy: %.3f\n",totSpin.x,totSpin.y,totSpin.z,*p_energy);
-    for(int i=0;i<totOrbs*nthermal;i++) localUpdate(totOrbs, lattice, p_energy, p_totSpin); //thermalization
+    for(int i=0;i<ninterval*nthermal;i++) localUpdate(totOrbs, lattice, p_energy, p_totSpin); //thermalization
 
     PyObject *xspinData, *yspinData, *zspinData, *energyData;
     //float len;
@@ -401,6 +401,8 @@ PyObject * localUpdateMC(int totOrbs, float initSpin[totOrbs], float initD[totOr
     zspinData=PyTuple_New(nsweep);
     energyData=PyTuple_New(nsweep);
     for(int i=0;i<nsweep;i++){
+        for(int j=0;j<ninterval;j++) localUpdate(totOrbs, lattice, p_energy, p_totSpin);
+        /*
         float energyAvg=0.0;
         Vec spinAvg;
         spinAvg.x=0;spinAvg.y=0;
@@ -413,6 +415,10 @@ PyObject * localUpdateMC(int totOrbs, float initSpin[totOrbs], float initD[totOr
         //len=sqrt(dot(*p_totSpin, *p_totSpin));
         PyTuple_SetItem(xspinData, i, PyFloat_FromDouble(spinAvg.x/totOrbs));
         PyTuple_SetItem(yspinData, i, PyFloat_FromDouble(spinAvg.y/totOrbs));
+        PyTuple_SetItem(zspinData, i, PyFloat_FromDouble(0));
+        PyTuple_SetItem(energyData, i, PyFloat_FromDouble(*p_energy));*/
+        PyTuple_SetItem(xspinData, i, PyFloat_FromDouble(p_totSpin->x));
+        PyTuple_SetItem(yspinData, i, PyFloat_FromDouble(p_totSpin->y));
         PyTuple_SetItem(zspinData, i, PyFloat_FromDouble(0));
         PyTuple_SetItem(energyData, i, PyFloat_FromDouble(*p_energy));
     }

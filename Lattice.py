@@ -121,11 +121,13 @@ def establishLattice(Lx=1,Ly=1,Lz=1,norb=1,Lmatrix=np.array([[1,0,0],[0,1,0],[0,
         lattice.append(lattice_x)
     return lattice, lattice_flatten
 
-def establishLinking(lattice,bondList):
+def establishLinking(lattice,bondList,ki_s=0,ki_t=0,ki_overLat=[0,0,0]):
     Lx=len(lattice)
     Ly=len(lattice[0])
     Lz=len(lattice[0][0])
     Lo=len(lattice[0][0][0])
+
+    correlatedOrbitalPair=[]
     # uncode every orbitals
     On=False
     for x in range(Lx):
@@ -147,12 +149,15 @@ def establishLinking(lattice,bondList):
                                     targetOrb.addLinking(sourceOrb,np.array([bond.strength,bond.strength1,bond.strength2]))
                                 else:
                                     targetOrb.addLinking(sourceOrb,bond.strength)
+                # save the correlated orbital pairs
+                correlatedOrbitalPair.append([lattice[x][y][z][ki_s].id, lattice[(x+ki_overLat[0])%Lx][(y+ki_overLat[1])%Ly][(z+ki_overLat[2])%Lz][ki_s].id])
     # after process
     for x in range(Lx):
         for y in range(Ly):
             for z in range(Lz):
                 for o in range(Lo):
                     lattice[x][y][z][o].classifyTheLinking(On=On)
+    return correlatedOrbitalPair
 
 def plotLattice(lattice):
     '''

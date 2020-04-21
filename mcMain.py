@@ -5,7 +5,7 @@ import numpy as np
 import time
 
 class MC:
-    def __init__(self,ID,LMatrix,pos=[],S=[],D=[],bondList=[],T=1,Lx=1,Ly=1,Lz=1,h=0.): # init for specified temperature
+    def __init__(self,ID,LMatrix,pos=[],S=[],D=[],bondList=[],T=1,Lx=1,Ly=1,Lz=1,ki_s=0,ki_t=0,ki_overLat=[0,0,0],h=0.): # init for specified temperature
         norb=len(pos)
         totOrbs=Lx*Ly*Lz*norb
         lattice_array, lattice=lat.establishLattice(Lx=Lx,Ly=Ly,Lz=Lz,norb=norb,Lmatrix=np.array(LMatrix),bmatrix=np.array(pos),SpinList=S,DList=D)
@@ -17,7 +17,7 @@ class MC:
             bond_tmp=bond.copy()#lat.Bond(bond.source,bond.target,bond.overLat,bond.strength/T)
             bond_tmp.strength/=T;bond_tmp.strength1/=T;bond_tmp.strength2/=T
             bondT.append(bond_tmp)
-        lat.establishLinking(lattice_array,bondT)
+        self.correlatedOrbitalPair=lat.establishLinking(lattice_array,bondT,ki_s=ki_s,ki_t=ki_t,ki_overLat=ki_overLat)
         self.ID=ID
         self.T=T
         self.Sz=Lx*Ly*Lz*sum(S)
@@ -25,11 +25,14 @@ class MC:
         self.lattice=lattice
         self.totOrbs=totOrbs
         self.blockLen=0
+        self.ki_s=ki_s
+        self.ki_t=ki_t
         self.h=h
 
-    def mainLoopViaCLib(self,nsweep=1000,nthermal=5000,algo='Wolff'):
+    def mainLoopViaCLib(self,nsweep=1000,nthermal=500,ninterval=-1,algo='Wolff'):
         self.nsweep=nsweep
         self.nthermal=nthermal
+        ninterval=self.totOrbs if ninterval<=0 else ninterval
 
         # initial spin
         initSpin=(c_float*self.totOrbs)()
@@ -68,23 +71,31 @@ class MC:
         # field info.
         h=c_float(self.h)
 
+        # correlated info.
+        nLat=len(self.correlatedOrbitalPair)
+        corrOrbitalPair=(c_int*(nLat*2))()
+        for ipair,pair in enumerate(self.correlatedOrbitalPair):
+            corrOrbitalPair[ipair*2]=pair[0]
+            corrOrbitalPair[ipair*2+1]=pair[1]
+
         mylib=CDLL("./isinglib.so")
         if algo=='Wolff':
             cMC=mylib.blockUpdateMC
             cMC.restype=py_object
-            data=cMC(self.totOrbs, initSpin, nthermal, nsweep, maxNLinking, nlinking, linkStrength, linkData, h)
+            data=cMC(self.totOrbs, initSpin, nthermal, nsweep, maxNLinking, nlinking, linkStrength, linkData, ninterval, nLat, corrOrbitalPair, h)
             print(np.mean(np.abs(data[0]))/self.totOrbs,np.mean(data[1])/self.totOrbs)
-            return data[0], np.array(data[1])*self.totOrbs
+            return data[0], np.array(data[1]), np.array(data[2])
         elif algo=='Metroplis':
             cMC=mylib.localUpdateMC
             cMC.restype=py_object
-            data=cMC(self.totOrbs, initSpin, nthermal, nsweep, maxNLinking, nlinking, linkStrength, linkData, h)
+            data=cMC(self.totOrbs, initSpin, nthermal, nsweep, maxNLinking, nlinking, linkStrength, linkData, ninterval, nLat, corrOrbitalPair, h)
             print(np.mean(np.abs(data[0]))/self.totOrbs,np.mean(data[1])/self.totOrbs)
-            return data[0], np.array(data[1])*self.totOrbs
+            return data[0], np.array(data[1]), np.array(data[2])
 
-    def mainLoopViaCLib_On(self,nsweep=1000,nthermal=5000,algo='Metroplis',On=3,flunc=0.0,h=0.,binGraph=False):
+    def mainLoopViaCLib_On(self,nsweep=1000,nthermal=5000,ninterval=-1,algo='Metroplis',On=3,flunc=0.0,h=0.,binGraph=False):
         self.nsweep=nsweep
         self.nthermal=nthermal
+        ninterval=self.totOrbs if ninterval<=0 else ninterval
 
         # initial spin, single ion anisotropy and number of linking
         initSpin=(c_float*self.totOrbs)()
@@ -145,7 +156,7 @@ class MC:
             #print('Wolff')
             cMC=mylib.blockUpdateMC
             cMC.restype=py_object
-            xspin, yspin, zspin, energy = cMC(self.totOrbs, initSpin, initD, nthermal, nsweep, maxNLinking_, nlinking, linkStrength, linkData, flunc_, h)
+            xspin, yspin, zspin, energy = cMC(self.totOrbs, initSpin, initD, nthermal, nsweep, maxNLinking_, nlinking, linkStrength, linkData, ninterval, flunc_, h)
             #spin, energy = data[0], data[1], data[2], data[3]
             spin=np.sqrt(np.array(xspin)**2+np.array(yspin)**2+np.array(zspin)**2)
             if binGraph:
@@ -157,11 +168,11 @@ class MC:
                 plt.imshow(data)
                 plt.show()
             print('<x> %.3f <y> %.3f <z> %.3f <tot> %.3f <energy> %.3f'%(np.mean(xspin)/self.totOrbs,np.mean(yspin)/self.totOrbs,np.mean(zspin)/self.totOrbs,np.mean(spin)/self.totOrbs,np.mean(energy)/self.totOrbs))
-            return spin, np.array(energy)*self.totOrbs
+            return spin, np.array(energy)
         elif algo=='Metroplis':
             cMC=mylib.localUpdateMC
             cMC.restype=py_object
-            xspin, yspin, zspin, energy = cMC(self.totOrbs, initSpin, initD, nthermal, nsweep, maxNLinking_, nlinking, linkStrength, linkData, flunc_, h)
+            xspin, yspin, zspin, energy = cMC(self.totOrbs, initSpin, initD, nthermal, nsweep, maxNLinking_, nlinking, linkStrength, linkData, ninterval, flunc_, h)
             spin = np.sqrt(np.array(xspin)**2+np.array(yspin)**2+np.array(zspin)**2)
             if binGraph:
                 data=np.zeros((200,200))
@@ -172,7 +183,7 @@ class MC:
                 plt.imshow(data)
                 plt.show()
             print('<x> %.3f <y> %.3f <z> %.3f <tot> %.3f <energy> %.3f'%(np.mean(np.abs(xspin))/self.totOrbs,np.mean(np.abs(yspin))/self.totOrbs,np.mean(np.abs(zspin))/self.totOrbs,np.mean(np.abs(spin))/self.totOrbs,np.mean(energy)/self.totOrbs))
-            return spin, np.array(energy)*self.totOrbs
+            return spin, np.array(energy)
         
     def mainLoop(self,nsweep=10000,nthermal=5000):
         self.nsweep=nsweep
