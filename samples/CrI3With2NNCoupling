@@ -1,4 +1,4 @@
-This is mcsolver's save file, version: 1.0
+This is mcsolver's save file, version: 1.1
 Lattice:
 1.000000000 0.000000000 0.000000000
 -0.500000000 0.866025404 0.000000000
@@ -25,7 +25,7 @@ bond 8: Jz -3.633000000 Jx -3.757000000 Jy -3.757000000 orb 1 to orb 1 over [0 1
 Temperature scanning region:
 Tmin 70.000000000 Tmax 90.000000000 nT 11
 Sweeps for thermalization and statistics:
-80000 640000
+80000 640000 0
 Model type:
 Heisenberg
 Algorithm:
