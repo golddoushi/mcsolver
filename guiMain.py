@@ -370,6 +370,7 @@ def updateResultViewer(TList=[],magList=[], susList=[]):
 
     ax2=ax.twinx()
     ax2.scatter(TList,susList,color='blue',label=r'Capa')
+    ax2.set_ylim(min(susList),max(susList))
 
     f.legend()
 

@@ -11,19 +11,20 @@ def startMC(param): # start MC for Ising model
     # unzip all global parameters for every processing
     ID, T, bondList,LMatrix,pos,S,DList,nsweep,nthermal,ninterval,Lx,Ly,Lz,algorithm=param
     mcslave=mc.MC(ID,LMatrix,pos=pos,S=S,D=DList,bondList=bondList,T=T,Lx=Lx,Ly=Ly,Lz=Lz)
-    mData, eData, corr=np.array(mcslave.mainLoopViaCLib(nsweep=nsweep,nthermal=nthermal,ninterval=ninterval,algo=algorithm))
-    mData=abs(mData)/Lx/Ly/Lz
+    spin_i, spin_j, spin_ij, E, E2=mcslave.mainLoopViaCLib(nsweep=nsweep,nthermal=nthermal,ninterval=ninterval,algo=algorithm)
+    #mData=abs(mData)/Lx/Ly/Lz
     #eData/=(Lx*Ly*Lz)
-    return ID, T, mData, eData, mcslave.totOrbs
+    #print("<ij>=",np.mean(corr))
+    return ID, T, spin_i, spin_j, spin_ij, E, E2, mcslave.totOrbs
 
 def startMCForOn(param): # start MC for O(n) model
     # unzip all global parameters for every processing
     ID, T, bondList,LMatrix,pos,S,DList,nsweep,nthermal,ninterval,Lx,Ly,Lz,algorithm,On=param
     mcslave=mc.MC(ID,LMatrix,pos=pos,S=S,D=DList,bondList=bondList,T=T,Lx=Lx,Ly=Ly,Lz=Lz,h=0.1)
-    mData, eData=mcslave.mainLoopViaCLib_On(nsweep=nsweep,nthermal=nthermal,ninterval=ninterval,algo=algorithm,On=On)
-    mData=abs(mData)/Lx/Ly/Lz
+    spin_i, spin_j, spin_ij, E, E2=mcslave.mainLoopViaCLib_On(nsweep=nsweep,nthermal=nthermal,ninterval=ninterval,algo=algorithm,On=On)
+    #mData=abs(mData)/Lx/Ly/Lz
     #eData/=(Lx*Ly*Lz)
-    return ID, T, mData, eData, mcslave.totOrbs
+    return ID, T, spin_i, spin_j, spin_ij, E, E2, mcslave.totOrbs
 
 def startSimulaton():
     time0=time.time()
@@ -60,13 +61,13 @@ def startSimulaton():
                     break
             pool=Pool(processes=io.ncores)
             for result in pool.imap_unordered(startMC,paramPack_tmp):
-                ID, T, mData, eData, N=result
+                ID, T, spin_i, spin_j, spin_ij, E, E2, N=result
                 TResult.append(T)
-                magResult.append(np.mean(mData))
-                susResult.append(np.std(mData)**2/T*N)
-                energyResult.append(np.mean(eData))
-                capaResult.append(np.std(eData)**2/T**2)
-                u4Result.append(np.mean(mData*mData)**2/np.mean(mData**4))
+                magResult.append(spin_i)
+                susResult.append((spin_ij-spin_i*spin_j)/T)
+                energyResult.append(E)
+                capaResult.append((E2-E*E)/T**2)
+                u4Result.append(0.)
             pool.close()
         gui.updateResultViewer(TList=TResult, magList=magResult, susList=capaResult)
     # continuous model settings
@@ -95,13 +96,13 @@ def startSimulaton():
                     break
             pool=Pool(processes=io.ncores)
             for result in pool.imap_unordered(startMCForOn,paramPack_tmp):
-                ID, T, mData, eData, N =result
+                ID, T, spin_i, spin_j, spin_ij, E, E2, N =result
                 TResult.append(T)
-                magResult.append(np.mean(mData))
-                susResult.append(np.std(mData)**2/T*N)
-                energyResult.append(np.mean(eData))
-                capaResult.append(np.std(eData)**2/T**2)
-                u4Result.append(np.mean(mData*mData)**2/np.mean(mData**4))
+                magResult.append(np.sqrt(sum(spin_i*spin_i)))
+                susResult.append((spin_ij-np.dot(spin_i,spin_j))/T)
+                energyResult.append(E)
+                capaResult.append((E2-E*E)/T**2)
+                u4Result.append(0.)
             pool.close()
         gui.updateResultViewer(TList=TResult, magList=magResult, susList=capaResult)
     else:

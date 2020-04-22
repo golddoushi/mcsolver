@@ -83,14 +83,17 @@ class MC:
             cMC=mylib.blockUpdateMC
             cMC.restype=py_object
             data=cMC(self.totOrbs, initSpin, nthermal, nsweep, maxNLinking, nlinking, linkStrength, linkData, ninterval, nLat, corrOrbitalPair, h)
-            print(np.mean(np.abs(data[0]))/self.totOrbs,np.mean(data[1])/self.totOrbs)
-            return data[0], np.array(data[1]), np.array(data[2])
+            #print(np.mean(np.abs(data[0]))/self.totOrbs,np.mean(data[1])/self.totOrbs)
+            spin_i, spin_j, spin_ij, E, E2 = data
+            print("<Si>=%.3f, <Sj>=%.3f, <SiSj>=%.3f, <E>=%.3f, <E2>=%.3f"%(spin_i, spin_j, spin_ij, E, E2))
+            return data
         elif algo=='Metroplis':
             cMC=mylib.localUpdateMC
             cMC.restype=py_object
             data=cMC(self.totOrbs, initSpin, nthermal, nsweep, maxNLinking, nlinking, linkStrength, linkData, ninterval, nLat, corrOrbitalPair, h)
-            print(np.mean(np.abs(data[0]))/self.totOrbs,np.mean(data[1])/self.totOrbs)
-            return data[0], np.array(data[1]), np.array(data[2])
+            spin_i, spin_j, spin_ij, E, E2 = data
+            print("<Si>=%.3f, <Sj>=%.3f, <SiSj>=%.3f, <E>=%.3f, <E2>=%.3f"%(spin_i, spin_j, spin_ij, E, E2))
+            return data
 
     def mainLoopViaCLib_On(self,nsweep=1000,nthermal=5000,ninterval=-1,algo='Metroplis',On=3,flunc=0.0,h=0.,binGraph=False):
         self.nsweep=nsweep
@@ -143,6 +146,14 @@ class MC:
                     cnt+=1
         
         maxNLinking_=c_int(maxNLinking)
+
+        # correlated info.
+        nLat=len(self.correlatedOrbitalPair)
+        corrOrbitalPair=(c_int*(nLat*2))()
+        for ipair,pair in enumerate(self.correlatedOrbitalPair):
+            corrOrbitalPair[ipair*2]=pair[0]
+            corrOrbitalPair[ipair*2+1]=pair[1]
+        
         flunc_=c_float(flunc)
         if On==2:
             mylib=CDLL("./xylib.so")
@@ -156,9 +167,13 @@ class MC:
             #print('Wolff')
             cMC=mylib.blockUpdateMC
             cMC.restype=py_object
-            xspin, yspin, zspin, energy = cMC(self.totOrbs, initSpin, initD, nthermal, nsweep, maxNLinking_, nlinking, linkStrength, linkData, ninterval, flunc_, h)
+            data = cMC(self.totOrbs, initSpin, initD, nthermal, nsweep, maxNLinking_, nlinking, linkStrength, linkData, ninterval, nLat, corrOrbitalPair, flunc_, h)
             #spin, energy = data[0], data[1], data[2], data[3]
-            spin=np.sqrt(np.array(xspin)**2+np.array(yspin)**2+np.array(zspin)**2)
+            spin_i_x, spin_i_y, spin_i_z, spin_j_x, spin_j_y, spin_j_z, spin_ij, E, E2=data
+            spin_i=np.array([spin_i_x, spin_i_y, spin_i_z])
+            spin_j=np.array([spin_j_x, spin_j_y, spin_j_z])
+            print('<i><j>=%.3f <ij>=%.3f <E>=%.3f <E2>=%.3f'%(np.dot(spin_i,spin_j),spin_ij,E,E2))
+            '''
             if binGraph:
                 data=np.zeros((200,200))
                 S=abs(orb.spin)
@@ -167,13 +182,18 @@ class MC:
                 import matplotlib.pyplot as plt
                 plt.imshow(data)
                 plt.show()
-            print('<x> %.3f <y> %.3f <z> %.3f <tot> %.3f <energy> %.3f'%(np.mean(xspin)/self.totOrbs,np.mean(yspin)/self.totOrbs,np.mean(zspin)/self.totOrbs,np.mean(spin)/self.totOrbs,np.mean(energy)/self.totOrbs))
-            return spin, np.array(energy)
+            #print('<x> %.3f <y> %.3f <z> %.3f <tot> %.3f <energy> %.3f'%(np.mean(xspin)/self.totOrbs,np.mean(yspin)/self.totOrbs,np.mean(zspin)/self.totOrbs,np.mean(spin)/self.totOrbs,np.mean(energy)/self.totOrbs))
+            '''
+            return spin_i, spin_j, spin_ij, E, E2
         elif algo=='Metroplis':
             cMC=mylib.localUpdateMC
             cMC.restype=py_object
-            xspin, yspin, zspin, energy = cMC(self.totOrbs, initSpin, initD, nthermal, nsweep, maxNLinking_, nlinking, linkStrength, linkData, ninterval, flunc_, h)
-            spin = np.sqrt(np.array(xspin)**2+np.array(yspin)**2+np.array(zspin)**2)
+            data = cMC(self.totOrbs, initSpin, initD, nthermal, nsweep, maxNLinking_, nlinking, linkStrength, linkData, ninterval, nLat, corrOrbitalPair, flunc_, h)
+            spin_i_x, spin_i_y, spin_i_z, spin_j_x, spin_j_y, spin_j_z, spin_ij, E, E2=data
+            spin_i=np.array([spin_i_x, spin_i_y, spin_i_z])
+            spin_j=np.array([spin_j_x, spin_j_y, spin_j_z])
+            print('<i><j>=%.3f <ij>=%.3f <E>=%.3f <E2>=%.3f'%(np.dot(spin_i,spin_j),spin_ij,E,E2))
+            '''
             if binGraph:
                 data=np.zeros((200,200))
                 S=abs(orb.spin)
@@ -183,7 +203,8 @@ class MC:
                 plt.imshow(data)
                 plt.show()
             print('<x> %.3f <y> %.3f <z> %.3f <tot> %.3f <energy> %.3f'%(np.mean(np.abs(xspin))/self.totOrbs,np.mean(np.abs(yspin))/self.totOrbs,np.mean(np.abs(zspin))/self.totOrbs,np.mean(np.abs(spin))/self.totOrbs,np.mean(energy)/self.totOrbs))
-            return spin, np.array(energy)
+            '''
+            return spin_i, spin_j, spin_ij, E, E2
         
     def mainLoop(self,nsweep=10000,nthermal=5000):
         self.nsweep=nsweep

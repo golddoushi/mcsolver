@@ -170,24 +170,52 @@ PyObject * blockUpdateMC(int totOrbs, float initSpin[totOrbs], int nthermal, int
     //printf("thermalization finished\n");
 
     // printf("start sweeping\n");
-    PyObject *spinData, *energyData, *corrData;
-    spinData=PyTuple_New(nsweep);
-    energyData=PyTuple_New(nsweep);
-    corrData=PyTuple_New(nsweep);
+    //PyObject *spinData, *energyData, *corrData;
+    //spinData=PyTuple_New(nsweep);
+    //energyData=PyTuple_New(nsweep);
+    //corrData=PyTuple_New(nsweep);
+
+    float spin_i=0;
+    float spin_j=0;
+    float spin_ij=0;
+    float totEnergy=0;
+    float E2=0;
     for(int i=0;i<nsweep;i++){
+        // spin statistics over space in each frame
+        float spin_i_avg=0;
+        float spin_j_avg=0;
         float corrAvg=0.0;
-        for(int j=0;j<nLat;j++) corrAvg+=lattice[corrOrbPair[j][0]].spin*lattice[corrOrbPair[j][1]].spin;
+        for(int j=0;j<nLat;j++){
+            float si_tmp=lattice[corrOrbPair[j][0]].spin;
+            float sj_tmp=lattice[corrOrbPair[j][1]].spin;
+            spin_i_avg+=si_tmp;
+            spin_j_avg+=sj_tmp;
+            corrAvg+=si_tmp*sj_tmp;
+        }
+
+        spin_i+=fabs(spin_i_avg)/nLat;
+        spin_j+=fabs(spin_j_avg)/nLat;
+        spin_ij+=corrAvg/nLat;
+
+        // energy stored in each frame
+        float e_avg=*p_energy/nLat;
+        totEnergy+=e_avg;
+        E2+=e_avg*e_avg;
+
         //blockUpdate(totOrbs, lattice, p_energy, p_totSpin);
         for(int j=0;j<ninterval;j++) blockUpdate(totOrbs, lattice, p_energy, p_totSpin);
-        PyTuple_SetItem(spinData, i, PyFloat_FromDouble(*p_totSpin));
-        PyTuple_SetItem(energyData, i, PyFloat_FromDouble(*p_energy));
-        PyTuple_SetItem(corrData, i, PyFloat_FromDouble(corrAvg/nLat));
+        //PyTuple_SetItem(spinData, i, PyFloat_FromDouble(*p_totSpin));
+        //PyTuple_SetItem(energyData, i, PyFloat_FromDouble(*p_energy));
+        //PyTuple_SetItem(corrData, i, PyFloat_FromDouble(corrAvg/nLat));
     }
+
     PyObject *Data;
-    Data=PyTuple_New(3);
-    PyTuple_SetItem(Data, 0, spinData);
-    PyTuple_SetItem(Data, 1, energyData);
-    PyTuple_SetItem(Data, 2, corrData);
+    Data=PyTuple_New(5);
+    PyTuple_SetItem(Data, 0, PyFloat_FromDouble(spin_i/nsweep));
+    PyTuple_SetItem(Data, 1, PyFloat_FromDouble(spin_j/nsweep));
+    PyTuple_SetItem(Data, 2, PyFloat_FromDouble(spin_ij/nsweep));
+    PyTuple_SetItem(Data, 3, PyFloat_FromDouble(totEnergy/nsweep));
+    PyTuple_SetItem(Data, 4, PyFloat_FromDouble(E2/nsweep));
     return Data;
 }
 
@@ -206,24 +234,50 @@ PyObject * localUpdateMC(int totOrbs, float initSpin[totOrbs], int nthermal, int
     
     for(int i=0;i<nthermal*ninterval;i++) localUpdate(totOrbs, lattice, p_energy, p_totSpin, h); //thermalization
 
-    PyObject *spinData, *energyData, *corrData;
-    spinData=PyTuple_New(nsweep);
-    energyData=PyTuple_New(nsweep);
-    corrData=PyTuple_New(nsweep);
+    //PyObject *spinData, *energyData, *corrData;
+    //spinData=PyTuple_New(nsweep);
+    //energyData=PyTuple_New(nsweep);
+    //corrData=PyTuple_New(nsweep);
+
+    float spin_i=0;
+    float spin_j=0;
+    float spin_ij=0;
+    float totEnergy=0;
+    float E2=0;
     for(int i=0;i<nsweep;i++){
+        // spin statistics over space in each frame
+        float spin_i_avg=0;
+        float spin_j_avg=0;
         float corrAvg=0.0;
-        for(int j=0;j<nLat;j++) corrAvg+=lattice[corrOrbPair[j][0]].spin*lattice[corrOrbPair[j][1]].spin;
+        for(int j=0;j<nLat;j++){
+            float si_tmp=lattice[corrOrbPair[j][0]].spin;
+            float sj_tmp=lattice[corrOrbPair[j][1]].spin;
+            spin_i_avg+=si_tmp;
+            spin_j_avg+=sj_tmp;
+            corrAvg+=si_tmp*sj_tmp;
+        }
+        spin_i+=fabs(spin_i_avg)/nLat;
+        spin_j+=fabs(spin_j_avg)/nLat;
+        spin_ij+=corrAvg/nLat;
+
+        // energy stored in each frame
+        float e_avg=*p_energy/nLat;
+        totEnergy+=e_avg;
+        E2+=e_avg*e_avg;
+
         for(int j=0;j<ninterval;j++) localUpdate(totOrbs, lattice, p_energy, p_totSpin, h);
         
-        PyTuple_SetItem(spinData, i, PyFloat_FromDouble(*p_totSpin/ninterval));
-        PyTuple_SetItem(energyData, i, PyFloat_FromDouble(*p_energy/ninterval));
-        PyTuple_SetItem(corrData, i, PyFloat_FromDouble(corrAvg/nLat));
+        //PyTuple_SetItem(spinData, i, PyFloat_FromDouble(*p_totSpin/ninterval));
+        //PyTuple_SetItem(energyData, i, PyFloat_FromDouble(*p_energy/ninterval));
+        //PyTuple_SetItem(corrData, i, PyFloat_FromDouble(corrAvg/nLat));
     }
     
     PyObject *Data;
-    Data=PyTuple_New(3);
-    PyTuple_SetItem(Data, 0, spinData);
-    PyTuple_SetItem(Data, 1, energyData);
-    PyTuple_SetItem(Data, 2, corrData);
+    Data=PyTuple_New(5);
+    PyTuple_SetItem(Data, 0, PyFloat_FromDouble(spin_i/nsweep));
+    PyTuple_SetItem(Data, 1, PyFloat_FromDouble(spin_j/nsweep));
+    PyTuple_SetItem(Data, 2, PyFloat_FromDouble(spin_ij/nsweep));
+    PyTuple_SetItem(Data, 3, PyFloat_FromDouble(totEnergy/nsweep));
+    PyTuple_SetItem(Data, 4, PyFloat_FromDouble(E2/nsweep));
     return Data;
 }
