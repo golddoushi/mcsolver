@@ -1,4 +1,4 @@
-from ctypes import c_float, c_int, CDLL, py_object
+from ctypes import c_double, c_int, CDLL, py_object, c_double
 from random import random, randint
 import Lattice as lat
 import numpy as np
@@ -35,29 +35,29 @@ class MC:
         ninterval=self.totOrbs if ninterval<=0 else ninterval
 
         # initial spin
-        initSpin=(c_float*self.totOrbs)()
+        initSpin=(c_double*self.totOrbs)()
         nlinking=(c_int*self.totOrbs)()
         nlinking_list=[]
         for iorb, orb in enumerate(self.lattice):
-            initSpin[iorb]=c_float(orb.spin)
+            initSpin[iorb]=c_double(orb.spin)
             nlinking[iorb]=c_int(len(orb.linkedOrb))
             nlinking_list.append(len(orb.linkedOrb))
         
         # link strength
         maxNLinking=np.max(nlinking_list)
         #nlinking=len(orb.linkedOrb)
-        linkStrength=(c_float*(self.totOrbs*maxNLinking))()
+        linkStrength=(c_double*(self.totOrbs*maxNLinking))()
         cnt=0
         for iorb, orb in enumerate(self.lattice):
             for ilinking in range(maxNLinking):
                 if ilinking>=nlinking_list[iorb]:
-                    linkStrength[cnt]=c_float(0.)
+                    linkStrength[cnt]=c_double(0.)
                     cnt+=1
                 else:
-                    linkStrength[cnt]=c_float(orb.linkStrength[ilinking])
+                    linkStrength[cnt]=c_double(orb.linkStrength[ilinking])
                     cnt+=1
         #for istrength, strength in enumerate(orb.linkStrength):
-        #    linkStrength[istrength]=c_float(strength)
+        #    linkStrength[istrength]=c_double(strength)
 
         # linking info.
         linkData=(c_int*(self.totOrbs*maxNLinking))()
@@ -69,7 +69,7 @@ class MC:
         maxNLinking=c_int(maxNLinking)
         
         # field info.
-        h=c_float(self.h)
+        h=c_double(self.h)
 
         # correlated info.
         nLat=len(self.correlatedOrbitalPair)
@@ -101,39 +101,39 @@ class MC:
         ninterval=self.totOrbs if ninterval<=0 else ninterval
 
         # initial spin, single ion anisotropy and number of linking
-        initSpin=(c_float*self.totOrbs)()
-        initD=(c_float*(3*self.totOrbs))()
+        initSpin=(c_double*self.totOrbs)()
+        initD=(c_double*(3*self.totOrbs))()
         nlinking=(c_int*self.totOrbs)()
         nlinking_list=[]
         for iorb, orb in enumerate(self.lattice):
             #print(orb.spin)
-            initSpin[iorb]=c_float(orb.spin)
-            initD[iorb*3]=c_float(orb.D[0])
-            initD[iorb*3+1]=c_float(orb.D[1])
-            initD[iorb*3+2]=c_float(orb.D[2])
+            initSpin[iorb]=c_double(orb.spin)
+            initD[iorb*3]=c_double(orb.D[0])
+            initD[iorb*3+1]=c_double(orb.D[1])
+            initD[iorb*3+2]=c_double(orb.D[2])
 
             nlinking[iorb]=c_int(len(orb.linkedOrb))
             nlinking_list.append(len(orb.linkedOrb))
         
         # link strength
         maxNLinking=np.max(nlinking_list)
-        linkStrength=(c_float*(self.totOrbs*maxNLinking*3))() # thus the nlinking of every orbs are the same
+        linkStrength=(c_double*(self.totOrbs*maxNLinking*3))() # thus the nlinking of every orbs are the same
         cnt=0
         for iorb, orb in enumerate(self.lattice):
             for ilinking in range(maxNLinking):
                 if ilinking>=nlinking_list[iorb]:
                     for i in range(3):
-                        linkStrength[cnt]=c_float(0.)
+                        linkStrength[cnt]=c_double(0.)
                         cnt+=1
                 else:
                     for i in range(3):
-                        linkStrength[cnt]=c_float(orb.linkStrength[ilinking][i])
+                        linkStrength[cnt]=c_double(orb.linkStrength[ilinking][i])
                         cnt+=1
 
         # linking info.
         linkData=(c_int*(self.totOrbs*maxNLinking))()
         # field
-        h=c_float(self.h)
+        h=c_double(self.h)
 
         cnt=0
         for iorb, orb in enumerate(self.lattice):
@@ -154,7 +154,7 @@ class MC:
             corrOrbitalPair[ipair*2]=pair[0]
             corrOrbitalPair[ipair*2+1]=pair[1]
         
-        flunc_=c_float(flunc)
+        flunc_=c_double(flunc)
         if On==2:
             mylib=CDLL("./xylib.so")
         elif On==3:

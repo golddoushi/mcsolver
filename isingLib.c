@@ -6,14 +6,14 @@
 typedef struct Orb
 {
     int id;
-    float spin;
+    double spin;
     int nlink;
-    float *linkStrength;
+    double *linkStrength;
     int inBlock;
     struct Orb **linkedOrb;
 }Orb;
 
-void establishLattice(Orb *lattice, int totOrbs, float initSpin[totOrbs], int maxNLinking, int nlink[maxNLinking], float linkStrength[totOrbs][maxNLinking]){
+void establishLattice(Orb *lattice, int totOrbs, double initSpin[totOrbs], int maxNLinking, int nlink[maxNLinking], double linkStrength[totOrbs][maxNLinking]){
     for(int i=0;i<totOrbs;i++){
         lattice[i].id=i;
         lattice[i].spin=initSpin[i];
@@ -31,19 +31,19 @@ void establishLinking(Orb *lattice, int totOrbs, int maxNLinking, int nlink[maxN
     }
 }
 
-void establishLatticeWithGhost(Orb *lattice, int totOrbs, float initSpin[totOrbs], int maxNLinking, int nlink[maxNLinking], float linkStrength[totOrbs][maxNLinking], float h){
+void establishLatticeWithGhost(Orb *lattice, int totOrbs, double initSpin[totOrbs], int maxNLinking, int nlink[maxNLinking], double linkStrength[totOrbs][maxNLinking], double h){
     for(int i=0;i<totOrbs-1;i++){
         lattice[i].id=i;
         lattice[i].spin=initSpin[i];
         lattice[i].nlink=nlink[i]+1;
-        lattice[i].linkStrength=(float*)malloc(lattice[i].nlink*sizeof(float));
+        lattice[i].linkStrength=(double*)malloc(lattice[i].nlink*sizeof(double));
         for(int j=0;j<lattice[i].nlink-1;j++)lattice[i].linkStrength[j]=linkStrength[i][j];
         lattice[i].linkStrength[lattice[i].nlink-1]=1;
     }
     lattice[totOrbs-1].id=totOrbs-1;
     lattice[totOrbs-1].spin=h;
     lattice[totOrbs-1].nlink=totOrbs-1;
-    lattice[totOrbs-1].linkStrength=(float*)malloc((totOrbs-1)*sizeof(float));
+    lattice[totOrbs-1].linkStrength=(double*)malloc((totOrbs-1)*sizeof(double));
     for(int i=0;i<totOrbs-1;i++) lattice[totOrbs-1].linkStrength[i]=1;
 }
 
@@ -59,8 +59,8 @@ void establishLinkingWithGhost(Orb *lattice, int totOrbs, int maxNLinking, int n
     for(int i=0;i<totOrbs-1;i++) lattice[totOrbs-1].linkedOrb[i]=lattice+i;
 }
 
-float getCorrEnergy(Orb *source){
-    float corr=0;
+double getCorrEnergy(Orb *source){
+    double corr=0;
     for(int i=0;i<source->nlink;i++){
         corr+=(source->linkStrength[i])*(source->spin)*(source->linkedOrb[i]->spin);
     }
@@ -85,7 +85,7 @@ int expandBlock(int*beginIndex, int*endIndex, Orb *buffer[], int*blockLen, Orb *
         Orb *linkedOrb=outOrb->linkedOrb[i];
         //printf("      considering the %d orb which is linking to %d orb, it is %d in block \n", linkedOrb->id, outOrb->id, linkedOrb->inBlock);
         if(linkedOrb->inBlock==0){
-            float corr=(outOrb->linkStrength[i])*(outOrb->spin)*(linkedOrb->spin); // bond strength
+            double corr=(outOrb->linkStrength[i])*(outOrb->spin)*(linkedOrb->spin); // bond strength
             //printf("          since it is not in block thus we calc. the correlation energy is %f\n",corr);
             if(corr<0 && (1-exp(2*corr))>rand()/32767.0){
                 //printf("          -->>fortunately it is added to block, Padd=%f\n",(1-exp(2*corr)));
@@ -104,7 +104,7 @@ int expandBlock(int*beginIndex, int*endIndex, Orb *buffer[], int*blockLen, Orb *
     return 1;
 }
 
-void blockUpdate(int totOrbs, Orb lattice[], float*p_energy, float*p_totSpin){
+void blockUpdate(int totOrbs, Orb lattice[], double*p_energy, double*p_totSpin){
     //printf("one block update step is initializaing...\n");
     Orb *block[totOrbs];
     Orb *buffer[totOrbs];
@@ -132,9 +132,9 @@ void blockUpdate(int totOrbs, Orb lattice[], float*p_energy, float*p_totSpin){
     *p_energy/=2;
 }
 
-void localUpdate(int totOrbs, Orb lattice[], float *p_energy, float *p_totSpin, float h){
+void localUpdate(int totOrbs, Orb lattice[], double *p_energy, double *p_totSpin, double h){
     int seedID=rand()%totOrbs;
-    float corr=2*(getCorrEnergy(lattice+seedID)-h*lattice[seedID].spin);
+    double corr=2*(getCorrEnergy(lattice+seedID)-h*lattice[seedID].spin);
 
     if(corr>=0){
         lattice[seedID].spin*=-1;
@@ -147,9 +147,9 @@ void localUpdate(int totOrbs, Orb lattice[], float *p_energy, float *p_totSpin, 
     }
 }
  
-PyObject * blockUpdateMC(int totOrbs, float initSpin[totOrbs], int nthermal, int nsweep, 
-                   int maxNLinking, int nlink[totOrbs], float linkStrength[totOrbs][maxNLinking], int linkedOrb[totOrbs][maxNLinking],
-                   int ninterval, int nLat, int corrOrbPair[nLat][2], float h){
+PyObject * blockUpdateMC(int totOrbs, double initSpin[totOrbs], int nthermal, int nsweep, 
+                   int maxNLinking, int nlink[totOrbs], double linkStrength[totOrbs][maxNLinking], int linkedOrb[totOrbs][maxNLinking],
+                   int ninterval, int nLat, int corrOrbPair[nLat][2], double h){
     //printf("hello block algorithm!\n");
     // initialize lattice including one ghost spin
     totOrbs+=1;
@@ -158,8 +158,8 @@ PyObject * blockUpdateMC(int totOrbs, float initSpin[totOrbs], int nthermal, int
     establishLinkingWithGhost(lattice, totOrbs, maxNLinking, nlink, linkedOrb);
 
     // initialize measurement
-    float energy=0, totSpin=0;
-    float *p_energy=&energy, *p_totSpin=&totSpin;
+    double energy=0, totSpin=0;
+    double *p_energy=&energy, *p_totSpin=&totSpin;
     for(int i=0;i<totOrbs-1;i++) totSpin+=initSpin[i];
     
     // initialize block
@@ -175,19 +175,19 @@ PyObject * blockUpdateMC(int totOrbs, float initSpin[totOrbs], int nthermal, int
     //energyData=PyTuple_New(nsweep);
     //corrData=PyTuple_New(nsweep);
 
-    float spin_i=0;
-    float spin_j=0;
-    float spin_ij=0;
-    float totEnergy=0;
-    float E2=0;
+    double spin_i=0;
+    double spin_j=0;
+    double spin_ij=0;
+    double totEnergy=0;
+    double E2=0;
     for(int i=0;i<nsweep;i++){
         // spin statistics over space in each frame
-        float spin_i_avg=0;
-        float spin_j_avg=0;
-        float corrAvg=0.0;
+        double spin_i_avg=0;
+        double spin_j_avg=0;
+        double corrAvg=0.0;
         for(int j=0;j<nLat;j++){
-            float si_tmp=lattice[corrOrbPair[j][0]].spin;
-            float sj_tmp=lattice[corrOrbPair[j][1]].spin;
+            double si_tmp=lattice[corrOrbPair[j][0]].spin;
+            double sj_tmp=lattice[corrOrbPair[j][1]].spin;
             spin_i_avg+=si_tmp;
             spin_j_avg+=sj_tmp;
             corrAvg+=si_tmp*sj_tmp;
@@ -198,7 +198,7 @@ PyObject * blockUpdateMC(int totOrbs, float initSpin[totOrbs], int nthermal, int
         spin_ij+=corrAvg/nLat;
 
         // energy stored in each frame
-        float e_avg=*p_energy/nLat;
+        double e_avg=*p_energy/nLat;
         totEnergy+=e_avg;
         E2+=e_avg*e_avg;
 
@@ -219,17 +219,17 @@ PyObject * blockUpdateMC(int totOrbs, float initSpin[totOrbs], int nthermal, int
     return Data;
 }
 
-PyObject * localUpdateMC(int totOrbs, float initSpin[totOrbs], int nthermal, int nsweep, 
-                   int maxNLinking, int nlink[totOrbs], float linkStrength[totOrbs][maxNLinking], int linkedOrb[totOrbs][maxNLinking],
-                   int ninterval, int nLat, int corrOrbPair[nLat][2], float h){
+PyObject * localUpdateMC(int totOrbs, double initSpin[totOrbs], int nthermal, int nsweep, 
+                   int maxNLinking, int nlink[totOrbs], double linkStrength[totOrbs][maxNLinking], int linkedOrb[totOrbs][maxNLinking],
+                   int ninterval, int nLat, int corrOrbPair[nLat][2], double h){
     // initialize lattice
     Orb lattice[totOrbs];
     establishLattice(lattice, totOrbs, initSpin, maxNLinking, nlink, linkStrength);
     establishLinking(lattice, totOrbs, maxNLinking, nlink, linkedOrb);
 
     // initialize measurement
-    float energy=0, totSpin=0;
-    float *p_energy=&energy, *p_totSpin=&totSpin;
+    double energy=0, totSpin=0;
+    double *p_energy=&energy, *p_totSpin=&totSpin;
     for(int i=0;i<ninterval;i++) totSpin+=initSpin[i];
     
     for(int i=0;i<nthermal*ninterval;i++) localUpdate(totOrbs, lattice, p_energy, p_totSpin, h); //thermalization
@@ -239,19 +239,19 @@ PyObject * localUpdateMC(int totOrbs, float initSpin[totOrbs], int nthermal, int
     //energyData=PyTuple_New(nsweep);
     //corrData=PyTuple_New(nsweep);
 
-    float spin_i=0;
-    float spin_j=0;
-    float spin_ij=0;
-    float totEnergy=0;
-    float E2=0;
+    double spin_i=0;
+    double spin_j=0;
+    double spin_ij=0;
+    double totEnergy=0;
+    double E2=0;
     for(int i=0;i<nsweep;i++){
         // spin statistics over space in each frame
-        float spin_i_avg=0;
-        float spin_j_avg=0;
-        float corrAvg=0.0;
+        double spin_i_avg=0;
+        double spin_j_avg=0;
+        double corrAvg=0.0;
         for(int j=0;j<nLat;j++){
-            float si_tmp=lattice[corrOrbPair[j][0]].spin;
-            float sj_tmp=lattice[corrOrbPair[j][1]].spin;
+            double si_tmp=lattice[corrOrbPair[j][0]].spin;
+            double sj_tmp=lattice[corrOrbPair[j][1]].spin;
             spin_i_avg+=si_tmp;
             spin_j_avg+=sj_tmp;
             corrAvg+=si_tmp*sj_tmp;
@@ -261,7 +261,7 @@ PyObject * localUpdateMC(int totOrbs, float initSpin[totOrbs], int nthermal, int
         spin_ij+=corrAvg/nLat;
 
         // energy stored in each frame
-        float e_avg=*p_energy/nLat;
+        double e_avg=*p_energy/nLat;
         totEnergy+=e_avg;
         E2+=e_avg*e_avg;
 

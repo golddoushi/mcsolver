@@ -6,11 +6,11 @@
 typedef struct Vec
 {
     int dimension;
-    float x,y;
+    double x,y;
 }Vec;
 // vec1=abs(vec1)
 void normalize(Vec *vec1){
-    float len=sqrt(vec1->x*vec1->x+vec1->y*vec1->y);
+    double len=sqrt(vec1->x*vec1->x+vec1->y*vec1->y);
     if (len<1e-5) return;
     vec1->x/=len;
     vec1->y/=len;
@@ -21,7 +21,7 @@ void equal(Vec *vec1, Vec vec2){
     vec1->y=vec2.y;
 }
 // vec1*=c
-void cTimes(Vec *vec1, float c){
+void cTimes(Vec *vec1, double c){
     vec1->x*=c;
     vec1->y*=c;
 }
@@ -31,7 +31,7 @@ void vabs(Vec *vec1){
     vec1->y=fabs(vec1->y);
 }
 // vec1/=c
-void cDivides(Vec *vec1, float c){
+void cDivides(Vec *vec1, double c){
     vec1->x/=c;
     vec1->y/=c;
 }
@@ -46,11 +46,11 @@ void minusEqual(Vec *vec1, Vec vec2){
     vec1->y-=vec2.y;
 }
 // vec1 dot vec2
-float dot(Vec vec1, Vec vec2){
+double dot(Vec vec1, Vec vec2){
     return vec1.x*vec2.x+vec1.y*vec2.y;
 }
 
-float diagonalDot(Vec vec1, Vec vec2, Vec vec3){
+double diagonalDot(Vec vec1, Vec vec2, Vec vec3){
     return vec1.x*vec2.x*vec3.x+
            vec1.y*vec2.y*vec3.y;
 }
@@ -58,13 +58,13 @@ Vec *generateRandomVec(){
     Vec *direction=(Vec*)malloc(sizeof(Vec));
     direction->x=rand()/32767.0-0.5;
     direction->y=rand()/32767.0-0.5;
-    float len2=dot(*direction, *direction);
+    double len2=dot(*direction, *direction);
     if (len2>0.5)
     {
         return generateRandomVec();
     }else
     {
-        float len=sqrt(len2);
+        double len=sqrt(len2);
         direction->x/=len;
         direction->y/=len;
         return direction;
@@ -82,20 +82,20 @@ typedef struct Orb
     struct Orb **linkedOrb;
     Vec onsiteAnisotropy;
 
-    float d_onsiteEnergy;
-    float sDotN;
+    double d_onsiteEnergy;
+    double sDotN;
     int isProjected;
     
 }Orb;
 
 //establishLattice(lattice, totOrbs, initSpin, maxNLinking, nlink, linkStrength);
-void establishLattice(Orb *lattice, int totOrbs, float initSpin[totOrbs], float initD[totOrbs][3], float flunc, int maxNLinking, int nlink[totOrbs], float linkStrength[totOrbs][maxNLinking][3], float h){
+void establishLattice(Orb *lattice, int totOrbs, double initSpin[totOrbs], double initD[totOrbs][3], double flunc, int maxNLinking, int nlink[totOrbs], double linkStrength[totOrbs][maxNLinking][3], double h){
     //printf("establishing whole lattice with %d orbs and %d linkings for each orb\n",totOrbs,maxNLinking);
     int i;
     for(i=0;i<totOrbs;i++){
         //printf("check point-1, entering setting %d",i);
         lattice[i].id=i;
-        //lattice[i].spin.coor=(float*)malloc(3*sizeof(float));  // allocate spin vector for each orb
+        //lattice[i].spin.coor=(double*)malloc(3*sizeof(double));  // allocate spin vector for each orb
         lattice[i].spin.x=initSpin[i];
         lattice[i].spin.y=0;
 
@@ -117,7 +117,7 @@ void establishLattice(Orb *lattice, int totOrbs, float initSpin[totOrbs], float 
         //printf("check point 2, total links:%d\n",nlink[i]);
         int j;
         for(j=0;j<nlink[i];j++){
-            //lattice[i].linkStrength[j].coor=(float*)malloc(3*sizeof(float));
+            //lattice[i].linkStrength[j].coor=(double*)malloc(3*sizeof(double));
             //printf("check point 3\n");
             lattice[i].linkStrength[j].x=linkStrength[i][j][0];
             lattice[i].linkStrength[j].y=linkStrength[i][j][1];
@@ -156,25 +156,25 @@ void establishLinking(Orb *lattice, int totOrbs, int maxNLinking, int nlink[totO
     //printf("bonds successfully built\n");
 }
 
-float getCorrEnergy(Orb *source){
-    float corr=0;
+double getCorrEnergy(Orb *source){
+    double corr=0;
     for(int i=0;i<source->nlink;i++){
         corr+=diagonalDot(source->linkStrength[i],source->spin,source->linkedOrb[i]->spin);
     }
     return corr;
 }
 
-float getDeltaCorrEnergy(Orb *source){
-    float corr=0;
+double getDeltaCorrEnergy(Orb *source){
+    double corr=0;
     for(int i=0;i<source->nlink;i++){
         corr+=diagonalDot(source->linkStrength[i],source->transSpin,source->linkedOrb[i]->spin);
     }
     return corr;
 }
 
-float getDeltaOnsiteEnergy(Orb *source){
-    float s1x=source->spin.x+source->transSpin.x;
-    float s1y=source->spin.y+source->transSpin.y;
+double getDeltaOnsiteEnergy(Orb *source){
+    double s1x=source->spin.x+source->transSpin.x;
+    double s1y=source->spin.y+source->transSpin.y;
     return source->onsiteAnisotropy.x*(s1x*s1x-source->spin.x*source->spin.x)+
            source->onsiteAnisotropy.y*(s1y*s1y-source->spin.y*source->spin.y);
 }
@@ -203,14 +203,14 @@ int expandBlock(int*beginIndex, int*endIndex, Orb *buffer[], int*blockLen, Orb *
     //printf("it has %d neighbor orbs\n",outOrb->nlink);
     int i;
     for(i=0;i<outOrb->nlink;i++){
-        //float effectiveJ=diagonalDot(outOrb->linkStrength[i], refDirection, refDirection);
+        //double effectiveJ=diagonalDot(outOrb->linkStrength[i], refDirection, refDirection);
         //printf("the %d linking has strength %.3f %.3f (original) %.3f (effective)\n",i,outOrb->linkStrength[i].x,outOrb->linkStrength[i].y,effectiveJ);
         Orb *linkedOrb=outOrb->linkedOrb[i];
         //printf("consider to add orb %d\n",linkedOrb->id);
         //printf("      considering the %d orb which is linking to %d orb, it is %d in block \n", linkedOrb->id, outOrb->id, linkedOrb->inBlock);
         if(linkedOrb->inBlock==0){
             //printf("projection along axis: %.3f\n", s2n);
-            //float corr=-s1n*diagonalDot(refDirection,outOrb->linkStrength[i],linkedOrb->spin); // bond strength
+            //double corr=-s1n*diagonalDot(refDirection,outOrb->linkStrength[i],linkedOrb->spin); // bond strength
             //printf("      spin of orb %d is %.3f %.3f %.3f and bond strength is %.3f\n",linkedOrb->id,linkedOrb->spin.coor[0],linkedOrb->spin.coor[1],linkedOrb->spin.coor[2],corr);
             if (linkedOrb->isProjected==0)
             {
@@ -219,7 +219,7 @@ int expandBlock(int*beginIndex, int*endIndex, Orb *buffer[], int*blockLen, Orb *
                 cTimes(&linkedOrb->transSpin, linkedOrb->sDotN);
                 linkedOrb->isProjected=1;
             }
-            float corr=outOrb->sDotN*linkedOrb->sDotN*diagonalDot(refDirection,refDirection,outOrb->linkStrength[i])/2;
+            double corr=outOrb->sDotN*linkedOrb->sDotN*diagonalDot(refDirection,refDirection,outOrb->linkStrength[i])/2;
             
             //linkedOrb->d_onsiteEnergy=getDeltaOnsiteEnergy(linkedOrb);
             if(corr<0 && (1-exp(corr))>rand()/32767.0){
@@ -237,7 +237,7 @@ int expandBlock(int*beginIndex, int*endIndex, Orb *buffer[], int*blockLen, Orb *
     return 1;
 }
 
-void blockUpdate(int totOrbs, Orb lattice[], float*p_energy, Vec *p_totSpin){
+void blockUpdate(int totOrbs, Orb lattice[], double*p_energy, Vec *p_totSpin){
     //printf("one block update step is initializaing...\n");
     Orb *block[totOrbs];
     Orb *buffer[totOrbs];
@@ -250,13 +250,13 @@ void blockUpdate(int totOrbs, Orb lattice[], float*p_energy, Vec *p_totSpin){
     int *p_beginIndex=&beginIndex, *p_endIndex=&endIndex, *p_blockLen=&blockLen;
 
     Vec *refDirection=generateRandomVec();
-    //refDirection.coor=(float*)malloc(3*sizeof(float));
+    //refDirection.coor=(double*)malloc(3*sizeof(double));
     //equal(&refDirection, &block[0]->spin);
     //normalize(&refDirection);
     //printf("-------------------\n");
     //printf("the seed Orb is %d\n",block[0]->id);
     //printf("trial normal direction %.3f %.3f\n",refDirection->x,refDirection->y);
-    //float effectiveJ=diagonalDot(block[0]->linkStrength[0], refDirection, refDirection);
+    //double effectiveJ=diagonalDot(block[0]->linkStrength[0], refDirection, refDirection);
     //printf("the 0 linking has strength %.3f %.3f %.3f (original) %.3f (effective)\n",block[0]->linkStrength[0].coor[0],block[0]->linkStrength[1].coor[1],block[0]->linkStrength[2].coor[2],effectiveJ);
     while (expandBlock(p_beginIndex, p_endIndex, buffer, p_blockLen, block, *refDirection)==1)
     {
@@ -264,7 +264,7 @@ void blockUpdate(int totOrbs, Orb lattice[], float*p_energy, Vec *p_totSpin){
     }
     
     //printf("    Block size is %d\n",*p_blockLen);
-    float tot_d_onsiteEnergy=0;
+    double tot_d_onsiteEnergy=0;
     for(i=0;i<*p_blockLen;i++){
         block[i]->isProjected=0;
         for (j = 0; j < block[i]->nlink; j++)
@@ -300,7 +300,7 @@ void blockUpdate(int totOrbs, Orb lattice[], float*p_energy, Vec *p_totSpin){
     }
 }
 
-void localUpdate(int totOrbs, Orb lattice[], float *p_energy, Vec *p_totSpin){
+void localUpdate(int totOrbs, Orb lattice[], double *p_energy, Vec *p_totSpin){
     //printf("start local updating\n");
     int seedID=rand()%totOrbs;  // chose one orb Note that WE CANNOT CHOOSE GHOST SPIN, since it's not compatible with local statistics
     //int seedID=totOrbs;
@@ -309,11 +309,11 @@ void localUpdate(int totOrbs, Orb lattice[], float *p_energy, Vec *p_totSpin){
     Vec *refDirection=generateRandomVec(); // chose new direction
     //printf("try new spin direction, ref: %.3f %.3f\n",
     //       refDirection->x,refDirection->y);
-    float s1n=-2*dot(lattice[seedID].spin,*refDirection);
+    double s1n=-2*dot(lattice[seedID].spin,*refDirection);
     //printf("projection s1n: %.3f\n",s1n);
     equal(&lattice[seedID].transSpin,*refDirection);
     cTimes(&lattice[seedID].transSpin,s1n);
-    float corr=getDeltaCorrEnergy(lattice+seedID);
+    double corr=getDeltaCorrEnergy(lattice+seedID);
     corr+=getDeltaOnsiteEnergy(lattice+seedID);
     
     //printf("lead to the translation spin vector: %.3f %.3f and delta Ecorr: %.3f, transition possibility %.3f P\n",
@@ -329,9 +329,9 @@ void localUpdate(int totOrbs, Orb lattice[], float *p_energy, Vec *p_totSpin){
     return;
 }
 
-PyObject * blockUpdateMC(int totOrbs, float initSpin[totOrbs], float initD[totOrbs][3], int nthermal, int nsweep, 
-                   int maxNLinking, int nlink[totOrbs], float linkStrength[totOrbs][maxNLinking][3], int linkedOrb[totOrbs][maxNLinking],
-                   int ninterval, int nLat, int corrOrbPair[nLat][2], float flunc, float h){
+PyObject * blockUpdateMC(int totOrbs, double initSpin[totOrbs], double initD[totOrbs][3], int nthermal, int nsweep, 
+                   int maxNLinking, int nlink[totOrbs], double linkStrength[totOrbs][maxNLinking][3], int linkedOrb[totOrbs][maxNLinking],
+                   int ninterval, int nLat, int corrOrbPair[nLat][2], double flunc, double h){
     // initialize lattice add one ghost spin for mimicing external field
     Orb lattice[totOrbs+1];
     //printf("hello here is C lib\n");
@@ -339,8 +339,8 @@ PyObject * blockUpdateMC(int totOrbs, float initSpin[totOrbs], float initD[totOr
     establishLinking(lattice, totOrbs, maxNLinking, nlink, linkedOrb);
 
     // initialize measurement
-    float energy=0;
-    float *p_energy=&energy;
+    double energy=0;
+    double *p_energy=&energy;
     Vec totSpin;
     totSpin.x=0;totSpin.y=0;
     Vec*p_totSpin=&totSpin;
@@ -355,9 +355,9 @@ PyObject * blockUpdateMC(int totOrbs, float initSpin[totOrbs], float initD[totOr
     spin_i.y=0;
     spin_j.x=0;
     spin_j.y=0;
-    float spin_ij;
-    float totEnergy=0;
-    float E2=0;
+    double spin_ij;
+    double totEnergy=0;
+    double E2=0;
 
     for(int i=0;i<nsweep;i++){
         // spin statistics over space in each frame
@@ -367,7 +367,7 @@ PyObject * blockUpdateMC(int totOrbs, float initSpin[totOrbs], float initD[totOr
         spin_i_avg.y=0;
         spin_j_avg.x=0;
         spin_j_avg.y=0;
-        float spin_ij_avg=0.0;
+        double spin_ij_avg=0.0;
         for(int j=0;j<nLat;j++){
             plusEqual(&spin_i_avg, lattice[corrOrbPair[j][0]].spin);
             plusEqual(&spin_j_avg, lattice[corrOrbPair[j][1]].spin);
@@ -382,7 +382,7 @@ PyObject * blockUpdateMC(int totOrbs, float initSpin[totOrbs], float initD[totOr
         plusEqual(&spin_j,spin_j_avg);
         spin_ij+=spin_ij_avg/nLat;
 
-        float e_avg=*p_energy/nLat;
+        double e_avg=*p_energy/nLat;
         totEnergy+=e_avg;
         E2+=e_avg*e_avg;
 
@@ -405,9 +405,9 @@ PyObject * blockUpdateMC(int totOrbs, float initSpin[totOrbs], float initD[totOr
 
 
 // self.totOrbs, initSpin, nthermal, nsweep, maxNLinking, nlinking, linkStrength, linkData
-PyObject * localUpdateMC(int totOrbs, float initSpin[totOrbs], float initD[totOrbs][3], int nthermal, int nsweep, 
-                   int maxNLinking, int nlink[totOrbs], float linkStrength[totOrbs][maxNLinking][3], int linkedOrb[totOrbs][maxNLinking],
-                   int ninterval, int nLat, int corrOrbPair[nLat][2], float flunc, float h){
+PyObject * localUpdateMC(int totOrbs, double initSpin[totOrbs], double initD[totOrbs][3], int nthermal, int nsweep, 
+                   int maxNLinking, int nlink[totOrbs], double linkStrength[totOrbs][maxNLinking][3], int linkedOrb[totOrbs][maxNLinking],
+                   int ninterval, int nLat, int corrOrbPair[nLat][2], double flunc, double h){
     // initialize lattice add one ghost spin for mimicing external field
     Orb lattice[totOrbs+1];
     //printf("hello here is C lib\n");
@@ -415,8 +415,8 @@ PyObject * localUpdateMC(int totOrbs, float initSpin[totOrbs], float initD[totOr
     establishLinking(lattice, totOrbs, maxNLinking, nlink, linkedOrb);
 
     // initialize measurement
-    float energy=0;
-    float *p_energy=&energy;
+    double energy=0;
+    double *p_energy=&energy;
     for(int i=0;i<totOrbs;i++){
         *p_energy+=getCorrEnergy(lattice+i);
     }
@@ -438,9 +438,9 @@ PyObject * localUpdateMC(int totOrbs, float initSpin[totOrbs], float initD[totOr
     spin_i.y=0;
     spin_j.x=0;
     spin_j.y=0;
-    float spin_ij;
-    float totEnergy=0;
-    float E2=0;
+    double spin_ij;
+    double totEnergy=0;
+    double E2=0;
     for(int i=0;i<nsweep;i++){
         // spin statistics over space in each frame
         Vec spin_i_avg;
@@ -449,7 +449,7 @@ PyObject * localUpdateMC(int totOrbs, float initSpin[totOrbs], float initD[totOr
         spin_i_avg.y=0;
         spin_j_avg.x=0;
         spin_j_avg.y=0;
-        float spin_ij_avg=0.0;
+        double spin_ij_avg=0.0;
         for(int j=0;j<nLat;j++){
             plusEqual(&spin_i_avg, lattice[corrOrbPair[j][0]].spin);
             plusEqual(&spin_j_avg, lattice[corrOrbPair[j][1]].spin);
@@ -463,7 +463,7 @@ PyObject * localUpdateMC(int totOrbs, float initSpin[totOrbs], float initD[totOr
         plusEqual(&spin_j,spin_j_avg);
         spin_ij+=spin_ij_avg/nLat;
 
-        float e_avg=*p_energy/nLat;
+        double e_avg=*p_energy/nLat;
         totEnergy+=e_avg;
         E2+=e_avg*e_avg;
 
