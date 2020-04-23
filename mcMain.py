@@ -8,9 +8,14 @@ class MC:
     def __init__(self,ID,LMatrix,pos=[],S=[],D=[],bondList=[],T=1,Lx=1,Ly=1,Lz=1,ki_s=0,ki_t=0,ki_overLat=[0,0,0],h=0.): # init for specified temperature
         norb=len(pos)
         totOrbs=Lx*Ly*Lz*norb
-        lattice_array, lattice=lat.establishLattice(Lx=Lx,Ly=Ly,Lz=Lz,norb=norb,Lmatrix=np.array(LMatrix),bmatrix=np.array(pos),SpinList=S,DList=D)
         # to aviod 0K
         T=0.1 if T<0.1 else T
+        # *****************************************************#
+        #  ATTENTION: all energies are multiplied by beta here #
+        #******************************************************#
+        # create orbs for manual temperature
+        DT=[d/T for d in D]
+        lattice_array, lattice=lat.establishLattice(Lx=Lx,Ly=Ly,Lz=Lz,norb=norb,Lmatrix=np.array(LMatrix),bmatrix=np.array(pos),SpinList=S,DList=DT)
         # create bond list for manual temperature
         bondT=[]
         for bond in bondList:
@@ -83,17 +88,18 @@ class MC:
             cMC=mylib.blockUpdateMC
             cMC.restype=py_object
             data=cMC(self.totOrbs, initSpin, nthermal, nsweep, maxNLinking, nlinking, linkStrength, linkData, ninterval, nLat, corrOrbitalPair, h)
-            #print(np.mean(np.abs(data[0]))/self.totOrbs,np.mean(data[1])/self.totOrbs)
             spin_i, spin_j, spin_ij, E, E2 = data
+            E*=self.T;E2*=self.T**2 # recover the real energies
             print("<Si>=%.3f, <Sj>=%.3f, <SiSj>=%.3f, <E>=%.3f, <E2>=%.3f"%(spin_i, spin_j, spin_ij, E, E2))
-            return data
+            return spin_i, spin_j, spin_ij, E, E2
         elif algo=='Metroplis':
             cMC=mylib.localUpdateMC
             cMC.restype=py_object
             data=cMC(self.totOrbs, initSpin, nthermal, nsweep, maxNLinking, nlinking, linkStrength, linkData, ninterval, nLat, corrOrbitalPair, h)
             spin_i, spin_j, spin_ij, E, E2 = data
+            E*=self.T;E2*=self.T**2 # recover the real energies
             print("<Si>=%.3f, <Sj>=%.3f, <SiSj>=%.3f, <E>=%.3f, <E2>=%.3f"%(spin_i, spin_j, spin_ij, E, E2))
-            return data
+            return spin_i, spin_j, spin_ij, E, E2
 
     def mainLoopViaCLib_On(self,nsweep=1000,nthermal=5000,ninterval=-1,algo='Metroplis',On=3,flunc=0.0,h=0.,binGraph=False):
         self.nsweep=nsweep
@@ -170,6 +176,7 @@ class MC:
             data = cMC(self.totOrbs, initSpin, initD, nthermal, nsweep, maxNLinking_, nlinking, linkStrength, linkData, ninterval, nLat, corrOrbitalPair, flunc_, h)
             #spin, energy = data[0], data[1], data[2], data[3]
             spin_i_x, spin_i_y, spin_i_z, spin_j_x, spin_j_y, spin_j_z, spin_ij, E, E2=data
+            E*=self.T;E2*=self.T**2 # recover the real energies
             spin_i=np.array([spin_i_x, spin_i_y, spin_i_z])
             spin_j=np.array([spin_j_x, spin_j_y, spin_j_z])
             print('<i><j>=%.3f <ij>=%.3f <E>=%.3f <E2>=%.3f'%(np.dot(spin_i,spin_j),spin_ij,E,E2))
@@ -190,6 +197,7 @@ class MC:
             cMC.restype=py_object
             data = cMC(self.totOrbs, initSpin, initD, nthermal, nsweep, maxNLinking_, nlinking, linkStrength, linkData, ninterval, nLat, corrOrbitalPair, flunc_, h)
             spin_i_x, spin_i_y, spin_i_z, spin_j_x, spin_j_y, spin_j_z, spin_ij, E, E2=data
+            E*=self.T;E2*=self.T**2 # recover the real energies
             spin_i=np.array([spin_i_x, spin_i_y, spin_i_z])
             spin_j=np.array([spin_j_x, spin_j_y, spin_j_z])
             print('<i><j>=%.3f <ij>=%.3f <E>=%.3f <E2>=%.3f'%(np.dot(spin_i,spin_j),spin_ij,E,E2))

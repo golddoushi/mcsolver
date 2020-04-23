@@ -148,9 +148,12 @@ void establishLinking(Orb *lattice, int totOrbs, int maxNLinking, int nlink[totO
 }
 
 double getCorrEnergy(Orb *source){
+    //printf("start calc corr. energy\n");
     double corr=0;
     for(int i=0;i<source->nlink;i++){
         corr+=diagonalDot(source->linkStrength[i],source->spin,source->linkedOrb[i]->spin);
+        //printf("J=%.3f S1=%.3f S2=%.3f\n",source->linkStrength[i],source->spin,source->linkedOrb[i]->spin);
+        //printf("corr=%.3f\n",corr);
     }
     return corr;
 }
@@ -333,6 +336,10 @@ PyObject * blockUpdateMC(int totOrbs, double initSpin[totOrbs], double initD[tot
     // initialize measurement
     double energy=0;
     double *p_energy=&energy;
+    for(int i=0;i<totOrbs;i++) *p_energy+=getCorrEnergy(lattice+i);
+    *p_energy/=2;
+    //printf("gournd energy=%.3f nLat=%d\n",*p_energy, nLat);
+
     Vec totSpin;
     totSpin.x=0;totSpin.y=0;totSpin.z=0;
     Vec*p_totSpin=&totSpin;
@@ -382,6 +389,7 @@ PyObject * blockUpdateMC(int totOrbs, double initSpin[totOrbs], double initD[tot
         spin_ij+=spin_ij_avg/nLat;
 
         double e_avg=*p_energy/nLat;
+        //printf("e_avg=%.3f\n",e_avg);
         totEnergy+=e_avg;
         E2+=e_avg*e_avg;
 
@@ -415,9 +423,7 @@ PyObject * localUpdateMC(int totOrbs, double initSpin[totOrbs], double initD[tot
     // initialize measurement
     double energy=0;
     double *p_energy=&energy;
-    for(int i=0;i<totOrbs;i++){
-        *p_energy+=getCorrEnergy(lattice+i);
-    }
+    for(int i=0;i<totOrbs;i++) *p_energy+=getCorrEnergy(lattice+i);
     *p_energy/=2;
     Vec totSpin;
     totSpin.x=0;totSpin.y=0;totSpin.z=0;
