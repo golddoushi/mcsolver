@@ -20,7 +20,9 @@ class MC:
         bondT=[]
         for bond in bondList:
             bond_tmp=bond.copy()#lat.Bond(bond.source,bond.target,bond.overLat,bond.strength/T)
-            bond_tmp.strength/=T;bond_tmp.strength1/=T;bond_tmp.strength2/=T
+            #print(bond_tmp.strength/T)
+            bond_tmp.strength=bond_tmp.strength/T#;bond_tmp.strength1/=T;bond_tmp.strength2/=T
+            #print(bond_tmp.strength)
             bondT.append(bond_tmp)
         if ki_s>=norb or ki_t>=norb:
             print("ERROR: index out of range ki_S=%d, ki_t=%d, norb=%d\n"%(ki_s,ki_t,norb))
@@ -128,15 +130,18 @@ class MC:
         
         # link strength
         maxNLinking=np.max(nlinking_list)
+        #print("maxNLinking=%d"%maxNLinking)
         linkStrength=(c_double*(self.totOrbs*maxNLinking*3))() # thus the nlinking of every orbs are the same
         cnt=0
         for iorb, orb in enumerate(self.lattice):
+            #print("orb%d"%orb.id)
             for ilinking in range(maxNLinking):
                 if ilinking>=nlinking_list[iorb]:
                     for i in range(3):
                         linkStrength[cnt]=c_double(0.)
                         cnt+=1
                 else:
+                    #print("link %d :"%ilinking,orb.linkStrength[ilinking])
                     for i in range(3):
                         linkStrength[cnt]=c_double(orb.linkStrength[ilinking][i])
                         cnt+=1

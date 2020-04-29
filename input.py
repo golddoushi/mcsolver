@@ -12,23 +12,26 @@ pos=[[0,0,0]]
 # spin number
 Spin=[1]
 # single ion anisotropy
-D=[[0.0,0.0,0.0]]
+D=np.array([[0.0,0.0,0.0]])
 # couplings   #source #target #edge  #J(meV) negative for FM coupling
-bond1=lat.Bond(0,0,np.array([1,0,0]),-1,-1,-1, False)
-bond2=lat.Bond(0,0,np.array([0,1,0]),-1,-1,-1, False)
+bond1=lat.Bond(0,0,np.array([1,0,0]),-1,-1,-1, True)
+bond2=lat.Bond(0,0,np.array([0,1,0]),-1,-1,-1, True)
 
 bondList=[bond1,bond2]
 
 
 #time0=time.time()
-#mcslave=mc.MC(0,LMatrix,pos=pos,S=Spin,D=D,bondList=bondList,T=2.1,Lx=2,Ly=2,Lz=1,ki_s=0,ki_t=0,ki_overLat=[0,0,0],h=0.0)
-#mcslave.mainLoopViaCLib_On(nsweep=80000,nthermal=40000,algo='Wolff',On=2,flunc=0.0,binGraph=True)
+for T in np.linspace(2.0,2.4,2):
+    print(T)
+    mcslave=mc.MC(0,LMatrix,pos=pos,S=Spin,D=D,bondList=bondList,T=T,Lx=3,Ly=3,Lz=1,ki_s=0,ki_t=0,ki_overLat=[0,0,0],h=0.0)
+    data=mcslave.mainLoopViaCLib_On(nsweep=40000,nthermal=20000,ninterval=1,algo='Wolff',On=2,flunc=0.0,binGraph=False)
+    #print(data)
 #totSpin,energy,corr=mcslave.mainLoopViaCLib(nsweep=10,nthermal=100,algo='Wolff')
 #mean=np.mean(abs(np.array(totSpin)))/mcslave.totOrbs
 #print(np.mean(abs(np.array(corr)))-mean**2)
 #print('time elapsed: %.3f s'%(time.time()-time0))
 
-
+'''
 TList=np.linspace(2.1,2.4,11)
 U4_list=[]
 for L in [16,32]:
@@ -45,3 +48,4 @@ for L in [16,32]:
 plt.scatter(TList,U4_list[0])
 plt.scatter(TList,U4_list[1])
 plt.show()
+'''

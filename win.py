@@ -32,10 +32,11 @@ def startSimulaton():
     io.collectParam()
     
     TList=np.linspace(io.T0,io.T1,io.nT)
-    bondList=[lat.Bond(bond_data[0],bond_data[1],\
-                       np.array([int(x) for x in bond_data[2]]),\
-                       bond_data[3],bond_data[4],bond_data[5]) \
-                        for bond_data in io.bondList]
+    bondList=[lat.Bond(bond_data[0],bond_data[1],                 # source and target  
+                       np.array([int(x) for x in bond_data[2]]),  # over lat.
+                       bond_data[3],bond_data[4],bond_data[5],    # strength
+                       True if io.modelType!='Ising' else False)  # On
+                        for bond_data in io.bondList]             # ergodic
     LMatrix=np.array(io.LMatrix)
     pos=np.array(io.pos)
     
