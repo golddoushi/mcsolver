@@ -22,6 +22,11 @@ class MC:
             bond_tmp=bond.copy()#lat.Bond(bond.source,bond.target,bond.overLat,bond.strength/T)
             bond_tmp.strength/=T;bond_tmp.strength1/=T;bond_tmp.strength2/=T
             bondT.append(bond_tmp)
+        if ki_s>=norb or ki_t>=norb:
+            print("ERROR: index out of range ki_S=%d, ki_t=%d, norb=%d\n"%(ki_s,ki_t,norb))
+            raise("Input Error!")
+            ki_s=norb-1 if ki_s >= norb else ki_s
+            ki_t=norb-1 if ki_t >= norb else ki_t
         self.correlatedOrbitalPair=lat.establishLinking(lattice_array,bondT,ki_s=ki_s,ki_t=ki_t,ki_overLat=ki_overLat)
         self.ID=ID
         self.T=T
@@ -159,6 +164,7 @@ class MC:
         for ipair,pair in enumerate(self.correlatedOrbitalPair):
             corrOrbitalPair[ipair*2]=pair[0]
             corrOrbitalPair[ipair*2+1]=pair[1]
+            #print(pair[0],pair[1])
         
         flunc_=c_double(flunc)
         if On==2:

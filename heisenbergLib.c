@@ -464,7 +464,6 @@ PyObject * localUpdateMC(int totOrbs, double initSpin[totOrbs], double initD[tot
             plusEqual(&spin_i_avg, lattice[corrOrbPair[j][0]].spin);
             plusEqual(&spin_j_avg, lattice[corrOrbPair[j][1]].spin);
             spin_ij_avg+=dot(lattice[corrOrbPair[j][0]].spin,lattice[corrOrbPair[j][1]].spin);
-            
         }
         cDivides(&spin_i_avg, nLat);
         cDivides(&spin_j_avg, nLat);

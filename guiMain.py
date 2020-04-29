@@ -16,7 +16,7 @@ global nOrbnBondGui, nOrb, nBonds  # read number of orbitals and bonds
 global OrbListBox, IDandTypeNote, PosNote, AnisotropyNote
 global BondBox, IDandTypeOfBondNote, BondDetailNote
 
-global TlistGui, MCparamGui, modelGui, modelStr, algorithmGui, algoStr, coreGui
+global TlistGui, MCparamGui, modelGui, modelStr, algorithmGui, algoStr, corrGui, coreGui
 global resultViewerBase, resultViewer, structureFrame, structureViewer, structureAxis
 global submitBtn
 
@@ -245,7 +245,7 @@ def loadBonds():
 ###############
 
 def loadMCSettings():
-    global gui, TListGui, MCparamGui, modelGui, modelStr, algorithmGui, algoStr, coreGui
+    global gui, TListGui, MCparamGui, modelGui, modelStr, algorithmGui, algoStr, corrGui, coreGui
     SettingFrame=LabelFrame(gui,text='Other settings')
     SettingFrame.grid(row=3,column=0,sticky=(W,E))
 
@@ -271,8 +271,12 @@ def loadMCSettings():
     algorithmGui=Spinbox(model_base,from_=1, to=3, values=['Wolff','Metroplis','Sweden-Wang'],textvariable=algoStr,width=12)
     algorithmGui.grid(row=0,column=3)
 
+    corr_base=Frame(SettingFrame)
+    corr_base.grid(row=3,column=0,sticky='W')
+    corrGui=toolbox.NoteFrm(corr_base, init_notes=['Mesure corr. s','t','overLat:','',''], init_data=[0,0,0,0,0],entryWidth=3,row=True)
+
     core_base=Frame(SettingFrame)
-    core_base.grid(row=3,column=0,sticky='W')
+    core_base.grid(row=4,column=0,sticky='W')
     coreGui=toolbox.NoteFrm(core_base, init_notes=['core:'], init_data=[np.max([1,int(cpu_count()/2)])])
 
 ########################

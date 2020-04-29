@@ -150,7 +150,7 @@ def establishLinking(lattice,bondList,ki_s=0,ki_t=0,ki_overLat=[0,0,0]):
                                 else:
                                     targetOrb.addLinking(sourceOrb,bond.strength)
                 # save the correlated orbital pairs
-                correlatedOrbitalPair.append([lattice[x][y][z][ki_s].id, lattice[(x+ki_overLat[0])%Lx][(y+ki_overLat[1])%Ly][(z+ki_overLat[2])%Lz][ki_s].id])
+                correlatedOrbitalPair.append([lattice[x][y][z][ki_s].id, lattice[(x+ki_overLat[0])%Lx][(y+ki_overLat[1])%Ly][(z+ki_overLat[2])%Lz][ki_t].id])
     # after process
     for x in range(Lx):
         for y in range(Ly):

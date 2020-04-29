@@ -2,10 +2,12 @@ from tkinter import filedialog
 from re import findall
 import guiMain as gui
 
-global LMatrix, LPack, pos, S, DList, bondList, T0, T1, nT, nthermal, nsweep, ninterval, modelType, algorithm, ncores
+global LMatrix, LPack, pos, S, DList, bondList, T0, T1, nT, nthermal, nsweep, ninterval, modelType, algorithm, GcOrb, ncores
+# initial value
+GcOrb=[0,0,[0,0,0]]
 
 def collectParam():
-    global LMatrix, LPack, pos, S, DList, bondList, T0, T1, nT, nthermal, nsweep, ninterval, modelType, algorithm, ncores
+    global LMatrix, LPack, pos, S, DList, bondList, T0, T1, nT, nthermal, nsweep, ninterval, modelType, algorithm, GcOrb, ncores
     # get lattice
     a1=gui.latticeGui[0].report()
     a2=gui.latticeGui[1].report()
@@ -55,17 +57,23 @@ def collectParam():
     algorithm = gui.algorithmGui.get()
     print('Algorithm:',algorithm)
 
+    # get orb. info. for Gc calc.
+    #print(gui.corrGui.report())
+    s, t, v1, v2, v3 = [int(x) for x in gui.corrGui.report()]
+    GcOrb=[[s,t],[v1,v2,v3]]
+    print('Measure correlation between orb%d and orb%d with overLat: (%d, %d, %d)'%(s,t,v1,v2,v3))
+
     # get ncores
     ncores= int(gui.coreGui.report()[0])
     print('using %d cores'%ncores)
 
 def saveParam():
-    global LMatrix, LPack, pos, S, DList, bondList, T0, T1, nT, nthermal, nsweep, ninterval, modelType, algorithm, ncores
+    global LMatrix, LPack, pos, S, DList, bondList, T0, T1, nT, nthermal, nsweep, ninterval, modelType, algorithm, GcOrb, ncores
     collectParam()
     # write into files
     filePath=filedialog.asksaveasfilename()
     f=open(filePath,'w')
-    f.write("This is mcsolver's save file, version: 1.0\n")
+    f.write("This is mcsolver's save file, version: 1.2\n")
     f.write("Lattice:\n")
     a1, a2, a3= LMatrix
     f.write("%.9f %.9f %.9f\n"%(a1[0],a1[1],a1[2]))
@@ -93,6 +101,8 @@ def saveParam():
 
     f.write("Temperature scanning region:\n")
     f.write("Tmin %.9f Tmax %.9f nT %d\n"%(T0, T1, nT))
+    f.write("Mesurement:\n")
+    f.write("mesure the correlation function between orb%d and orb%d over [%d %d %d]\n"%(GcOrb[0][0],GcOrb[0][1],GcOrb[1][0],GcOrb[1][1],GcOrb[1][2]))
     f.write("Sweeps for thermalization and statistics, and relaxiation step for each sweep:\n")
     f.write("%d %d %d\n"%(nthermal, nsweep, ninterval))
     f.write("Model type:\n")
@@ -110,8 +120,8 @@ def loadParam():
     f.close()
     # load version info.
     version=findall(r"[0-9\.]+",data[0])[0]
-    if version!="1.1":
-        print("unknown file or version (only support v1.1)")
+    if version!="1.2":
+        print("unknown file or version (only support v1.2)")
         return False
     
     # decide position of each tag
@@ -136,6 +146,8 @@ def loadParam():
             tagModel=iline
         if keyword[0]=='Algorithm':
             tagAlgorithm=iline
+        if keyword[0]=='Mesurement':
+            tagMesurement=iline
         if keyword[0]=='Ncores':
             tagNcores=iline
 
@@ -164,6 +176,10 @@ def loadParam():
                          [float(ele[1]),float(ele[2]),float(ele[3])],
                          [int(ele[4]),int(ele[5]),(float(ele[6]),float(ele[7]),float(ele[8]))]
                         ])
+
+    # load mesurements
+    GcPack=findall(r'[0-9\-]+',data[tagMesurement+1])
+    
     # load other parameters
     Tpack=findall(r"[0-9\.]+",data[tagTemperature+1])
     nTermSweep=findall(r"[0-9\.\-]+",data[tagSweeps+1])
@@ -179,6 +195,7 @@ def loadParam():
     gui.OrbListBox.updateInfo(orbInfo)
     gui.BondBox.updateInfo(bondInfo)
     gui.TListGui.setValue(Tpack)
+    gui.corrGui.setValue(GcPack)
     gui.MCparamGui.setValue(nTermSweep)
     gui.modelStr.set(modelType)
     gui.algoStr.set(algorithm)

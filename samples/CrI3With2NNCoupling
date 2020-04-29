@@ -1,4 +1,4 @@
-This is mcsolver's save file, version: 1.1
+This is mcsolver's save file, version: 1.2
 Lattice:
 1.000000000 0.000000000 0.000000000
 -0.500000000 0.866025404 0.000000000
@@ -13,18 +13,20 @@ orb 1: type 0 spin 1.500000000 pos [0.333333333 0.666666667 0.000000000] Dz -2.3
 Bonds:
 9
 id, source, target, overLat, Jz, Jx, Jy of each bond:
-bond 0: Jz -33.2758 Jx -31.7626 Jy -31.7626 orb 0 to orb 1 over [0 0 0]
-bond 1: Jz -33.2758 Jx -31.7626 Jy -31.7626 orb 0 to orb 1 over [1 0 0]
-bond 2: Jz -33.2758 Jx -31.7626 Jy -31.7626 orb 0 to orb 1 over [0 -1 0]
-bond 3: Jz -7.266 Jx -7.514  Jy -7.514  orb 0 to orb 0 over [1 0 0]
-bond 4: Jz -7.266 Jx -7.514  Jy -7.514  orb 0 to orb 0 over [1 1 0]
-bond 5: Jz -7.266 Jx -7.514  Jy -7.514  orb 0 to orb 0 over [0 1 0]
-bond 6: Jz -7.266 Jx -7.514  Jy -7.514  orb 1 to orb 1 over [1 0 0]
-bond 7: Jz -7.266 Jx -7.514  Jy -7.514  orb 1 to orb 1 over [1 1 0]
-bond 8: Jz -7.266 Jx -7.514  Jy -7.514  orb 1 to orb 1 over [0 1 0]
+bond 0: Jz -33.275800000 Jx -31.762600000 Jy -31.762600000 orb 0 to orb 1 over [0 0 0]
+bond 1: Jz -33.275800000 Jx -31.762600000 Jy -31.762600000 orb 0 to orb 1 over [1 0 0]
+bond 2: Jz -33.275800000 Jx -31.762600000 Jy -31.762600000 orb 0 to orb 1 over [0 -1 0]
+bond 3: Jz -7.266000000 Jx -7.514000000 Jy -7.514000000 orb 0 to orb 0 over [1 0 0]
+bond 4: Jz -7.266000000 Jx -7.514000000 Jy -7.514000000 orb 0 to orb 0 over [1 1 0]
+bond 5: Jz -7.266000000 Jx -7.514000000 Jy -7.514000000 orb 0 to orb 0 over [0 1 0]
+bond 6: Jz -7.266000000 Jx -7.514000000 Jy -7.514000000 orb 1 to orb 1 over [1 0 0]
+bond 7: Jz -7.266000000 Jx -7.514000000 Jy -7.514000000 orb 1 to orb 1 over [1 1 0]
+bond 8: Jz -7.266000000 Jx -7.514000000 Jy -7.514000000 orb 1 to orb 1 over [0 1 0]
 Temperature scanning region:
 Tmin 40.000000000 Tmax 80.000000000 nT 11
-Sweeps for thermalization and statistics:
+Mesurement:
+mesure the correlation function between orb0 and orb0 over [0 0 0]
+Sweeps for thermalization and statistics, and relaxiation step for each sweep:
 80000 640000 0
 Model type:
 Heisenberg
