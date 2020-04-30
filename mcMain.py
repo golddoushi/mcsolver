@@ -59,14 +59,17 @@ class MC:
         maxNLinking=np.max(nlinking_list)
         #nlinking=len(orb.linkedOrb)
         linkStrength=(c_double*(self.totOrbs*maxNLinking))()
+        #linkStrength_rnorm=(c_double*(self.totOrbs*maxNLinking))() # linking for renormalization
         cnt=0
         for iorb, orb in enumerate(self.lattice):
             for ilinking in range(maxNLinking):
                 if ilinking>=nlinking_list[iorb]:
                     linkStrength[cnt]=c_double(0.)
+                    #linkStrength_rnorm[cnt]=c_double(0.)
                     cnt+=1
                 else:
                     linkStrength[cnt]=c_double(orb.linkStrength[ilinking])
+                    #linkStrength_rnorm[cnt]==c_double(orb.linkStrength[ilinking]) if orb.chosen else c_double(0.)
                     cnt+=1
         #for istrength, strength in enumerate(orb.linkStrength):
         #    linkStrength[istrength]=c_double(strength)
@@ -75,9 +78,36 @@ class MC:
         linkData=(c_int*(self.totOrbs*maxNLinking))()
         cnt=0
         for orb in self.lattice:
-            for linkedOrb in orb.linkedOrb:
-                linkData[cnt]=linkedOrb.id
+            for iorb in range(maxNLinking):#orb.linkedOrb:
+                linkData[cnt]=orb.linkedOrb[iorb].id if iorb<len(orb.linkedOrb) else -1
                 cnt+=1
+
+        #-------------------------------------------------------------------------------#
+        # linking info. for renormalized lattice
+        # count total sites in shrinked lat.
+        totOrb_rnorm=0
+        for orb in self.lattice:
+            if orb.chosen:totOrb_rnorm+=1
+        #print("total %d orbs in renormalized lattice"%totOrb_rnorm)
+        rOrb=(c_int*totOrb_rnorm)() # store id of renormalized orbs
+        cnt=0
+        for orb in self.lattice:
+            if orb.chosen:
+                rOrb[cnt]=orb.id
+                cnt+=1
+        
+        linkData_rnorm=(c_int*(totOrb_rnorm*maxNLinking))() # store their link info
+        cnt=0
+        for orb in self.lattice:
+            if orb.chosen:
+                for iorb in range(maxNLinking):
+                    linkData_rnorm[cnt]=c_int(orb.linkedOrb_rnorm[iorb].id) if iorb<len(orb.linkedOrb_rnorm) else c_int(-1)
+                    #print("orb%d ~ orb%d, linkeData_rnorm[%d]= %d"%(orb.id,orb.linkedOrb_rnorm[iorb].id,cnt,linkData_rnorm[cnt]))
+                    cnt+=1
+        #for cnt in range(totOrb_rnorm*maxNLinking):
+        #    print(linkData_rnorm[cnt])
+        #-------------------------------------------------------------------------------#
+        
         maxNLinking=c_int(maxNLinking)
         
         # field info.
@@ -94,18 +124,32 @@ class MC:
         if algo=='Wolff':
             cMC=mylib.blockUpdateMC
             cMC.restype=py_object
-            data=cMC(self.totOrbs, initSpin, nthermal, nsweep, maxNLinking, nlinking, linkStrength, linkData, ninterval, nLat, corrOrbitalPair, h)
-            spin_i, spin_j, spin_ij, E, E2 = data
-            E*=self.T;E2*=self.T**2 # recover the real energies
-            print("<Si>=%.3f, <Sj>=%.3f, <SiSj>=%.3f, <E>=%.3f, <E2>=%.3f"%(spin_i, spin_j, spin_ij, E, E2))
+            data=cMC(self.totOrbs, initSpin, nthermal, nsweep, maxNLinking, nlinking, linkStrength, linkData, ninterval, nLat, corrOrbitalPair, h,
+                     totOrb_rnorm, rOrb, linkData_rnorm)
+            spin_i, spin_j, spin_ij, E, E2, E4, E_rnorm, E2_rnorm, E4_rnorm = data
+            E*=self.T;E2*=self.T**2;E4*=self.T**4;E_rnorm*=self.T;E2_rnorm*=self.T**2;E4_rnorm*=self.T**4 # recover the real energies
+            U4=E2**2/E4
+            U4_r=E2_rnorm**2/E4_rnorm
+            #print("T=%.3f, <Si>=%.3f, <Sj>=%.3f, <SiSj>=%.3f, <E>=%.3f, <E2>=%.3f, <Er>=%.3f, <E2_r>=%.3f, C=%.6f, Cr=%.6f"%(
+            #       self.T,    spin_i,    spin_j,     spin_ij,        E,        E2,   E_rnorm,    E2_rnorm, E2-E**2, E2_rnorm-E_rnorm**2))
+            print("%.3f %.3f %.3f %.3f %.3f %.3f %.3f %.3f %.6f %.6f %.6f %.6f"%(
+                   self.T,    spin_i,    spin_j,     spin_ij,        E,        E2,   E_rnorm,    E2_rnorm, E2-E**2, E2_rnorm-E_rnorm**2, U4, U4_r))
+            
             return spin_i, spin_j, spin_ij, E, E2
         elif algo=='Metroplis':
             cMC=mylib.localUpdateMC
             cMC.restype=py_object
-            data=cMC(self.totOrbs, initSpin, nthermal, nsweep, maxNLinking, nlinking, linkStrength, linkData, ninterval, nLat, corrOrbitalPair, h)
-            spin_i, spin_j, spin_ij, E, E2 = data
-            E*=self.T;E2*=self.T**2 # recover the real energies
-            print("<Si>=%.3f, <Sj>=%.3f, <SiSj>=%.3f, <E>=%.3f, <E2>=%.3f"%(spin_i, spin_j, spin_ij, E, E2))
+            data=cMC(self.totOrbs, initSpin, nthermal, nsweep, maxNLinking, nlinking, linkStrength, linkData, ninterval, nLat, corrOrbitalPair, h,
+                     totOrb_rnorm, rOrb, linkData_rnorm)
+            spin_i, spin_j, spin_ij, E, E2, E4, E_rnorm, E2_rnorm, E4_rnorm = data
+            E*=self.T;E2*=self.T**2;E4*=self.T**4;E_rnorm*=self.T;E2_rnorm*=self.T**2;E4_rnorm*=self.T**4 # recover the real energies
+            U4=E2**2/E4
+            U4_r=E2_rnorm**2/E4_rnorm
+            #print("T=%.3f, <Si>=%.3f, <Sj>=%.3f, <SiSj>=%.3f, <E>=%.3f, <E2>=%.3f, <Er>=%.3f, <E2_r>=%.3f, C=%.6f, Cr=%.6f"%(
+            #       self.T,    spin_i,    spin_j,     spin_ij,        E,        E2,   E_rnorm,    E2_rnorm, E2-E**2, E2_rnorm-E_rnorm**2))
+            print("%.3f %.3f %.3f %.3f %.3f %.3f %.3f %.3f %.6f %.6f %.6f %.6f"%(
+                   self.T,    spin_i,    spin_j,     spin_ij,        E,        E2,   E_rnorm,    E2_rnorm, E2-E**2, E2_rnorm-E_rnorm**2, U4, U4_r))
+            
             return spin_i, spin_j, spin_ij, E, E2
 
     def mainLoopViaCLib_On(self,nsweep=1000,nthermal=5000,ninterval=-1,algo='Metroplis',On=3,flunc=0.0,h=0.,binGraph=False):

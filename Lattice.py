@@ -100,11 +100,8 @@ class Bond:
         if On:
             self.strength=np.array([strength,strength1,strength2])
         #print('bond',strength,strength1,strength2,On,self.strength)
-        #self.strength1=strength1 # for xy and heisenberg model
-        #self.strength2=strength2 # for xy and heisenberg model
     
     def copy(self):
-        #print('copy')
         bond=Bond(self.source,self.target,self.overLat,0,0,0,self.On)
         bond.strength=np.array(list(self.strength)) if self.On else self.strength
         return bond
@@ -159,38 +156,20 @@ def establishLinking(lattice,bondList,ki_s=0,ki_t=0,ki_overLat=[0,0,0]):
                     # start linking type1: normal bond
                     sourceOrb=lattice[x][y][z][o]
                     for bond in bondList:
-                        #print(bond.strength)
                         if o==bond.source:
                             targetOrb=lattice[(x+bond.overLat[0])%Lx][(y+bond.overLat[1])%Ly][(z+bond.overLat[2])%Lz][bond.target]
-                            #if bond.On:
-                            #    On=True
-                            #    sourceOrb.addLinking(targetOrb,np.array([bond.strength,bond.strength1,bond.strength2]))
-                            #else:
-                            #    sourceOrb.addLinking(targetOrb,bond.strength)
                             sourceOrb.addLinking(targetOrb,bond.strength)
                             if sourceOrb.id!=targetOrb.id:
-                                #if bond.On:
-                                #    targetOrb.addLinking(sourceOrb,np.array([bond.strength,bond.strength1,bond.strength2]))
-                                #else:
-                                #    targetOrb.addLinking(sourceOrb,bond.strength)
                                 targetOrb.addLinking(sourceOrb,bond.strength)
                     # type2: bond in renormalized system
-                    '''
+                    
                     if sourceOrb.chosen:
                         for bond in bondList:
                             if o==bond.source:
                                 targetOrb=lattice[(x+bond.overLat[0]*2)%Lx][(y+bond.overLat[1]*2)%Ly][(z+bond.overLat[2]*2)%Lz][bond.target]
-                                if bond.On:
-                                    #On=True
-                                    sourceOrb.addLinking_rnorm(targetOrb,np.array([bond.strength,bond.strength1,bond.strength2]))
-                                else:
-                                    sourceOrb.addLinking_rnorm(targetOrb,bond.strength)
+                                sourceOrb.addLinking_rnorm(targetOrb,bond.strength)
                                 if sourceOrb.id!=targetOrb.id:
-                                    if bond.On:
-                                        targetOrb.addLinking_rnorm(sourceOrb,np.array([bond.strength,bond.strength1,bond.strength2]))
-                                    else:
-                                        targetOrb.addLinking_rnorm(sourceOrb,bond.strength)
-                    '''
+                                    targetOrb.addLinking_rnorm(sourceOrb,bond.strength)
                 # save the correlated orbital pairs
                 correlatedOrbitalPair.append([lattice[x][y][z][ki_s].id, lattice[(x+ki_overLat[0])%Lx][(y+ki_overLat[1])%Ly][(z+ki_overLat[2])%Lz][ki_t].id])
     # after process
