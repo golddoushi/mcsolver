@@ -342,8 +342,10 @@ PyObject * blockUpdateMC(int totOrbs, double initSpin[totOrbs], double initD[tot
     double spin_ij;
     double totEnergy=0;
     double E2=0;
+    double M=0,M2=0,M4=0;
 
     for(int i=0;i<nsweep;i++){
+        for(int j=0;j<ninterval;j++) blockUpdate(totOrbs, lattice, p_energy, p_totSpin);
         // spin statistics over space in each frame
         Vec spin_i_avg;
         Vec spin_j_avg;
@@ -358,6 +360,9 @@ PyObject * blockUpdateMC(int totOrbs, double initSpin[totOrbs], double initD[tot
             spin_ij_avg+=dot(lattice[corrOrbPair[j][0]].spin,lattice[corrOrbPair[j][1]].spin);
             
         }
+        M=dot(spin_i_avg,spin_i_avg)/nLat;
+        M2+=M*M;
+        M4+=M*M*M*M;
         cDivides(&spin_i_avg, nLat);
         cDivides(&spin_j_avg, nLat);
         vabs(&spin_i_avg);
@@ -366,16 +371,14 @@ PyObject * blockUpdateMC(int totOrbs, double initSpin[totOrbs], double initD[tot
         plusEqual(&spin_j,spin_j_avg);
         spin_ij+=spin_ij_avg/nLat;
 
-        double e_avg=*p_energy/nLat;
+        double e_avg=*p_energy/totOrbs;
         //printf("e_avg=%.5f\n",e_avg);
         totEnergy+=e_avg;
         E2+=e_avg*e_avg;
-
-        for(int j=0;j<ninterval;j++) blockUpdate(totOrbs, lattice, p_energy, p_totSpin);
     }
-
+    double U4=(M2/nsweep)*(M2/nsweep)/(M4/nsweep);
     PyObject *Data;
-    Data=PyTuple_New(9);
+    Data=PyTuple_New(10);
     PyTuple_SetItem(Data, 0, PyFloat_FromDouble(spin_i.x/nsweep));
     PyTuple_SetItem(Data, 1, PyFloat_FromDouble(spin_i.y/nsweep));
     PyTuple_SetItem(Data, 2, PyFloat_FromDouble(0));
@@ -385,6 +388,7 @@ PyObject * blockUpdateMC(int totOrbs, double initSpin[totOrbs], double initD[tot
     PyTuple_SetItem(Data, 6, PyFloat_FromDouble(spin_ij/nsweep));
     PyTuple_SetItem(Data, 7, PyFloat_FromDouble(totEnergy/nsweep));
     PyTuple_SetItem(Data, 8, PyFloat_FromDouble(E2/nsweep));
+    PyTuple_SetItem(Data, 9, PyFloat_FromDouble(U4));
     return Data;
 }
 
@@ -426,7 +430,9 @@ PyObject * localUpdateMC(int totOrbs, double initSpin[totOrbs], double initD[tot
     double spin_ij;
     double totEnergy=0;
     double E2=0;
+    double M=0,M2=0,M4=0;
     for(int i=0;i<nsweep;i++){
+        for(int j=0;j<ninterval;j++) localUpdate(totOrbs, lattice, p_energy, p_totSpin);
         // spin statistics over space in each frame
         Vec spin_i_avg;
         Vec spin_j_avg;
@@ -440,6 +446,9 @@ PyObject * localUpdateMC(int totOrbs, double initSpin[totOrbs], double initD[tot
             plusEqual(&spin_j_avg, lattice[corrOrbPair[j][1]].spin);
             spin_ij_avg+=dot(lattice[corrOrbPair[j][0]].spin,lattice[corrOrbPair[j][1]].spin);
         }
+        M=dot(spin_i_avg,spin_i_avg)/nLat;
+        M2+=M*M;
+        M4+=M*M*M*M;
         cDivides(&spin_i_avg, nLat);
         cDivides(&spin_j_avg, nLat);
         vabs(&spin_i_avg);
@@ -448,15 +457,13 @@ PyObject * localUpdateMC(int totOrbs, double initSpin[totOrbs], double initD[tot
         plusEqual(&spin_j,spin_j_avg);
         spin_ij+=spin_ij_avg/nLat;
 
-        double e_avg=*p_energy/nLat;
+        double e_avg=*p_energy/totOrbs;
         totEnergy+=e_avg;
         E2+=e_avg*e_avg;
-
-        for(int j=0;j<ninterval;j++) localUpdate(totOrbs, lattice, p_energy, p_totSpin);
     }
-    
+    double U4=(M2/nsweep)*(M2/nsweep)/(M4/nsweep);
     PyObject *Data;
-    Data=PyTuple_New(9);
+    Data=PyTuple_New(10);
     PyTuple_SetItem(Data, 0, PyFloat_FromDouble(spin_i.x/nsweep));
     PyTuple_SetItem(Data, 1, PyFloat_FromDouble(spin_i.y/nsweep));
     PyTuple_SetItem(Data, 2, PyFloat_FromDouble(0));
@@ -466,5 +473,6 @@ PyObject * localUpdateMC(int totOrbs, double initSpin[totOrbs], double initD[tot
     PyTuple_SetItem(Data, 6, PyFloat_FromDouble(spin_ij/nsweep));
     PyTuple_SetItem(Data, 7, PyFloat_FromDouble(totEnergy/nsweep));
     PyTuple_SetItem(Data, 8, PyFloat_FromDouble(E2/nsweep));
+    PyTuple_SetItem(Data, 9, PyFloat_FromDouble(U4));
     return Data;
 }
