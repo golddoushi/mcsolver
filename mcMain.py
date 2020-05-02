@@ -188,6 +188,34 @@ class MC:
 
         # linking info.
         linkData=(c_int*(self.totOrbs*maxNLinking))()
+
+        #-------------------------------------------------------------------------------#
+        # linking info. for renormalized lattice
+        # count total sites in shrinked lat.
+        totOrb_rnorm=0
+        for orb in self.lattice:
+            if orb.chosen:totOrb_rnorm+=1
+        #print("total %d orbs in renormalized lattice"%totOrb_rnorm)
+        rOrb=(c_int*totOrb_rnorm)() # store id of renormalized orbs
+        cnt=0
+        for orb in self.lattice:
+            if orb.chosen:
+                rOrb[cnt]=orb.id
+                cnt+=1
+        
+        linkData_rnorm=(c_int*(totOrb_rnorm*maxNLinking))() # store their link info
+        cnt=0
+        for orb in self.lattice:
+            if orb.chosen:
+                for iorb in range(maxNLinking):
+                    linkData_rnorm[cnt]=c_int(orb.linkedOrb_rnorm[iorb].id) if iorb<len(orb.linkedOrb_rnorm) else c_int(-1)
+                    #print("orb%d ~ orb%d, linkeData_rnorm[%d]= %d"%(orb.id,orb.linkedOrb_rnorm[iorb].id,cnt,linkData_rnorm[cnt]))
+                    cnt+=1
+        #for cnt in range(totOrb_rnorm*maxNLinking):
+        #    print(linkData_rnorm[cnt])
+        #-------------------------------------------------------------------------------#
+
+
         # field
         h=c_double(self.h)
 
@@ -224,13 +252,18 @@ class MC:
             #print('Wolff')
             cMC=mylib.blockUpdateMC
             cMC.restype=py_object
-            data = cMC(self.totOrbs, initSpin, initD, nthermal, nsweep, maxNLinking_, nlinking, linkStrength, linkData, ninterval, nLat, corrOrbitalPair, flunc_, h)
+            data = cMC(self.totOrbs, initSpin, initD, nthermal, nsweep, maxNLinking_, nlinking, linkStrength, linkData, ninterval, nLat, corrOrbitalPair, flunc_, h,
+                       totOrb_rnorm, rOrb, linkData_rnorm)
             #spin, energy = data[0], data[1], data[2], data[3]
-            spin_i_x, spin_i_y, spin_i_z, spin_j_x, spin_j_y, spin_j_z, spin_ij, E, E2, U4=data
-            E*=self.T;E2*=self.T**2 # recover the real energies
+            spin_i_x, spin_i_y, spin_i_z, spin_j_x, spin_j_y, spin_j_z, spin_ij, E, E2, U4, E_r, E2_r=data
+            E*=self.T;E2*=self.T**2;E_r*=self.T;E2_r*=self.T**2 # recover the real energies
+            C=E2-E*E
+            C_r=E2_r-E_r*E_r
             spin_i=np.array([spin_i_x, spin_i_y, spin_i_z])
             spin_j=np.array([spin_j_x, spin_j_y, spin_j_z])
-            print('<i><j>=%.3f <ij>=%.3f <E>=%.3f <E2>=%.3f <U4>=%.3f'%(np.dot(spin_i,spin_j),spin_ij,E,E2,U4))
+            #      T       <i><j>     <ij>      <E>      <E2>      <U4>      <E_r>      <E2_r>  C  C_v
+            print('%.3f %.3f %.3f %.3f %.3f %.3f %.3f %.3f %.6f %.6f'%(
+                   self.T,np.dot(spin_i,spin_j),spin_ij,E,E2,       U4,       E_r,      E2_r,   C, C_r))
             '''
             if binGraph:
                 data=np.zeros((200,200))
@@ -246,12 +279,17 @@ class MC:
         elif algo=='Metroplis':
             cMC=mylib.localUpdateMC
             cMC.restype=py_object
-            data = cMC(self.totOrbs, initSpin, initD, nthermal, nsweep, maxNLinking_, nlinking, linkStrength, linkData, ninterval, nLat, corrOrbitalPair, flunc_, h)
-            spin_i_x, spin_i_y, spin_i_z, spin_j_x, spin_j_y, spin_j_z, spin_ij, E, E2, U4=data
-            E*=self.T;E2*=self.T**2 # recover the real energies
+            data = cMC(self.totOrbs, initSpin, initD, nthermal, nsweep, maxNLinking_, nlinking, linkStrength, linkData, ninterval, nLat, corrOrbitalPair, flunc_, h,
+                       totOrb_rnorm, rOrb, linkData_rnorm)
+            spin_i_x, spin_i_y, spin_i_z, spin_j_x, spin_j_y, spin_j_z, spin_ij, E, E2, U4, E_r, E2_r=data
+            E*=self.T;E2*=self.T**2;E_r*=self.T;E2_r*=self.T**2 # recover the real energies
+            C=E2-E*E
+            C_r=E2_r-E_r*E_r
             spin_i=np.array([spin_i_x, spin_i_y, spin_i_z])
             spin_j=np.array([spin_j_x, spin_j_y, spin_j_z])
-            print('<i><j>=%.3f <ij>=%.3f <E>=%.3f <E2>=%.3f <U4>=%.3f'%(np.dot(spin_i,spin_j),spin_ij,E,E2,U4))
+            #      T       <i><j>     <ij>      <E>      <E2>      <U4>      <E_r>      <E2_r>  C  C_v
+            print('%.3f %.3f %.3f %.3f %.3f %.3f %.3f %.3f %.6f %.6f'%(
+                   self.T,np.dot(spin_i,spin_j),spin_ij,E,E2,       U4,       E_r,      E2_r,   C, C_r))
             '''
             if binGraph:
                 data=np.zeros((200,200))
