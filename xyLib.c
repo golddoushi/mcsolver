@@ -56,8 +56,8 @@ double diagonalDot(Vec vec1, Vec vec2, Vec vec3){
 }
 Vec *generateRandomVec(){
     Vec *direction=(Vec*)malloc(sizeof(Vec));
-    direction->x=rand()/32767.0-0.5;
-    direction->y=rand()/32767.0-0.5;
+    direction->x=rand()/(double) RAND_MAX-0.5;
+    direction->y=rand()/(double) RAND_MAX-0.5;
     double len2=dot(*direction, *direction);
     if (len2>0.5)
     {
@@ -229,7 +229,7 @@ int expandBlock(int*beginIndex, int*endIndex, Orb *buffer[], int*blockLen, Orb *
             double corr=outOrb->sDotN*linkedOrb->sDotN*diagonalDot(refDirection,refDirection,outOrb->linkStrength[i])/2;
             
             //linkedOrb->d_onsiteEnergy=getDeltaOnsiteEnergy(linkedOrb);
-            if(corr<0 && (1-exp(corr))>rand()/32767.0){
+            if(corr<0 && (1-exp(corr))>rand()/(double) RAND_MAX){
                 //printf("          -->>fortunately it is added to block with possibility %f\n",(1-exp(2*corr)));
                 // update block
                 *blockLen+=1;
@@ -294,7 +294,7 @@ void blockUpdate(int totOrbs, Orb lattice[], double*p_energy, Vec *p_totSpin){
     for(i=0;i<*p_blockLen;i++) block[i]->inBlock=0;
     free(refDirection);
     // process the onsite anisotropy
-    if(tot_d_onsiteEnergy<=0 || exp(-tot_d_onsiteEnergy)>rand()/32767.0){
+    if(tot_d_onsiteEnergy<=0 || exp(-tot_d_onsiteEnergy)>rand()/(double) RAND_MAX){
         for(i=0;i<*p_blockLen;i++){
             if(i!=totOrbs-1)plusEqual(&block[i]->spin, block[i]->transSpin);
             //printf("    after update orb %d spin converted to %.3f %.3f %.3f\n",block[i]->id,block[i]->spin.coor[0],block[i]->spin.coor[1],block[i]->spin.coor[2]);
@@ -328,7 +328,7 @@ void localUpdate(int totOrbs, Orb lattice[], double *p_energy, Vec *p_totSpin){
     //printf("lead to the translation spin vector: %.3f %.3f and delta Ecorr: %.3f, transition possibility %.3f P\n",
     //      lattice[seedID].transSpin.x,lattice[seedID].transSpin.y,corr,100*exp(-corr));
     
-    if(corr<=0 || exp(-corr)>rand()/32767.0){  // new direction is energertically favoured thus accept directly
+    if(corr<=0 || exp(-corr)>rand()/(double) RAND_MAX){  // new direction is energertically favoured thus accept directly
         plusEqual(p_totSpin,lattice[seedID].transSpin);
         plusEqual(&lattice[seedID].spin,lattice[seedID].transSpin);
         *p_energy+=corr;

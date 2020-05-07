@@ -113,8 +113,9 @@ def saveParam():
     f.write("%d\n"%ncores)
     f.close()
 
-def loadParam():
-    filePath=filedialog.askopenfilename()
+def loadParam(updateGUI=True,rpath='./mcInput'):
+    global LMatrix, LPack, pos, S, DList, bondList, T0, T1, nT, nthermal, nsweep, ninterval, modelType, algorithm, GcOrb, ncores
+    filePath=filedialog.askopenfilename() if updateGUI else rpath
     f=open(filePath,'r')
     data=[line for line in f.read().split('\n') if line]
     f.close()
@@ -162,31 +163,46 @@ def loadParam():
     # load orbitals
     norb=int(findall(r"[0-9]+",data[tagOrbitals+1])[0])
     orbInfo=[]
+    pos=[]
+    S=[]
+    DList=[]
     for i in range(norb):
         ele=findall(r"[0-9\.\-]+",data[tagOrbitals+3+i])
         orbInfo.append([int(ele[0]),int(ele[1]),float(ele[2]),\
                        (float(ele[3]),float(ele[4]),float(ele[5])),\
                        (float(ele[6]),float(ele[7]),float(ele[8]))])
+        pos.append([float(ele[3]),float(ele[4]),float(ele[5])])
+        S.append(float(ele[2]))
+        DList.append([float(ele[6]),float(ele[7]),float(ele[8])])
     # load bonds
     nbonds=int(findall(r"[0-9]+",data[tagBonds+1])[0])
     bondInfo=[]
+    bondList=[]
     for i in range(nbonds):
         ele=findall(r"[0-9\.\-]+",data[tagBonds+3+i])
         bondInfo.append([int(ele[0]),
                          [float(ele[1]),float(ele[2]),float(ele[3])],
                          [int(ele[4]),int(ele[5]),(float(ele[6]),float(ele[7]),float(ele[8]))]
                         ])
+                         # source    target      [overlat.                                 ] Jz            Jx            Jy                           
+        bondList.append([int(ele[4]),int(ele[5]),[float(ele[6]),float(ele[7]),float(ele[8])],float(ele[1]),float(ele[2]),float(ele[3])])
 
     # load mesurements
     GcPack=findall(r'[0-9\-]+',data[tagMesurement+1])
-    
+    s, t, v1, v2, v3 = [int(x) for x in GcPack]
+    GcOrb=[[s,t],[v1,v2,v3]]
     # load other parameters
     Tpack=findall(r"[0-9\.]+",data[tagTemperature+1])
+    T0, T1, nT = float(Tpack[0]), float(Tpack[1]), int(Tpack[2])
     nTermSweep=findall(r"[0-9\.\-]+",data[tagSweeps+1])
+    nthermal, nsweep, ninterval=[int(x) for x in nTermSweep]
     modelType=data[tagModel+1]
     algorithm=data[tagAlgorithm+1]
-    ncores=[int(data[tagNcores+1])]
+    _ncores=[int(data[tagNcores+1])]
+    ncores=_ncores[0]
 
+    if not updateGUI:
+        return True
     # update gui window
     for i in range(3):
         gui.latticeGui[i].setValue([float(x) for x in LMatrix[i]])
@@ -199,8 +215,7 @@ def loadParam():
     gui.MCparamGui.setValue(nTermSweep)
     gui.modelStr.set(modelType)
     gui.algoStr.set(algorithm)
-    gui.coreGui.setValue(ncores)
+    gui.coreGui.setValue(_ncores)
     gui.updateStructureViewer()
-
     return True
     

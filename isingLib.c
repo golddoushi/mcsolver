@@ -130,7 +130,7 @@ int expandBlock(int*beginIndex, int*endIndex, Orb *buffer[], int*blockLen, Orb *
         if(linkedOrb->inBlock==0){
             double corr=(outOrb->linkStrength[i])*(outOrb->spin)*(linkedOrb->spin); // bond strength
             //printf("          since it is not in block thus we calc. the correlation energy is %f\n",corr);
-            if(corr<0 && (1-exp(2*corr))>rand()/32767.0){
+            if(corr<0 && (1-exp(2*corr))>rand()/(double) RAND_MAX){
                 //printf("          -->>fortunately it is added to block, Padd=%f\n",(1-exp(2*corr)));
                 // update block
                 *blockLen+=1;
@@ -190,7 +190,7 @@ void localUpdate(int totOrbs, Orb lattice[], double *p_energy, double *p_totSpin
         lattice[seedID].spin*=-1;
         *p_totSpin+=(lattice[seedID].spin*2);
         *p_energy-=corr;
-    }else if (exp(corr)>rand()/32767.0){
+    }else if (exp(corr)>rand()/(double) RAND_MAX){
         lattice[seedID].spin*=-1;
         *p_totSpin+=(lattice[seedID].spin*2);
         *p_energy-=corr;
