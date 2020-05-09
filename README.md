@@ -7,6 +7,7 @@ Email: liangliu@mail.sdu.edu.cn
 You can download the packed .exe (only tested in Windows 10 platform) from the following link. Wish it can find something helpful for you. And if it was used for publication, please cite:
 [1] Magnetic switches via electric field in BN nanoribbons. Applied Surface Science 480(2019)
 
+
 网盘下载地址
 链接：https://pan.baidu.com/s/1EaDqOOdB7AP9WXrwEIEaxQ
 提取码：52ze
