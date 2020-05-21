@@ -273,7 +273,7 @@ def loadMCSettings():
 
     corr_base=Frame(SettingFrame)
     corr_base.grid(row=3,column=0,sticky='W')
-    corrGui=toolbox.NoteFrm(corr_base, init_notes=['Mesure corr. s','t','overLat:','',''], init_data=[0,0,0,0,0],entryWidth=3,row=True)
+    corrGui=toolbox.NoteFrm(corr_base, init_notes=['Mesure corr. si','sj','overLat:','',''], init_data=[0,0,0,0,0],entryWidth=3,row=True)
 
     core_base=Frame(SettingFrame)
     core_base.grid(row=4,column=0,sticky='W')

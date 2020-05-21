@@ -51,7 +51,7 @@ def startSimulaton():
             paramPack.append([iT,T,bondList,LMatrix,pos,io.S,io.DList,io.nsweep,io.nthermal,io.ninterval,io.LPack[0],io.LPack[1],io.LPack[2],io.algorithm,
                               io.GcOrb])
         
-        TResult=[];magResult=[];susResult=[];energyResult=[];capaResult=[];u4Result=[]
+        TResult=[];SpinIResult=[];SpinJResult=[];susResult=[];energyResult=[];capaResult=[];u4Result=[]
         while(True): # using pump strategy to reduce the costs of RAM
             if len(paramPack)==0:
                 break
@@ -65,13 +65,14 @@ def startSimulaton():
             for result in pool.imap_unordered(startMC,paramPack_tmp):
                 ID, T, spin_i, spin_j, spin_ij, E, E2, U4, N=result
                 TResult.append(T)
-                magResult.append(spin_i)
+                SpinIResult.append(spin_i)
+                SpinJResult.append(spin_j)
                 susResult.append((spin_ij-spin_i*spin_j)/T)
                 energyResult.append(E)
                 capaResult.append((E2-E*E)/T**2)
                 u4Result.append(U4)
             pool.close()
-        gui.updateResultViewer(TList=TResult, magList=magResult, susList=capaResult)
+        gui.updateResultViewer(TList=TResult, magList=SpinIResult, susList=capaResult)
     # continuous model settings
     elif(io.modelType=='XY' or io.modelType=='Heisenberg'):
         for bond in bondList:
@@ -87,7 +88,7 @@ def startSimulaton():
             paramPack.append([iT,T,bondList,LMatrix,pos,io.S,io.DList,io.nsweep,io.nthermal,io.ninterval,io.LPack[0],io.LPack[1],io.LPack[2],io.algorithm,On,
                               io.GcOrb])
 
-        TResult=[];magResult=[];susResult=[];energyResult=[];capaResult=[];u4Result=[]
+        TResult=[];SpinIResult=[];SpinJResult=[];susResult=[];energyResult=[];capaResult=[];u4Result=[]
         while(True): # using pump strategy to reduce the costs of RAM
             if len(paramPack)==0:
                 break
@@ -101,13 +102,14 @@ def startSimulaton():
             for result in pool.imap_unordered(startMCForOn,paramPack_tmp):
                 ID, T, spin_i, spin_j, spin_ij, E, E2, U4, N =result
                 TResult.append(T)
-                magResult.append(np.sqrt(sum(spin_i*spin_i)))
+                SpinIResult.append(np.sqrt(sum(spin_i*spin_i)))
+                SpinJResult.append(np.sqrt(sum(spin_j*spin_j)))
                 susResult.append((spin_ij-np.dot(spin_i,spin_j))/T)
                 energyResult.append(E)
                 capaResult.append((E2-E*E)/T**2)
                 u4Result.append(U4)
             pool.close()
-        gui.updateResultViewer(TList=TResult, magList=magResult, susList=capaResult)
+        gui.updateResultViewer(TList=TResult, magList=SpinIResult, susList=capaResult)
     else:
         print("for now only Ising, XY and Heisenberg model is supported")
         gui.submitBtn.config(state='normal')
@@ -115,9 +117,9 @@ def startSimulaton():
 
     # writting result file
     f=open('./result.txt','w')
-    f.write('#Temp #Spin    #Susc      #energy  #capacity #Binder cumulante\n')
-    for T, mag, sus, energy, capa, u4 in zip(TResult, magResult, susResult, energyResult, capaResult, u4Result):
-        f.write('%.3f %.6f %.6f %.6f %.6f %.6f\n'%(T, mag, sus, energy, capa, u4))
+    f.write('#Temp #<Si>    #<Sj>    #Susc    #energy   #capacity #Binder cumulante\n')
+    for T, si, sj, sus, energy, capa, u4 in zip(TResult, SpinIResult, SpinJResult, susResult, energyResult, capaResult, u4Result):
+        f.write('%.3f %.6f %.6f %.6f %.6f %.6f %.6f\n'%(T, si, sj, sus, energy, capa, u4))
     f.close()
     gui.submitBtn.config(state='normal')
     print("time elapsed %.3f s"%(time.time()-time0))

@@ -28,12 +28,14 @@ You can download the packed .exe (only tested in Windows 10 platform) from the f
 
 4.设定其他参数，包括温度始末点以及总的温度插值点、nthermal：热化（达到热平衡）所需的MC步、nsweep：热化后的统计次数、模型、算法（暂只支持metroplis局域更新，与wolff区块更新，即将加入Swensden-Wang算法、continuous time 算法与order conserving算法）
 
-5.设定并行线程数
+5.设定记录的自旋i，自旋j，以及这两个自旋相距的晶格矢量。
 
-6.(可选)点击save按钮保存当前设置
+6.设定并行线程数
 
-7.点击startMC按钮
+7.(可选)点击save按钮保存当前设置
 
-8.右侧出图之后就计算完成了。在软件所在目录有一个result.txt记录了平均自旋、磁化率、能量、比热、Binder cumulate U4等信息。如果并行计算温度的次序可能是错乱的，但是每行的对应是正确的。
+8.点击startMC按钮
 
-9.(可选)可以点击load按钮载入已有设置。sample文件夹中为CrI3的Heisenberg模型设置，可参考。设置文件为txt格式，可直接用记事本进行修改。
+9.右侧出图之后就计算完成了。在软件所在目录有一个result.txt记录了平均自旋（平均到前面定义的自旋i与自旋j上）、自旋关联、能量、比热、Binder cumulate U4等信息。如果并行计算温度的次序可能是错乱的，但是每行的对应是正确的。
+
+10.(可选)可以点击load按钮载入已有设置。sample文件夹中为CrI3的Heisenberg模型设置，可参考。设置文件为txt格式，可直接用记事本进行修改。
