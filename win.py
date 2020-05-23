@@ -21,10 +21,10 @@ def startMCForOn(param): # start MC for O(n) model
     # unzip all global parameters for every processing
     ID, T, bondList,LMatrix,pos,S,DList,nsweep,nthermal,ninterval,Lx,Ly,Lz,algorithm,On,GcOrb=param
     mcslave=mc.MC(ID,LMatrix,pos=pos,S=S,D=DList,bondList=bondList,T=T,Lx=Lx,Ly=Ly,Lz=Lz,ki_s=GcOrb[0][0],ki_t=GcOrb[0][1],ki_overLat=GcOrb[1],h=0.1)
-    spin_i, spin_j, spin_ij, E, E2, U4=mcslave.mainLoopViaCLib_On(nsweep=nsweep,nthermal=nthermal,ninterval=ninterval,algo=algorithm,On=On)
+    spin_i, spin_j, spin_ij, autoCorr, E, E2, U4=mcslave.mainLoopViaCLib_On(nsweep=nsweep,nthermal=nthermal,ninterval=ninterval,algo=algorithm,On=On)
     #mData=abs(mData)/Lx/Ly/Lz
     #eData/=(Lx*Ly*Lz)
-    return ID, T, spin_i, spin_j, spin_ij, E, E2, U4, mcslave.totOrbs
+    return ID, T, spin_i, spin_j, spin_ij, autoCorr, E, E2, U4, mcslave.totOrbs
 
 def startSimulaton():
     time0=time.time()
@@ -88,7 +88,7 @@ def startSimulaton():
             paramPack.append([iT,T,bondList,LMatrix,pos,io.S,io.DList,io.nsweep,io.nthermal,io.ninterval,io.LPack[0],io.LPack[1],io.LPack[2],io.algorithm,On,
                               io.GcOrb])
 
-        TResult=[];SpinIResult=[];SpinJResult=[];susResult=[];energyResult=[];capaResult=[];u4Result=[]
+        TResult=[];SpinIResult=[];SpinJResult=[];susResult=[];energyResult=[];capaResult=[];u4Result=[];autoCorrResult=[]
         while(True): # using pump strategy to reduce the costs of RAM
             if len(paramPack)==0:
                 break
@@ -100,11 +100,12 @@ def startSimulaton():
                     break
             pool=Pool(processes=io.ncores)
             for result in pool.imap_unordered(startMCForOn,paramPack_tmp):
-                ID, T, spin_i, spin_j, spin_ij, E, E2, U4, N =result
+                ID, T, spin_i, spin_j, spin_ij, autoCorr, E, E2, U4, N =result
                 TResult.append(T)
                 SpinIResult.append(np.sqrt(sum(spin_i*spin_i)))
                 SpinJResult.append(np.sqrt(sum(spin_j*spin_j)))
                 susResult.append((spin_ij-np.dot(spin_i,spin_j))/T)
+                autoCorrResult.append(autoCorr)
                 energyResult.append(E)
                 capaResult.append((E2-E*E)/T**2)
                 u4Result.append(U4)
