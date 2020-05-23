@@ -418,7 +418,7 @@ PyObject * blockUpdateMC(int totOrbs, double initSpin[totOrbs], double initD[tot
         E2_r+=e_avg_rnorm*e_avg_rnorm;
     }
     double U4=(M2/nsweep)*(M2/nsweep)/(M4/nsweep);
-    double autoCorr=(MdotM_tmp/nsweep-M_tot/nsweep*M_tot/nsweep);
+    double autoCorr=(MdotM_tmp/nsweep-(M_tot/nsweep)*(M_tot/nsweep));
     PyObject *Data;
     Data=PyTuple_New(13);
     PyTuple_SetItem(Data, 0, PyFloat_FromDouble(spin_i.x/nsweep));

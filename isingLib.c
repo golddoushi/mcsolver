@@ -229,6 +229,7 @@ PyObject * blockUpdateMC(int totOrbs, double initSpin[totOrbs], int nthermal, in
     double totEnergy=0, totEnergy_rnorm=0;
     double E2=0, E2_rnorm=0;
     double M=0,M2=0,M4=0;
+    double M_tmp=0,MdotM_tmp=0,M_tot=0;
     for(int i=0;i<nsweep;i++){
         for(int j=0;j<ninterval;j++) blockUpdate(totOrbs, lattice, p_energy, p_totSpin, p_energy_rnorm); // one sweep
         //printf("sweep%d finished\n",i);
@@ -246,6 +247,10 @@ PyObject * blockUpdateMC(int totOrbs, double initSpin[totOrbs], int nthermal, in
         M=spin_i_avg/nLat;
         M2+=M*M;
         M4+=M*M*M*M;
+        //calc auto-correlation
+        M_tot+=M;
+        MdotM_tmp+=M_tmp*M;
+        M_tmp=M;
 
         spin_i+=fabs(spin_i_avg)/nLat;
         spin_j+=fabs(spin_j_avg)/nLat;
@@ -264,16 +269,18 @@ PyObject * blockUpdateMC(int totOrbs, double initSpin[totOrbs], int nthermal, in
     //printf("average energy of full lattice: %.3f\n",totEnergy/nsweep);
     //printf("average energy of renormalized lattice: %.3f\n",totEnergy_rnorm/nsweep);
     double U4=(M2/nsweep)*(M2/nsweep)/(M4/nsweep);
+    double autoCorr=(MdotM_tmp/nsweep-(M_tot/nsweep)*(M_tot/nsweep));
     PyObject *Data;
-    Data=PyTuple_New(8);
+    Data=PyTuple_New(9);
     PyTuple_SetItem(Data, 0, PyFloat_FromDouble(spin_i/nsweep));
     PyTuple_SetItem(Data, 1, PyFloat_FromDouble(spin_j/nsweep));
     PyTuple_SetItem(Data, 2, PyFloat_FromDouble(spin_ij/nsweep));
-    PyTuple_SetItem(Data, 3, PyFloat_FromDouble(totEnergy/nsweep));
-    PyTuple_SetItem(Data, 4, PyFloat_FromDouble(E2/nsweep));
-    PyTuple_SetItem(Data, 5, PyFloat_FromDouble(totEnergy_rnorm/nsweep));
-    PyTuple_SetItem(Data, 6, PyFloat_FromDouble(E2_rnorm/nsweep));
-    PyTuple_SetItem(Data, 7, PyFloat_FromDouble(U4));
+    PyTuple_SetItem(Data, 3, PyFloat_FromDouble(autoCorr));
+    PyTuple_SetItem(Data, 4, PyFloat_FromDouble(totEnergy/nsweep));
+    PyTuple_SetItem(Data, 5, PyFloat_FromDouble(E2/nsweep));
+    PyTuple_SetItem(Data, 6, PyFloat_FromDouble(totEnergy_rnorm/nsweep));
+    PyTuple_SetItem(Data, 7, PyFloat_FromDouble(E2_rnorm/nsweep));
+    PyTuple_SetItem(Data, 8, PyFloat_FromDouble(U4));
     return Data;
 }
 
@@ -300,6 +307,7 @@ PyObject * localUpdateMC(int totOrbs, double initSpin[totOrbs], int nthermal, in
     double E2=0, E2_rnorm=0;
     *p_energy=0;
     double M=0,M2=0,M4=0;
+    double M_tmp=0,MdotM_tmp=0,M_tot=0;
     for(int i=0;i<totOrbs;i++){ // calc. energy in renormalized system
         *p_energy+=getCorrEnergy(lattice+i);
     }
@@ -326,6 +334,10 @@ PyObject * localUpdateMC(int totOrbs, double initSpin[totOrbs], int nthermal, in
         M=spin_i_avg/nLat;
         M2+=M*M;
         M4+=M*M*M*M;
+        //calc auto-correlation
+        M_tot+=M;
+        MdotM_tmp+=M_tmp*M;
+        M_tmp=M;
 
         spin_i+=fabs(spin_i_avg)/nLat;
         spin_j+=fabs(spin_j_avg)/nLat;
@@ -342,15 +354,17 @@ PyObject * localUpdateMC(int totOrbs, double initSpin[totOrbs], int nthermal, in
         E2_rnorm+=e_avg_rnorm*e_avg_rnorm;
     }
     double U4=(M2/nsweep)*(M2/nsweep)/(M4/nsweep);
+    double autoCorr=(MdotM_tmp/nsweep-(M_tot/nsweep)*(M_tot/nsweep));
     PyObject *Data;
-    Data=PyTuple_New(8);
+    Data=PyTuple_New(9);
     PyTuple_SetItem(Data, 0, PyFloat_FromDouble(spin_i/nsweep));
     PyTuple_SetItem(Data, 1, PyFloat_FromDouble(spin_j/nsweep));
     PyTuple_SetItem(Data, 2, PyFloat_FromDouble(spin_ij/nsweep));
-    PyTuple_SetItem(Data, 3, PyFloat_FromDouble(totEnergy/nsweep));
-    PyTuple_SetItem(Data, 4, PyFloat_FromDouble(E2/nsweep));
-    PyTuple_SetItem(Data, 5, PyFloat_FromDouble(totEnergy_rnorm/nsweep));
-    PyTuple_SetItem(Data, 6, PyFloat_FromDouble(E2_rnorm/nsweep));
-    PyTuple_SetItem(Data, 7, PyFloat_FromDouble(U4));
+    PyTuple_SetItem(Data, 3, PyFloat_FromDouble(autoCorr));
+    PyTuple_SetItem(Data, 4, PyFloat_FromDouble(totEnergy/nsweep));
+    PyTuple_SetItem(Data, 5, PyFloat_FromDouble(E2/nsweep));
+    PyTuple_SetItem(Data, 6, PyFloat_FromDouble(totEnergy_rnorm/nsweep));
+    PyTuple_SetItem(Data, 7, PyFloat_FromDouble(E2_rnorm/nsweep));
+    PyTuple_SetItem(Data, 8, PyFloat_FromDouble(U4));
     return Data;
 }

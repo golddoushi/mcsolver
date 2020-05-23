@@ -126,27 +126,27 @@ class MC:
             cMC.restype=py_object
             data=cMC(self.totOrbs, initSpin, nthermal, nsweep, maxNLinking, nlinking, linkStrength, linkData, ninterval, nLat, corrOrbitalPair, h,
                      totOrb_rnorm, rOrb, linkData_rnorm)
-            spin_i, spin_j, spin_ij, E, E2, E_rnorm, E2_rnorm, U4 = data
+            spin_i, spin_j, spin_ij, autoCorr, E, E2, E_rnorm, E2_rnorm, U4 = data
             E*=self.T;E2*=self.T**2;E_rnorm*=self.T;E2_rnorm*=self.T**2 # recover the real energies
             #print("T=%.3f, <Si>=%.3f, <Sj>=%.3f, <SiSj>=%.3f, <E>=%.3f, <E2>=%.3f, <Er>=%.3f, <E2_r>=%.3f, C=%.6f, Cr=%.6f"%(
-            #       self.T,    spin_i,    spin_j,     spin_ij,        E,        E2,   E_rnorm,    E2_rnorm, E2-E**2, E2_rnorm-E_rnorm**2))
-            print("%.3f %.3f %.3f %.3f %.3f %.3f %.3f %.3f %.6f %.6f %.6f"%(
-                   self.T,    spin_i,    spin_j,     spin_ij,        E,        E2,   E_rnorm,    E2_rnorm, E2-E**2, E2_rnorm-E_rnorm**2, U4))
+            #       self.T,    spin_i,    spin_j,     spin_ij,        autoCorr,   E,        E2,   E_rnorm,    E2_rnorm, E2-E**2, E2_rnorm-E_rnorm**2))
+            print("%.3f %.3f %.3f %.3f %.6f %.3f %.3f %.3f %.3f %.6f %.6f %.6f"%(
+                   self.T,    spin_i,    spin_j,     spin_ij,        autoCorr,    E,        E2,   E_rnorm,    E2_rnorm, E2-E**2, E2_rnorm-E_rnorm**2, U4))
             
-            return spin_i, spin_j, spin_ij, E, E2, U4
+            return spin_i, spin_j, spin_ij, autoCorr, E, E2, U4
         elif algo=='Metroplis':
             cMC=mylib.localUpdateMC
             cMC.restype=py_object
             data=cMC(self.totOrbs, initSpin, nthermal, nsweep, maxNLinking, nlinking, linkStrength, linkData, ninterval, nLat, corrOrbitalPair, h,
                      totOrb_rnorm, rOrb, linkData_rnorm)
-            spin_i, spin_j, spin_ij, E, E2, E_rnorm, E2_rnorm, U4 = data
+            spin_i, spin_j, spin_ij, autoCorr, E, E2, E_rnorm, E2_rnorm, U4 = data
             E*=self.T;E2*=self.T**2;E_rnorm*=self.T;E2_rnorm*=self.T**2 # recover the real energies
             #print("T=%.3f, <Si>=%.3f, <Sj>=%.3f, <SiSj>=%.3f, <E>=%.3f, <E2>=%.3f, <Er>=%.3f, <E2_r>=%.3f, C=%.6f, Cr=%.6f"%(
-            #       self.T,    spin_i,    spin_j,     spin_ij,        E,        E2,   E_rnorm,    E2_rnorm, E2-E**2, E2_rnorm-E_rnorm**2))
-            print("%.3f %.3f %.3f %.3f %.3f %.3f %.3f %.3f %.6f %.6f %.6f"%(
-                   self.T,    spin_i,    spin_j,     spin_ij,        E,        E2,   E_rnorm,    E2_rnorm, E2-E**2, E2_rnorm-E_rnorm**2, U4))
+            #       self.T,    spin_i,    spin_j,     spin_ij,        autoCorr,   E,        E2,   E_rnorm,    E2_rnorm, E2-E**2, E2_rnorm-E_rnorm**2))
+            print("%.3f %.3f %.3f %.3f %.6f %.3f %.3f %.3f %.3f %.6f %.6f %.6f"%(
+                   self.T,    spin_i,    spin_j,     spin_ij,        autoCorr,    E,        E2,   E_rnorm,    E2_rnorm, E2-E**2, E2_rnorm-E_rnorm**2, U4))
             
-            return spin_i, spin_j, spin_ij, E, E2, U4
+            return spin_i, spin_j, spin_ij, autoCorr, E, E2, U4
 
     def mainLoopViaCLib_On(self,nsweep=1000,nthermal=5000,ninterval=-1,algo='Metroplis',On=3,flunc=0.0,h=0.,binGraph=False):
         self.nsweep=nsweep

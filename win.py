@@ -11,11 +11,11 @@ def startMC(param): # start MC for Ising model
     # unzip all global parameters for every processing
     ID, T, bondList,LMatrix,pos,S,DList,nsweep,nthermal,ninterval,Lx,Ly,Lz,algorithm,GcOrb=param
     mcslave=mc.MC(ID,LMatrix,pos=pos,S=S,D=DList,bondList=bondList,T=T,Lx=Lx,Ly=Ly,Lz=Lz,ki_s=GcOrb[0][0],ki_t=GcOrb[0][1],ki_overLat=GcOrb[1])
-    spin_i, spin_j, spin_ij, E, E2, U4=mcslave.mainLoopViaCLib(nsweep=nsweep,nthermal=nthermal,ninterval=ninterval,algo=algorithm)
+    spin_i, spin_j, spin_ij, autoCorr, E, E2, U4=mcslave.mainLoopViaCLib(nsweep=nsweep,nthermal=nthermal,ninterval=ninterval,algo=algorithm)
     #mData=abs(mData)/Lx/Ly/Lz
     #eData/=(Lx*Ly*Lz)
     #print("<ij>=",np.mean(corr))
-    return ID, T, spin_i, spin_j, spin_ij, E, E2, U4, mcslave.totOrbs
+    return ID, T, spin_i, spin_j, spin_ij, autoCorr, E, E2, U4, mcslave.totOrbs
 
 def startMCForOn(param): # start MC for O(n) model
     # unzip all global parameters for every processing
@@ -51,7 +51,7 @@ def startSimulaton():
             paramPack.append([iT,T,bondList,LMatrix,pos,io.S,io.DList,io.nsweep,io.nthermal,io.ninterval,io.LPack[0],io.LPack[1],io.LPack[2],io.algorithm,
                               io.GcOrb])
         
-        TResult=[];SpinIResult=[];SpinJResult=[];susResult=[];energyResult=[];capaResult=[];u4Result=[]
+        TResult=[];SpinIResult=[];SpinJResult=[];susResult=[];energyResult=[];capaResult=[];u4Result=[];autoCorrResult=[]
         while(True): # using pump strategy to reduce the costs of RAM
             if len(paramPack)==0:
                 break
@@ -63,11 +63,12 @@ def startSimulaton():
                     break
             pool=Pool(processes=io.ncores)
             for result in pool.imap_unordered(startMC,paramPack_tmp):
-                ID, T, spin_i, spin_j, spin_ij, E, E2, U4, N=result
+                ID, T, spin_i, spin_j, spin_ij, autoCorr, E, E2, U4, N=result
                 TResult.append(T)
                 SpinIResult.append(spin_i)
                 SpinJResult.append(spin_j)
                 susResult.append((spin_ij-spin_i*spin_j)/T)
+                autoCorrResult.append(autoCorr)
                 energyResult.append(E)
                 capaResult.append((E2-E*E)/T**2)
                 u4Result.append(U4)
@@ -118,9 +119,9 @@ def startSimulaton():
 
     # writting result file
     f=open('./result.txt','w')
-    f.write('#Temp #<Si>    #<Sj>    #Susc    #energy   #capacity #Binder cumulante\n')
-    for T, si, sj, sus, energy, capa, u4 in zip(TResult, SpinIResult, SpinJResult, susResult, energyResult, capaResult, u4Result):
-        f.write('%.3f %.6f %.6f %.6f %.6f %.6f %.6f\n'%(T, si, sj, sus, energy, capa, u4))
+    f.write('#Temp #<Si>    #<Sj>    #Susc    #energy   #capacity #Binder cumulante #auto-corr.\n')
+    for T, si, sj, sus, energy, capa, u4, autoCorr in zip(TResult, SpinIResult, SpinJResult, susResult, energyResult, capaResult, u4Result, autoCorrResult):
+        f.write('%.3f %.6f %.6f %.6f %.6f %.6f %.6f %.6f\n'%(T, si, sj, sus, energy, capa, u4, autoCorr))
     f.close()
     gui.submitBtn.config(state='normal')
     print("time elapsed %.3f s"%(time.time()-time0))
