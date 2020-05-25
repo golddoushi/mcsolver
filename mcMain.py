@@ -3,6 +3,7 @@ from random import random, randint
 import Lattice as lat
 import numpy as np
 import time
+import simpleLoader as sL
 
 class MC:
     def __init__(self,ID,LMatrix,pos=[],S=[],D=[],bondList=[],T=1,Lx=1,Ly=1,Lz=1,ki_s=0,ki_t=0,ki_overLat=[0,0,0],h=0.): # init for specified temperature
@@ -120,7 +121,7 @@ class MC:
             corrOrbitalPair[ipair*2]=pair[0]
             corrOrbitalPair[ipair*2+1]=pair[1]
 
-        mylib=CDLL("./isinglib.so")
+        mylib=CDLL(sL.path+"isinglib.so")
         if algo=='Wolff':
             cMC=mylib.blockUpdateMC
             cMC.restype=py_object
@@ -241,9 +242,9 @@ class MC:
         
         flunc_=c_double(flunc)
         if On==2:
-            mylib=CDLL("./xylib.so")
+            mylib=CDLL(sL.path+"xylib.so")
         elif On==3:
-            mylib=CDLL("./heisenberglib.so")
+            mylib=CDLL(sL.path+"heisenberglib.so")
         else:
             print("Error: undefined O(n)")
             return

@@ -6,6 +6,9 @@ import Lattice as lat
 import mcMain as mc
 import fileio as io
 
+global path
+path='./'
+
 def startMCForIsing(param): # start MC for Ising model
     # unzip all global parameters for every processing
     ID, T, bondList,LMatrix,pos,S,DList,nsweep,nthermal,ninterval,Lx,Ly,Lz,algorithm,GcOrb=param
