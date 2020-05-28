@@ -87,15 +87,29 @@ class MC:
         # linking info. for renormalized lattice
         # count total sites in shrinked lat.
         totOrb_rnorm=0
+        norbInCluster=-1
         for orb in self.lattice:
-            if orb.chosen:totOrb_rnorm+=1
+            if orb.chosen:
+                totOrb_rnorm+=1
+                norbInCluster=len(orb.orb_cluster)
         #print("total %d orbs in renormalized lattice"%totOrb_rnorm)
-        rOrb=(c_int*totOrb_rnorm)() # store id of renormalized orbs
+        rOrb=(c_int*totOrb_rnorm)() # store id of renormalized orb cores
+        rOrbCluster=(c_int*(totOrb_rnorm*norbInCluster))() # store id of renormalized orbs in cluster
         cnt=0
         for orb in self.lattice:
             if orb.chosen:
                 rOrb[cnt]=orb.id
                 cnt+=1
+        cnt=0
+        #print("checking while preparing info.>>>>")
+        for orb in self.lattice:
+            if orb.chosen:
+                #print("orb%d is chosen"%orb.id)
+                for orbInCluster in orb.orb_cluster:
+                    rOrbCluster[cnt]=orbInCluster.id
+                    #print("    orb%d"%orbInCluster.id)
+                    cnt+=1
+        #print("<<<<")
         
         linkData_rnorm=(c_int*(totOrb_rnorm*maxNLinking))() # store their link info
         cnt=0
@@ -126,7 +140,7 @@ class MC:
             cMC=mylib.blockUpdateMC
             cMC.restype=py_object
             data=cMC(self.totOrbs, initSpin, nthermal, nsweep, maxNLinking, nlinking, linkStrength, linkData, ninterval, nLat, corrOrbitalPair, h,
-                     totOrb_rnorm, rOrb, linkData_rnorm)
+                     totOrb_rnorm, norbInCluster, rOrb, rOrbCluster, linkData_rnorm)
             spin_i, spin_j, spin_ij, autoCorr, E, E2, E_rnorm, E2_rnorm, U4 = data
             E*=self.T;E2*=self.T**2;E_rnorm*=self.T;E2_rnorm*=self.T**2 # recover the real energies
             #print("T=%.3f, <Si>=%.3f, <Sj>=%.3f, <SiSj>=%.3f, <E>=%.3f, <E2>=%.3f, <Er>=%.3f, <E2_r>=%.3f, C=%.6f, Cr=%.6f"%(
@@ -139,7 +153,7 @@ class MC:
             cMC=mylib.localUpdateMC
             cMC.restype=py_object
             data=cMC(self.totOrbs, initSpin, nthermal, nsweep, maxNLinking, nlinking, linkStrength, linkData, ninterval, nLat, corrOrbitalPair, h,
-                     totOrb_rnorm, rOrb, linkData_rnorm)
+                     totOrb_rnorm, norbInCluster, rOrb, rOrbCluster, linkData_rnorm)
             spin_i, spin_j, spin_ij, autoCorr, E, E2, E_rnorm, E2_rnorm, U4 = data
             E*=self.T;E2*=self.T**2;E_rnorm*=self.T;E2_rnorm*=self.T**2 # recover the real energies
             #print("T=%.3f, <Si>=%.3f, <Sj>=%.3f, <SiSj>=%.3f, <E>=%.3f, <E2>=%.3f, <Er>=%.3f, <E2_r>=%.3f, C=%.6f, Cr=%.6f"%(
@@ -195,14 +209,28 @@ class MC:
         # count total sites in shrinked lat.
         totOrb_rnorm=0
         for orb in self.lattice:
-            if orb.chosen:totOrb_rnorm+=1
+            if orb.chosen:
+                totOrb_rnorm+=1
+                norbInCluster=len(orb.orb_cluster)
         #print("total %d orbs in renormalized lattice"%totOrb_rnorm)
         rOrb=(c_int*totOrb_rnorm)() # store id of renormalized orbs
+        rOrbCluster=(c_int*(totOrb_rnorm*norbInCluster))() # store id of renormalized orbs in cluster
         cnt=0
         for orb in self.lattice:
             if orb.chosen:
                 rOrb[cnt]=orb.id
                 cnt+=1
+        
+        cnt=0
+        #print("checking while preparing info.>>>>")
+        for orb in self.lattice:
+            if orb.chosen:
+                #print("orb%d is chosen"%orb.id)
+                for orbInCluster in orb.orb_cluster:
+                    rOrbCluster[cnt]=orbInCluster.id
+                    #print("    orb%d"%orbInCluster.id)
+                    cnt+=1
+        #print("<<<<")
         
         linkData_rnorm=(c_int*(totOrb_rnorm*maxNLinking))() # store their link info
         cnt=0
@@ -254,17 +282,19 @@ class MC:
             cMC=mylib.blockUpdateMC
             cMC.restype=py_object
             data = cMC(self.totOrbs, initSpin, initD, nthermal, nsweep, maxNLinking_, nlinking, linkStrength, linkData, ninterval, nLat, corrOrbitalPair, flunc_, h,
-                       totOrb_rnorm, rOrb, linkData_rnorm)
+                       totOrb_rnorm, norbInCluster, rOrb, rOrbCluster, linkData_rnorm)
             #spin, energy = data[0], data[1], data[2], data[3]
-            spin_i_x, spin_i_y, spin_i_z, spin_j_x, spin_j_y, spin_j_z, spin_ij, autoCorr, E, E2, U4, E_r, E2_r=data
+            spin_i_x, spin_i_y, spin_i_z, spin_j_x, spin_j_y, spin_j_z, spin_ij, autoCorr, E, E2, U4, spin_i_r_x, spin_i_r_y, spin_i_r_z, spin_j_r_x, spin_j_r_y, spin_j_r_z, spin_ij_r, E_r, E2_r=data
             E*=self.T;E2*=self.T**2;E_r*=self.T;E2_r*=self.T**2 # recover the real energies
             C=E2-E*E
             C_r=E2_r-E_r*E_r
             spin_i=np.array([spin_i_x, spin_i_y, spin_i_z])
             spin_j=np.array([spin_j_x, spin_j_y, spin_j_z])
+            spin_i_r=np.array([spin_i_r_x, spin_i_r_y, spin_i_r_z])
+            spin_j_r=np.array([spin_j_r_x, spin_j_r_y, spin_j_r_z])
             #      T       <i><j>     <ij>      <autoCorr>      <E>      <E2>      <U4>      <E_r>      <E2_r>  C  C_v
-            print('%.3f %.3f %.3f %.6f %.3f %.3f %.3f %.3f %.3f %.6f %.6f'%(
-                   self.T,np.dot(spin_i,spin_j),spin_ij,autoCorr,E,E2,       U4,       E_r,      E2_r,   C, C_r))
+            print('%.3f %.3f %.3f %.6f %.3f %.3f %.3f %.3f %.3f %.3f %.3f %.6f %.6f'%(
+                   self.T,np.dot(spin_i,spin_j),spin_ij,autoCorr,E,E2,       U4,np.dot(spin_i_r,spin_j_r),spin_ij_r,       E_r,      E2_r,   C, C_r))
             '''
             if binGraph:
                 data=np.zeros((200,200))
@@ -281,16 +311,18 @@ class MC:
             cMC=mylib.localUpdateMC
             cMC.restype=py_object
             data = cMC(self.totOrbs, initSpin, initD, nthermal, nsweep, maxNLinking_, nlinking, linkStrength, linkData, ninterval, nLat, corrOrbitalPair, flunc_, h,
-                       totOrb_rnorm, rOrb, linkData_rnorm)
-            spin_i_x, spin_i_y, spin_i_z, spin_j_x, spin_j_y, spin_j_z, spin_ij, autoCorr, E, E2, U4, E_r, E2_r=data
+                       totOrb_rnorm, norbInCluster, rOrb, rOrbCluster, linkData_rnorm)
+            spin_i_x, spin_i_y, spin_i_z, spin_j_x, spin_j_y, spin_j_z, spin_ij, autoCorr, E, E2, U4, spin_i_r_x, spin_i_r_y, spin_i_r_z, spin_j_r_x, spin_j_r_y, spin_j_r_z, spin_ij_r, E_r, E2_r=data
             E*=self.T;E2*=self.T**2;E_r*=self.T;E2_r*=self.T**2 # recover the real energies
             C=E2-E*E
             C_r=E2_r-E_r*E_r
             spin_i=np.array([spin_i_x, spin_i_y, spin_i_z])
             spin_j=np.array([spin_j_x, spin_j_y, spin_j_z])
+            spin_i_r=np.array([spin_i_r_x, spin_i_r_y, spin_i_r_z])
+            spin_j_r=np.array([spin_j_r_x, spin_j_r_y, spin_j_r_z])
             #      T       <i><j>     <ij>      <autoCorr>      <E>      <E2>      <U4>      <E_r>      <E2_r>  C  C_v
-            print('%.3f %.3f %.3f %.6f %.3f %.3f %.3f %.3f %.3f %.6f %.6f'%(
-                   self.T,np.dot(spin_i,spin_j),spin_ij,autoCorr,E,E2,       U4,       E_r,      E2_r,   C, C_r))
+            print('%.3f %.3f %.3f %.6f %.3f %.3f %.3f %.3f %.3f %.3f %.3f %.6f %.6f'%(
+                   self.T,np.dot(spin_i,spin_j),spin_ij,autoCorr,E,E2,       U4,np.dot(spin_i_r,spin_j_r),spin_ij_r,       E_r,      E2_r,   C, C_r))
             '''
             if binGraph:
                 data=np.zeros((200,200))

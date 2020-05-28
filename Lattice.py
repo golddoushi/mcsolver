@@ -20,6 +20,7 @@ class Orbital:
 
         # mark for renormalization
         self.chosen=False
+        self.orb_cluster=[]
         self.linkedOrb_rnorm=[]
         self.linkStrength_rnorm=[]
     
@@ -85,6 +86,16 @@ class Orbital:
             if targetOrb.inBlock:
                 corr+=self.spin*targetOrb.spin*bondStrengh
         return corr
+
+    def addOrbIntoCluster(self,orb_trial):
+        newOrb=True
+        for orb in self.orb_cluster:
+            if orb.id==orb_trial.id:
+                newOrb=False
+                break
+        if newOrb:
+            self.orb_cluster.append(orb_trial)
+        return
     
 class Bond:
     '''
@@ -138,6 +149,31 @@ def establishLattice(Lx=1,Ly=1,Lz=1,norb=1,Lmatrix=np.array([[1,0,0],[0,1,0],[0,
                 lattice_y.append(lattice_z)
             lattice_x.append(lattice_y)
         lattice.append(lattice_x)
+    
+    # construct orb cluster for renormalizations
+    for x in range(Lx):
+        for y in range(Ly):
+            for z in range(Lz):
+                for o in range(norb):
+                    orbital=lattice[x][y][z][o]
+                    if orbital.chosen: # 8 possible orbs to add, totally
+                        orbital.addOrbIntoCluster(lattice[x][y][z][o])
+                        orbital.addOrbIntoCluster(lattice[x][y][(z+1)%Lz][o])
+                        orbital.addOrbIntoCluster(lattice[x][(y+1)%Ly][z][o])
+                        orbital.addOrbIntoCluster(lattice[(x+1)%Lx][y][z][o])
+                        orbital.addOrbIntoCluster(lattice[x][(y+1)%Ly][(z+1)%Lz][o])
+                        orbital.addOrbIntoCluster(lattice[(x+1)%Lx][y][(z+1)%Lz][o])
+                        orbital.addOrbIntoCluster(lattice[(x+1)%Lx][(y+1)%Ly][z][o])
+                        orbital.addOrbIntoCluster(lattice[(x+1)%Lx][(y+1)%Ly][(z+1)%Lz][o])
+
+    # check cluster
+    '''print("checking orb cluster after building >>>>>>")
+    for orb in lattice_flatten:
+        if orb.chosen:
+            print("orb%d is chosen, involving:"%orb.id)
+            for sub_orb in orb.orb_cluster:
+                print("    orb%d"%sub_orb.id)        
+    print("<<<<<<")'''       
     return lattice, lattice_flatten
 
 def establishLinking(lattice,bondList,ki_s=0,ki_t=0,ki_overLat=[0,0,0]):

@@ -14,10 +14,12 @@ typedef struct Orb
 
     int chosen;
     struct Orb **linkedOrb_rnorm;
+    int nOrbInCluster;
+    struct Orb **orb_cluster;
 }Orb;
 
 void establishLattice(Orb *lattice, int totOrbs, double initSpin[totOrbs], int maxNLinking, int nlink[maxNLinking], double linkStrength[totOrbs][maxNLinking],
-                   int totOrb_rnorm, int rOrb[totOrb_rnorm]){
+                   int totOrb_rnorm, int nOrbInCluster, int rOrb[totOrb_rnorm], int rOrbCluster[totOrb_rnorm][nOrbInCluster]){
     for(int i=0;i<totOrbs;i++){
         lattice[i].id=i;
         lattice[i].spin=initSpin[i];
@@ -25,8 +27,17 @@ void establishLattice(Orb *lattice, int totOrbs, double initSpin[totOrbs], int m
         lattice[i].linkStrength=linkStrength[i];
         lattice[i].chosen=0;
     }
+    //printf("now checking the orb cluster\n");
     for(int i=0;i<totOrb_rnorm;i++){
-        lattice[rOrb[i]].chosen=1;
+        int id=rOrb[i];
+        lattice[id].chosen=1;
+        lattice[id].nOrbInCluster=nOrbInCluster;
+        lattice[id].orb_cluster=(Orb**)malloc(nOrbInCluster*sizeof(Orb*));
+        //printf("orb%d is chosen to be the center of cluster, involving %d orbs in total:\n",lattice[id].id,lattice[id].nOrbInCluster);
+        for(int iorb=0;iorb<nOrbInCluster;iorb++){
+            lattice[id].orb_cluster[iorb]=lattice+rOrbCluster[i][iorb];
+            //printf("    from input id=%d orb%d\n",rOrbCluster[id][iorb],lattice[id].orb_cluster[iorb]->id);
+        }
     }
 }
 
@@ -99,12 +110,33 @@ double getCorrEnergy(Orb *source){
     return corr;
 }
 
+double getMajoritySpin(Orb *_orb){
+    //printf("start calc majority spin in block, %d orbs in total, centering orb%d\n",_orb->nOrbInCluster,_orb->id);
+    double avg_spin=0.0;
+    for(int ispin=0;ispin<_orb->nOrbInCluster;ispin++){
+        avg_spin+=_orb->orb_cluster[ispin]->spin;
+    }
+    if (avg_spin>0){
+        return fabs(_orb->spin);
+    }else if (avg_spin<0){
+        return -fabs(_orb->spin);
+    }else{
+        if (rand()/(double) RAND_MAX>0.5){
+            return fabs(_orb->spin);
+        }else{
+            return -fabs(_orb->spin);
+        }
+    }
+}
+
 double getCorrEnergy_rnorm(Orb *source){
     //printf("now we are calc. the corr. energy to orb%d\n",source->id);
     double corr=0;
+    double avg_spin_source=getMajoritySpin(source);
     for(int i=0;i<source->nlink;i++){
         //printf("link to orb%d\n",source->linkedOrb_rnorm[i]->id);
-        corr+=(source->linkStrength[i])*(source->spin)*(source->linkedOrb_rnorm[i]->spin);
+        double avg_spin_target=getMajoritySpin(source->linkedOrb_rnorm[i]);
+        corr+=(source->linkStrength[i])*avg_spin_source*avg_spin_target;
     }
     //printf("Ecorr=%.3f\n",corr);
     return corr;
@@ -200,14 +232,14 @@ void localUpdate(int totOrbs, Orb lattice[], double *p_energy, double *p_totSpin
 PyObject * blockUpdateMC(int totOrbs, double initSpin[totOrbs], int nthermal, int nsweep, 
                    int maxNLinking, int nlink[totOrbs], double linkStrength[totOrbs][maxNLinking], int linkedOrb[totOrbs][maxNLinking],
                    int ninterval, int nLat, int corrOrbPair[nLat][2], double h,
-                   int totOrb_rnorm, int rOrb[totOrb_rnorm], int linkedOrb_rnorm[totOrb_rnorm][maxNLinking]){
+                   int totOrb_rnorm, int nOrbInCluster, int rOrb[totOrb_rnorm], int rOrbCluster[totOrb_rnorm][nOrbInCluster], int linkedOrb_rnorm[totOrb_rnorm][maxNLinking]){
     //printf("hello block algorithm!\n");
     // initialize lattice including one ghost spin
     //totOrbs+=1;
     Orb lattice[totOrbs];
     //establishLatticeWithGhost(lattice, totOrbs, initSpin, maxNLinking, nlink, linkStrength, h, totOrb_rnorm, rOrb);
     //establishLinkingWithGhost(lattice, totOrbs, maxNLinking, nlink, linkedOrb, totOrb_rnorm, rOrb, linkedOrb_rnorm);
-    establishLattice(lattice, totOrbs, initSpin, maxNLinking, nlink, linkStrength, totOrb_rnorm, rOrb);
+    establishLattice(lattice, totOrbs, initSpin, maxNLinking, nlink, linkStrength, totOrb_rnorm, nOrbInCluster, rOrb, rOrbCluster);
     establishLinking(lattice, totOrbs, maxNLinking, nlink, linkedOrb, totOrb_rnorm, rOrb, linkedOrb_rnorm);
 
     // initialize measurement
@@ -287,10 +319,10 @@ PyObject * blockUpdateMC(int totOrbs, double initSpin[totOrbs], int nthermal, in
 PyObject * localUpdateMC(int totOrbs, double initSpin[totOrbs], int nthermal, int nsweep, 
                    int maxNLinking, int nlink[totOrbs], double linkStrength[totOrbs][maxNLinking], int linkedOrb[totOrbs][maxNLinking],
                    int ninterval, int nLat, int corrOrbPair[nLat][2], double h,
-                   int totOrb_rnorm, int rOrb[totOrb_rnorm], int linkedOrb_rnorm[totOrb_rnorm][maxNLinking]){
-    // initialize lattice
+                   int totOrb_rnorm, int nOrbInCluster, int rOrb[totOrb_rnorm], int rOrbCluster[totOrb_rnorm][nOrbInCluster], int linkedOrb_rnorm[totOrb_rnorm][maxNLinking]){
+    // initialize lattice 
     Orb lattice[totOrbs];
-    establishLattice(lattice, totOrbs, initSpin, maxNLinking, nlink, linkStrength, totOrb_rnorm, rOrb);
+    establishLattice(lattice, totOrbs, initSpin, maxNLinking, nlink, linkStrength, totOrb_rnorm, nOrbInCluster, rOrb, rOrbCluster);
     establishLinking(lattice, totOrbs, maxNLinking, nlink, linkedOrb, totOrb_rnorm, rOrb, linkedOrb_rnorm);
 
     // initialize measurement
