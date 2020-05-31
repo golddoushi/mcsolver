@@ -7,6 +7,9 @@ import Lattice as lat
 import mcMain as mc
 import fileio as io
 
+global path
+path='./'
+
 def startMC(param): # start MC for Ising model
     # unzip all global parameters for every processing
     ID, T, bondList,LMatrix,pos,S,DList,nsweep,nthermal,ninterval,Lx,Ly,Lz,algorithm,GcOrb=param
@@ -26,11 +29,14 @@ def startMCForOn(param): # start MC for O(n) model
     #eData/=(Lx*Ly*Lz)
     return ID, T, spin_i, spin_j, spin_ij, autoCorr, E, E2, U4, mcslave.totOrbs
 
-def startSimulaton():
+def startSimulation(updateGUI=True, rpath=''):
     time0=time.time()
-    gui.submitBtn.config(state='disabled')
-    io.collectParam()
-    
+    if updateGUI:
+        gui.submitBtn.config(state='disabled')
+        io.collectParam()
+    else:
+        io.loadParam(updateGUI=False, rpath=rpath)
+
     TList=np.linspace(io.T0,io.T1,io.nT)
     bondList=[lat.Bond(bond_data[0],bond_data[1],                 # source and target  
                        np.array([int(x) for x in bond_data[2]]),  # over lat.
@@ -43,7 +49,7 @@ def startSimulaton():
     if(io.modelType=='Ising'):
         if io.algorithm!='Metroplis' and io.algorithm!='Wolff':
             print('For now, only Metroplis and Wolff algorithm is supported for Ising model')
-            gui.submitBtn.config(state='normal')
+            if updateGUI: gui.submitBtn.config(state='normal')
             return
         
         paramPack=[]
@@ -73,14 +79,14 @@ def startSimulaton():
                 capaResult.append((E2-E*E)/T**2)
                 u4Result.append(U4)
             pool.close()
-        gui.updateResultViewer(TList=TResult, magList=SpinIResult, susList=capaResult)
+        if updateGUI: gui.updateResultViewer(TList=TResult, magList=SpinIResult, susList=capaResult)
     # continuous model settings
     elif(io.modelType=='XY' or io.modelType=='Heisenberg'):
         for bond in bondList:
             bond.On=True # switch on the vector type bonding
         if io.algorithm!='Metroplis' and io.algorithm!='Wolff':
             print('For now, only Metroplis and Wolff algorithm is supported for O(n) model')
-            gui.submitBtn.config(state='normal')
+            if updateGUI: gui.submitBtn.config(state='normal')
             return
 
         On=2 if io.modelType=='XY' else 3
@@ -111,10 +117,10 @@ def startSimulaton():
                 capaResult.append((E2-E*E)/T**2)
                 u4Result.append(U4)
             pool.close()
-        gui.updateResultViewer(TList=TResult, magList=SpinIResult, susList=capaResult)
+        if updateGUI: gui.updateResultViewer(TList=TResult, magList=SpinIResult, susList=capaResult)
     else:
         print("for now only Ising, XY and Heisenberg model is supported")
-        gui.submitBtn.config(state='normal')
+        if updateGUI: gui.submitBtn.config(state='normal')
         return
 
     # writting result file
@@ -123,12 +129,12 @@ def startSimulaton():
     for T, si, sj, sus, energy, capa, u4, autoCorr in zip(TResult, SpinIResult, SpinJResult, susResult, energyResult, capaResult, u4Result, autoCorrResult):
         f.write('%.3f %.6f %.6f %.6f %.6f %.6f %.6f %.6f\n'%(T, si, sj, sus, energy, capa, u4, autoCorr))
     f.close()
-    gui.submitBtn.config(state='normal')
+    if updateGUI: gui.submitBtn.config(state='normal')
     print("time elapsed %.3f s"%(time.time()-time0))
     return
             
 if __name__ == '__main__': # crucial for multiprocessing in Windows
     freeze_support()
     app=Tk(className='mc solver v1.0')
-    gui.loadEverything(app,startSimulaton)
+    gui.loadEverything(app,startSimulation)
     app.mainloop()

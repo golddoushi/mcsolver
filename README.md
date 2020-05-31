@@ -7,35 +7,34 @@ Email: liangliu@mail.sdu.edu.cn
 You can download the packed .exe (only tested in Windows 10 platform) from the following link. Wish it can find something helpful for you. And if it was used for publication, please cite:
 [1] Magnetic switches via electric field in BN nanoribbons. Applied Surface Science 480(2019)
 
+Link for exe：https://pan.baidu.com/s/1EaDqOOdB7AP9WXrwEIEaxQ
+passwd: 52ze
 
-网盘下载地址
-链接：https://pan.baidu.com/s/1EaDqOOdB7AP9WXrwEIEaxQ
-提取码：52ze
+Installation：
+No need for installation
 
-安装方法：
-无需安装
+Brief tutorial:
+Open exe (maybe wait 10 sec.), fill out all parameters, click startMC Btn, then wait for the results.
 
-使用方法：
-打开软件（打开较慢约10s），从上至下依次填写参数，然后点击startMC即可。如有帮助请引用论文，谢谢。
+Style I Define parameters via GUI:
+  1. Define the three lattice vectors of primitive cell.
 
-1.填写/修改晶格基矢
+  2. Define all basic spins in primitive cell, note that the fractional coordinates are supposed. Ani represents the single-ion anisotropies in xyz directions (It is useless in Ising model, and only former two are used in XY model). As well as, note that the units of anisotropies are in Kelvin. 
 
-2.增查改删轨道信息，注意坐标为分数坐标。Ani项后面是三个方向的single-ion anisotropy（Ising模型无此项，xy模型需要设定前两个也就是Dz，Dx），注意此处以及下面所有的能量的单位都是K，与meV的换算见下。
+  3. Define all exchange interactions (bonds). Only Jz is used for Ising model, and Jz, Jx are used for XY model, and all three J for Heisenberg model. In this step, you can click one of the bonds to review the actual linking in lattice on view pannel. Activated bond is depicted with bold and yellow line while others are green. You may drag left/right mouse Btn to rotate and expand/shrink the model shown in view pannel. 
 
-3.增查改删交换作用（bond），包括xyz三个方向的交换强度（如果用Ising模型则只需要设定jz，xy模型需要设定前两个）、交换链接的两个轨道的id（在上面一步中定义了）、交换跨越的晶格矢量。
-点选一个列表中的交换，结构预览中的键会变成粗黄线，看看是否与预料中的一样。
-轨道与交换作用修改之后，或者点选交换作用的列表，结构预览就会更新，可以用鼠标左键拖动可翻转，右键拖动可放缩，多角度检查交换构型。
+  4. Define other parameters, including the start and end temperatures, number of temperature interpolations, nthermal the total steps to make system enter balanced states, nsweep the total steps involved in mesearing, tau the MC updates for each step, and model type, algorithm (only Metropolis and Wolff are supported now)
 
-4.设定其他参数，包括温度始末点以及总的温度插值点、nthermal：热化（达到热平衡）所需的MC步、nsweep：热化后的统计次数、模型、算法（暂只支持metroplis局域更新，与wolff区块更新，即将加入Swensden-Wang算法、continuous time 算法与order conserving算法）
+  5. Set spin_i and spin_j and the lattice vector between them, for correlation mesearments.
 
-5.设定记录的自旋i，自旋j，以及这两个自旋相距的晶格矢量。
+  6. Set the core resources for parallel calc.
 
-6.设定并行线程数
+  7. (Optional) Save current parameters into file.
 
-7.(可选)点击save按钮保存当前设置
+  8. Click startMC Btn to start.
 
-8.点击startMC按钮
+  9. Wait for the diagram update in right pannel. Afterwards, you can find a file result.txt in the root directory of mcsolver, there are many useful informations including the averaged spin (on spin_i and j defined in step 5), correlation between spin_i and j, internal energy, specific heat capacith, and Binder cumulant U4, etc. If you handle the sims with more than one cores then the results may not be ordered according to temperature, however, the correspondences in every line are ok.
 
-9.右侧出图之后就计算完成了。在软件所在目录有一个result.txt记录了平均自旋（平均到前面定义的自旋i与自旋j上）、自旋关联、能量、比热、Binder cumulate U4等信息。如果并行计算温度的次序可能是错乱的，但是每行的对应是正确的。
-
-10.(可选)可以点击load按钮载入已有设置。sample文件夹中为CrI3的Heisenberg模型设置，可参考。设置文件为txt格式，可直接用记事本进行修改。
+Style II Define parameters via load file
+  1. click load Btn to load settings, and here I prepared the setting for CrI3 with exchanges up to 2nd nearest neiboring. You can modify the sample file for your own purposes, with any txt editor. 
+  2. Click startMC Btn to start.
