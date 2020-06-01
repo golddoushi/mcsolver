@@ -1,19 +1,21 @@
 # mcsolver
 A user friendly tools implementing Monte Carlo simulations to estimate Curie/Neel temperature
 
-Original version contributor： Dr. Liang Liu* 1.Shenzheng University 2.Shandong University
+Original version contributor: Dr. Liang Liu* 1.Shenzheng University 2.Shandong University
 Email: liangliu@mail.sdu.edu.cn
 
 You can download the packed .exe (only tested in Windows 10 platform) from the following link. Wish it can find something helpful for you. And if it was used for publication, please cite:
 [1] Magnetic switches via electric field in BN nanoribbons. Applied Surface Science 480(2019)
 
-Link for exe：https://pan.baidu.com/s/1EaDqOOdB7AP9WXrwEIEaxQ
+Link for exe: https://pan.baidu.com/s/1EaDqOOdB7AP9WXrwEIEaxQ
 passwd: 52ze
 
 
 Brief tutorial:
 
 A. using mcsolver via .exe, e.g., in Windows platform
+
+  NOTE: the mcsolver.exe maybe reported to be virus and removed by some anti-virus software. I still have no ideal about this and maybe you need add it into white list. Otherwise you can use mcsolver as a python package (see Section B below).
 
   Download .exe file from upper link, then open exe (maybe wait 10+ sec.), fill out all parameters, click startMC Btn, then wait for the results.
 
