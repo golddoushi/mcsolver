@@ -1,7 +1,7 @@
 # -*- coding: UTF-8 -*-
 import setuptools
 
-with open("README.md", "r", encoding='UTF-8') as fh:
+with open("README.md", "r") as fh:
     long_description = fh.read()
 
 isingLib=setuptools.Extension('isinglib.so',sources=['./isingLib.c'],language='c',extra_compile_args=['-std=c99','-fPIC'])
@@ -10,15 +10,16 @@ heisenbergLib=setuptools.Extension('heisenberglib.so',sources=['./heisenbergLib.
 
 setuptools.setup(
     name="mcsolver",
-    version="1.0.2",
+    version="1.2.0",
     author="Liang Liu",
     author_email="liangliu@main.sdu.edu.cn",
     description="A user friendly program to do Monte Carlo sims for magnetic systems",
     long_description=long_description,
     #long_description_content_type="text/markdown",
     url="https://github.com/golddoushi/mcsolver",
-    packages=setuptools.find_packages(),
+    packages=["mcsolver"],
     include_package_data=True,
+    ext_package="mcsolver",
     ext_modules=[isingLib,xyLib,heisenbergLib],
     classifiers=[
         "Programming Language :: Python :: 3",

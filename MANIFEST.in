@@ -1,1 +1,1 @@
-include *.py *.c *.so *.sh
+include *.py *.c LICENSE README.md
