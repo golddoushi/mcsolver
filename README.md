@@ -47,12 +47,36 @@ A. using mcsolver via .exe, e.g., in Windows platform
 
     2. Click startMC Btn to start.
 
-B. using mcsolver as a python package e.g., in the commandline mode in Linux platform
+B. using mcsolver as a python package
 
-  Download all codes presented here into one directory, compile the .c file into .so dynamic libraries (gcc and python headers, libraries are prerequisite), you may use setup.sh to automatically find the neccessary files and compile them. Then you can import the directory into your python and use function loadMC(rpath) to load parameter file (maybe prepared by GUI or some other ways) and start the simulations.
+  Style I Build form binary file in Windows platform
 
-  Note that the parallelization of mcsolver is not perfect. Now it cannot parallelize between multiple machines but amongst mutiple cores in a single machine (that is, only SMP mode is efficient). Therefore submit the job into one node if you are working with clusters.
+    Install the package via command:
 
-C. using code mode
+    pip install mcsolver
+
+    Note that python>=3, matplotlib, numpy, Tk are prerequisite
+
+    Afterwards, you can import mcsolver into your own python code and use function:
+
+    loadMC("parameterfile")
+
+    to start simulation. Preparation of parameterfile is the same as in section A.
+
+  Style II Build from source in Linux platform
+
+    Download all codes presented here, use install command:
+
+    python setup.py install
+
+    Afterwards, you can import mcsolver into your own python code and use function:
+
+    loadMC("parameterfile")
+
+    to start simulation. Preparation of parameterfile is the same as in section A.
+
+    Note that the parallelization of mcsolver is not perfect. Now it cannot parallelize between multiple machines but amongst mutiple cores in a single machine (that is, only SMP mode is efficient). Therefore submit the job into one node if you are working with clusters.
+
+C. using code mode (not recommend)
   
-   Download all codes, compile the .c file inito .so using c99 standard and run cmd: "python win.py" to load GUI.
+   Download all codes, compile the .c file inito .so using c99 standard and run cmd: "python win.py" to load GUI and conduct simulations.

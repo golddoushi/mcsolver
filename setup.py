@@ -18,8 +18,8 @@ setup(
     #long_description_content_type="text/markdown",
     url="https://github.com/golddoushi/mcsolver",
     packages=["mcsolver"],
-    include_package_data=True,
-    ext_package="mcsolver",
+    #include_package_data=True,
+    ext_package="mcsolver.lib",
     ext_modules=[isingLib,xyLib,heisenbergLib],
     classifiers=[
         "Programming Language :: Python :: 3",
@@ -34,6 +34,6 @@ setup(
 from distutils.sysconfig import get_python_lib
 from subprocess import check_call
 mcs_path=get_python_lib()+'/mcsolver/'
-check_call(["ln -s %sisinglib.* %sisinglib.so"%(mcs_path,mcs_path)],shell=True)
-check_call(["ln -s %sxylib.* %sxylib.so"%(mcs_path,mcs_path)],shell=True)
-check_call(["ln -s %sheisenberglib.* %sheisenberglib.so"%(mcs_path,mcs_path)],shell=True)
+check_call(["ln -s %s/lib/isinglib.* %sisinglib.so"%(mcs_path,mcs_path)],shell=True)
+check_call(["ln -s %s/lib/xylib.* %sxylib.so"%(mcs_path,mcs_path)],shell=True)
+check_call(["ln -s %s/lib/heisenberglib.* %sheisenberglib.so"%(mcs_path,mcs_path)],shell=True)
