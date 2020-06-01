@@ -1,14 +1,14 @@
 # -*- coding: UTF-8 -*-
-import setuptools
+from distutils.core import setup, Extension
 
 with open("README.md", "r") as fh:
     long_description = fh.read()
 
-isingLib=setuptools.Extension('isinglib.so',sources=['./isingLib.c'],language='c',extra_compile_args=['-std=c99','-fPIC'])
-xyLib=setuptools.Extension('xylib.so',sources=['./xyLib.c'],language='c',extra_compile_args=['-std=c99','-fPIC'])
-heisenbergLib=setuptools.Extension('heisenberglib.so',sources=['./heisenbergLib.c'],language='c',extra_compile_args=['-std=c99','-fPIC'])
+isingLib=Extension('isinglib',sources=['./mcsolver/isingLib.c'],language='c',extra_compile_args=['-std=c99','-fPIC'])
+xyLib=Extension('xylib',sources=['./mcsolver/xyLib.c'],language='c',extra_compile_args=['-std=c99','-fPIC'])
+heisenbergLib=Extension('heisenberglib',sources=['./mcsolver/heisenbergLib.c'],language='c',extra_compile_args=['-std=c99','-fPIC'])
 
-setuptools.setup(
+setup(
     name="mcsolver",
     version="1.2.0",
     author="Liang Liu",
@@ -30,3 +30,10 @@ setuptools.setup(
         "Topic :: Scientific/Engineering :: Visualization",
     ],
 )
+
+from distutils.sysconfig import get_python_lib
+from subprocess import check_call
+mcs_path=get_python_lib()+'/mcsolver/'
+check_call(["ln -s %sisinglib.* %sisinglib.so"%(mcs_path,mcs_path)],shell=True)
+check_call(["ln -s %sxylib.* %sxylib.so"%(mcs_path,mcs_path)],shell=True)
+check_call(["ln -s %sheisenberglib.* %sheisenberglib.so"%(mcs_path,mcs_path)],shell=True)

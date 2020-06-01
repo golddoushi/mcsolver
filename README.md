@@ -52,3 +52,7 @@ B. using mcsolver as a python package e.g., in the commandline mode in Linux pla
   Download all codes presented here into one directory, compile the .c file into .so dynamic libraries (gcc and python headers, libraries are prerequisite), you may use setup.sh to automatically find the neccessary files and compile them. Then you can import the directory into your python and use function loadMC(rpath) to load parameter file (maybe prepared by GUI or some other ways) and start the simulations.
 
   Note that the parallelization of mcsolver is not perfect. Now it cannot parallelize between multiple machines but amongst mutiple cores in a single machine (that is, only SMP mode is efficient). Therefore submit the job into one node if you are working with clusters.
+
+C. using code mode
+  
+   Download all codes, compile the .c file inito .so using c99 standard and run cmd: "python win.py" to load GUI.
