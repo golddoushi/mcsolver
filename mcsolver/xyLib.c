@@ -75,6 +75,7 @@ Vec *generateRandomVec(void){
 typedef struct Orb
 {
     int id;
+    double S; // maximum spin number
     Vec spin;
     Vec transSpin;
     int nlink;
@@ -101,6 +102,7 @@ void establishLattice(Orb *lattice, int totOrbs, double initSpin[totOrbs], doubl
     for(i=0;i<totOrbs;i++){
         //printf("check point-1, entering setting %d",i);
         lattice[i].id=i;
+        lattice[i].S=initSpin[i];
         lattice[i].spin.x=initSpin[i];
         lattice[i].spin.y=0;
 
@@ -185,6 +187,7 @@ Vec getMajoritySpin(Orb*_orb){  // core algorithm for renormalization
     }
     //cDivides(&avgSpin,_orb->nOrbInCluster);
     normalize(&avgSpin);
+    cTimes(&avgSpin, _orb->S);
     return avgSpin; // majority algorithm
 }
 
