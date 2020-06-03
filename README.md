@@ -55,13 +55,17 @@ B. using mcsolver as a python package
 
     pip install mcsolver
 
-    Note that python>=3, matplotlib, numpy, Tk are prerequisite
+    Note that python>=3, matplotlib, numpy, tkinter are prerequisite
 
     Afterwards, you can import mcsolver into your own python code and use function:
 
-    loadMC("parameterfile")
+    mcsolver.loadMC("parameterfile")
 
     to start simulation. Preparation of parameterfile is the same as in section A.
+    
+    There are one sample file sim_XYmodel_under_Windows.py in sample folder. To use this, change your current path (in console) into sample folder, and type command: python sim_XYmodel_under_Windows.py
+
+    NOTE: since mcsolver employ python-parallel you have to use freeze_support() before calling loadMC(...).
 
   Style II Build from source in Linux platform
 
@@ -71,9 +75,11 @@ B. using mcsolver as a python package
 
     Afterwards, you can import mcsolver into your own python code and use function:
 
-    loadMC("parameterfile")
+    mcsolver.loadMC("parameterfile")
 
     to start simulation. Preparation of parameterfile is the same as in section A.
+
+    There are one sample file sim_XYmodel_under_Windows.py in sample folder. To use this, cd to sample folder, and type command: python sim_XYmodel_under_Linux.py
 
     Note that the parallelization of mcsolver is not perfect. Now it cannot parallelize between multiple machines but amongst mutiple cores in a single machine (that is, only SMP mode is efficient). Therefore submit the job into one node if you are working with clusters.
 
