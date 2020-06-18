@@ -284,7 +284,7 @@ class MC:
             data = cMC(self.totOrbs, initSpin, initD, nthermal, nsweep, maxNLinking_, nlinking, linkStrength, linkData, ninterval, nLat, corrOrbitalPair, flunc_, h,
                        totOrb_rnorm, norbInCluster, rOrb, rOrbCluster, linkData_rnorm)
             #spin, energy = data[0], data[1], data[2], data[3]
-            spin_i_x, spin_i_y, spin_i_z, spin_j_x, spin_j_y, spin_j_z, spin_ij, autoCorr, E, E2, U4, spin_i_r_x, spin_i_r_y, spin_i_r_z, spin_j_r_x, spin_j_r_y, spin_j_r_z, spin_ij_r, E_r, E2_r=data
+            spin_i_x, spin_i_y, spin_i_z, spin_j_x, spin_j_y, spin_j_z, spin_ij, autoCorr, E, E2, U4, spin_i_r_x, spin_i_r_y, spin_i_r_z, spin_j_r_x, spin_j_r_y, spin_j_r_z, spin_ij_r, E_r, E2_r, spin_i_tot_z,spin_j_tot_z,spin_tot_z=data
             E*=self.T;E2*=self.T**2;E_r*=self.T;E2_r*=self.T**2 # recover the real energies
             C=E2-E*E
             C_r=E2_r-E_r*E_r
@@ -293,8 +293,11 @@ class MC:
             spin_i_r=np.array([spin_i_r_x, spin_i_r_y, spin_i_r_z])
             spin_j_r=np.array([spin_j_r_x, spin_j_r_y, spin_j_r_z])
             #      T       <i><j>     <ij>      <autoCorr>      <E>      <E2>      <U4>      <E_r>      <E2_r>  C  C_v
-            print('%.3f %.3f %.3f %.6f %.3f %.3f %.3f %.3f %.3f %.3f %.3f %.6f %.6f'%(
-                   self.T,np.dot(spin_i,spin_j),spin_ij,autoCorr,E,E2,       U4,np.dot(spin_i_r,spin_j_r),spin_ij_r,       E_r,      E2_r,   C, C_r))
+            print('%.3f %.3f %.3f %.3f %.3f %.3f %.6f %.3f %.3f %.3f %.3f %.3f %.3f %.3f %.6f %.6f'%(
+                   self.T,spin_i_tot_z,spin_j_tot_z,spin_tot_z,np.dot(spin_i,spin_j),spin_ij,autoCorr,E,E2,       U4,np.dot(spin_i_r,spin_j_r),spin_ij_r,       E_r,      E2_r,   C, C_r))
+            with open('./out','a') as fout:
+                fout.write('%.3f %.3f %.3f %.3f %.3f %.3f %.6f %.3f %.3f %.3f %.3f %.3f %.3f %.3f %.6f %.6f\n'%(
+                   self.T,spin_i_tot_z,spin_j_tot_z,spin_tot_z,np.dot(spin_i,spin_j),spin_ij,autoCorr,E,E2,       U4,np.dot(spin_i_r,spin_j_r),spin_ij_r,       E_r,      E2_r,   C, C_r))
             '''
             if binGraph:
                 data=np.zeros((200,200))
@@ -312,7 +315,7 @@ class MC:
             cMC.restype=py_object
             data = cMC(self.totOrbs, initSpin, initD, nthermal, nsweep, maxNLinking_, nlinking, linkStrength, linkData, ninterval, nLat, corrOrbitalPair, flunc_, h,
                        totOrb_rnorm, norbInCluster, rOrb, rOrbCluster, linkData_rnorm)
-            spin_i_x, spin_i_y, spin_i_z, spin_j_x, spin_j_y, spin_j_z, spin_ij, autoCorr, E, E2, U4, spin_i_r_x, spin_i_r_y, spin_i_r_z, spin_j_r_x, spin_j_r_y, spin_j_r_z, spin_ij_r, E_r, E2_r=data
+            spin_i_x, spin_i_y, spin_i_z, spin_j_x, spin_j_y, spin_j_z, spin_ij, autoCorr, E, E2, U4, spin_i_r_x, spin_i_r_y, spin_i_r_z, spin_j_r_x, spin_j_r_y, spin_j_r_z, spin_ij_r, E_r, E2_r, spin_i_tot_z,spin_j_tot_z,spin_tot_z=data
             E*=self.T;E2*=self.T**2;E_r*=self.T;E2_r*=self.T**2 # recover the real energies
             C=E2-E*E
             C_r=E2_r-E_r*E_r
@@ -321,8 +324,12 @@ class MC:
             spin_i_r=np.array([spin_i_r_x, spin_i_r_y, spin_i_r_z])
             spin_j_r=np.array([spin_j_r_x, spin_j_r_y, spin_j_r_z])
             #      T       <i><j>     <ij>      <autoCorr>      <E>      <E2>      <U4>      <E_r>      <E2_r>  C  C_v
-            print('%.3f %.3f %.3f %.6f %.3f %.3f %.3f %.3f %.3f %.3f %.3f %.6f %.6f'%(
-                   self.T,np.dot(spin_i,spin_j),spin_ij,autoCorr,E,E2,       U4,np.dot(spin_i_r,spin_j_r),spin_ij_r,       E_r,      E2_r,   C, C_r))
+            print('%.3f %.3f %.3f %.3f %.3f %.3f %.6f %.3f %.3f %.3f %.3f %.3f %.3f %.3f %.6f %.6f'%(
+                   self.T,spin_i_tot_z,spin_j_tot_z,spin_tot_z,np.dot(spin_i,spin_j),spin_ij,autoCorr,E,E2,       U4,np.dot(spin_i_r,spin_j_r),spin_ij_r,       E_r,      E2_r,   C, C_r))
+            with open('./out','a') as fout:
+                fout.write('%.3f %.3f %.3f %.3f %.3f %.3f %.6f %.3f %.3f %.3f %.3f %.3f %.3f %.3f %.6f %.6f\n'%(
+                   self.T,spin_i_tot_z,spin_j_tot_z,spin_tot_z,np.dot(spin_i,spin_j),spin_ij,autoCorr,E,E2,       U4,np.dot(spin_i_r,spin_j_r),spin_ij_r,       E_r,      E2_r,   C, C_r))
+            
             '''
             if binGraph:
                 data=np.zeros((200,200))

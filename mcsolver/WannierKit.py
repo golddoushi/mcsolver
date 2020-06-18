@@ -152,11 +152,17 @@ class TBmodel(object):
         #dragLineWithTwoPoints(a1+a2,a1+a2+a3)
         
         for iorb, orb in enumerate(self.orbital_coor):
+            if iorb>=50:
+                print('num. of orb >=50, some orbs will not be illustrated')
+                break
             orb_xyz=np.dot(orb[0],self.lattice)
             ax.scatter(orb_xyz[0],orb_xyz[1],orb_xyz[2],c=orb[2],s=orb[1])
             #ax.text(orb_xyz[0],orb_xyz[1],orb_xyz[2],str(iorb))
         
-        for hopping in self.hopping:
+        for ihopping, hopping in enumerate(self.hopping):
+            if ihopping>=100:
+                print('num. of hopping >=100, some hoppings will not be illustrated')
+                break
             iorb0, iorb1, Rextra, amp, color, linewidth=hopping[0], hopping[1], hopping[2], hopping[3], hopping[4], hopping[5]
             if np.dot(Rextra,Rextra)>0:
                 continue

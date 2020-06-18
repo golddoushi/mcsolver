@@ -102,10 +102,11 @@ typedef struct Orb
     int nOrbInCluster;
     struct Orb **orb_cluster;
     
+    double h;
 }Orb;
 
 //establishLattice(lattice, totOrbs, initSpin, maxNLinking, nlink, linkStrength);
-void establishLattice(Orb *lattice, int totOrbs, double initSpin[totOrbs], double initD[totOrbs][3], double flunc, int maxNLinking, int nlink[totOrbs], double linkStrength[totOrbs][maxNLinking][3],
+void establishLattice(Orb *lattice, int totOrbs, double initSpin[totOrbs], double initD[totOrbs][3], double h, double flunc, int maxNLinking, int nlink[totOrbs], double linkStrength[totOrbs][maxNLinking][3],
                       int totOrb_rnorm, int nOrbInCluster, int rOrb[totOrb_rnorm], int rOrbCluster[totOrb_rnorm][nOrbInCluster]){
     //printf("establishing whole lattice with %d orbs and %d linkings for each orb\n",totOrbs,maxNLinking);
     for(int i=0;i<totOrbs;i++){
@@ -127,6 +128,8 @@ void establishLattice(Orb *lattice, int totOrbs, double initSpin[totOrbs], doubl
         lattice[i].onsiteAnisotropy.x=initD[i][0];
         lattice[i].onsiteAnisotropy.y=initD[i][1];
         lattice[i].onsiteAnisotropy.z=initD[i][2];
+
+        lattice[i].h=h;
         //printf("orb %d spin: %.3f %.3f %.3f\n",i,lattice[i].spin.coor[0],lattice[i].spin.coor[1],lattice[i].spin.coor[2]);
         lattice[i].transSpin.x=0;  // allocate trans spin vector for each orb
         lattice[i].transSpin.y=0;
@@ -189,7 +192,7 @@ double getCorrEnergy(Orb *source){
 }
 
 double getOnsiteEnergy(Orb *source){  // onsite term
-    return diagonalDot(source->onsiteAnisotropy,source->spin,source->spin);
+    return diagonalDot(source->onsiteAnisotropy,source->spin,source->spin)+source->spin.z*source->h;
 }
 
 Vec getMajoritySpin(Orb*_orb){ // core algorithm for renormalization
@@ -222,7 +225,7 @@ double getOnsiteEnergy_rnorm(Orb *source){
     Vec avgSpin_source=getMajoritySpin(source);
     return source->onsiteAnisotropy.x*avgSpin_source.x*avgSpin_source.x+
            source->onsiteAnisotropy.y*avgSpin_source.y*avgSpin_source.y+
-           source->onsiteAnisotropy.z*avgSpin_source.z*avgSpin_source.z;
+           source->onsiteAnisotropy.z*avgSpin_source.z*avgSpin_source.z+source->h*avgSpin_source.z;
 }
 
 double getDeltaCorrEnergy(Orb *source){
@@ -237,9 +240,11 @@ double getDeltaOnsiteEnergy(Orb *source){
     double s1x=source->spin.x+source->transSpin.x;
     double s1y=source->spin.y+source->transSpin.y;
     double s1z=source->spin.z+source->transSpin.z;
+    //printf("h %.3f, transSpin %.3f\n",source->h,source->transSpin.z);
     return source->onsiteAnisotropy.x*(s1x*s1x-source->spin.x*source->spin.x)+
            source->onsiteAnisotropy.y*(s1y*s1y-source->spin.y*source->spin.y)+
-           source->onsiteAnisotropy.z*(s1z*s1z-source->spin.z*source->spin.z);
+           source->onsiteAnisotropy.z*(s1z*s1z-source->spin.z*source->spin.z)+
+           source->h*source->transSpin.z;
 }
 
 int expandBlock(int*beginIndex, int*endIndex, Orb *buffer[], int*blockLen, Orb *block[], Vec refDirection){
@@ -348,6 +353,7 @@ void blockUpdate(int totOrbs, Orb lattice[], double*p_energy, Vec *p_totSpin){
     for(i=0;i<*p_blockLen;i++) block[i]->inBlock=0;
     free(refDirection);
     // process the onsite anisotropy
+    //printf("tot_d_onsiteEnergy=%.6f\n",tot_d_onsiteEnergy);
     if(tot_d_onsiteEnergy<=0 || exp(-tot_d_onsiteEnergy)>rand()/(double) RAND_MAX){
         for(i=0;i<*p_blockLen;i++){
             plusEqual(&block[i]->spin, block[i]->transSpin);
@@ -398,7 +404,7 @@ PyObject * blockUpdateMC(int totOrbs, double initSpin[totOrbs], double initD[tot
     // initialize lattice
     Orb lattice[totOrbs];
     //printf("hello here is C lib\n");
-    establishLattice(lattice, totOrbs, initSpin, initD, flunc, maxNLinking, nlink, linkStrength, totOrb_rnorm, nOrbInCluster, rOrb, rOrbCluster);
+    establishLattice(lattice, totOrbs, initSpin, initD, h, flunc, maxNLinking, nlink, linkStrength, totOrb_rnorm, nOrbInCluster, rOrb, rOrbCluster);
     establishLinking(lattice, totOrbs, maxNLinking, nlink, linkedOrb, totOrb_rnorm, rOrb, linkedOrb_rnorm);
 
     // initialize measurement
@@ -432,8 +438,22 @@ PyObject * blockUpdateMC(int totOrbs, double initSpin[totOrbs], double initD[tot
     double M=0,M2=0,M4=0;
     double M_tmp=0,MdotM_tmp=0,M_tot=0;
 
+    Vec spin_direction;
+    double spin_i_z, spin_j_z, spin_tot_z;
+    spin_i_z=0;spin_j_z=0;spin_tot_z=0;
+
     for(int i=0;i<nsweep;i++){
         for(int j=0;j<ninterval;j++) blockUpdate(totOrbs, lattice, p_energy, p_totSpin);
+        // find the main axis
+        spin_direction.x=p_totSpin->x;
+        spin_direction.y=p_totSpin->y;
+        spin_direction.z=p_totSpin->z;
+        normalize(&spin_direction);
+        spin_i_z+=dot(spin_direction,lattice[corrOrbPair[0][0]].spin);
+        spin_j_z+=dot(spin_direction,lattice[corrOrbPair[0][1]].spin);
+        spin_tot_z+=(dot(spin_direction,*p_totSpin)/nLat);
+        
+
         // spin statistics over space in each frame
         Vec spin_i_avg;
         Vec spin_j_avg;
@@ -450,7 +470,7 @@ PyObject * blockUpdateMC(int totOrbs, double initSpin[totOrbs], double initD[tot
             spin_ij_avg+=dot(lattice[corrOrbPair[j][0]].spin,lattice[corrOrbPair[j][1]].spin);
             
         }
-        M=sqrt(dot(spin_i_avg,spin_i_avg))/nLat;
+        M=sqrt(dot(*p_totSpin,*p_totSpin))/nLat;
         M2+=M*M;
         M4+=M*M*M*M;
         //calc auto-correlation
@@ -532,7 +552,7 @@ PyObject * blockUpdateMC(int totOrbs, double initSpin[totOrbs], double initD[tot
     double U4=(M2/nsweep)*(M2/nsweep)/(M4/nsweep);
     double autoCorr=(MdotM_tmp/nsweep-M_tot/nsweep*M_tot/nsweep);
     PyObject *Data;
-    Data=PyTuple_New(20);
+    Data=PyTuple_New(23);
     PyTuple_SetItem(Data, 0, PyFloat_FromDouble(spin_i.x/nsweep));
     PyTuple_SetItem(Data, 1, PyFloat_FromDouble(spin_i.y/nsweep));
     PyTuple_SetItem(Data, 2, PyFloat_FromDouble(spin_i.z/nsweep));
@@ -553,6 +573,9 @@ PyObject * blockUpdateMC(int totOrbs, double initSpin[totOrbs], double initD[tot
     PyTuple_SetItem(Data,17, PyFloat_FromDouble(spin_ij_r/nsweep));
     PyTuple_SetItem(Data,18, PyFloat_FromDouble(totEnergy_r/nsweep));
     PyTuple_SetItem(Data,19, PyFloat_FromDouble(E2_r/nsweep));
+    PyTuple_SetItem(Data,20, PyFloat_FromDouble(spin_i_z/nsweep));
+    PyTuple_SetItem(Data,21, PyFloat_FromDouble(spin_j_z/nsweep));
+    PyTuple_SetItem(Data,22, PyFloat_FromDouble(spin_tot_z/nsweep));
     return Data;
 }
 
@@ -565,7 +588,7 @@ PyObject * localUpdateMC(int totOrbs, double initSpin[totOrbs], double initD[tot
     // initialize lattice
     Orb lattice[totOrbs];
     //printf("hello here is C lib\n");
-    establishLattice(lattice, totOrbs, initSpin, initD, flunc, maxNLinking, nlink, linkStrength, totOrb_rnorm, nOrbInCluster, rOrb, rOrbCluster);
+    establishLattice(lattice, totOrbs, initSpin, initD, h, flunc, maxNLinking, nlink, linkStrength, totOrb_rnorm, nOrbInCluster, rOrb, rOrbCluster);
     establishLinking(lattice, totOrbs, maxNLinking, nlink, linkedOrb, totOrb_rnorm, rOrb, linkedOrb_rnorm);
 
     // initialize measurement
@@ -598,8 +621,21 @@ PyObject * localUpdateMC(int totOrbs, double initSpin[totOrbs], double initD[tot
     double E2=0, E2_r=0;
     double M=0,M2=0,M4=0;
     double M_tmp=0,MdotM_tmp=0,M_tot=0;
+
+    Vec spin_direction;
+    double spin_i_z, spin_j_z, spin_tot_z;
+    spin_i_z=0;spin_j_z=0;spin_tot_z=0;
     for(int i=0;i<nsweep;i++){
         for(int j=0;j<ninterval;j++) localUpdate(totOrbs, lattice, p_energy, p_totSpin);
+        // find the main axis
+        spin_direction.x=p_totSpin->x;
+        spin_direction.y=p_totSpin->y;
+        spin_direction.z=p_totSpin->z;
+        normalize(&spin_direction);
+        spin_i_z+=dot(spin_direction,lattice[corrOrbPair[0][0]].spin);
+        spin_j_z+=dot(spin_direction,lattice[corrOrbPair[0][1]].spin);
+        spin_tot_z+=(dot(spin_direction,*p_totSpin)/nLat);
+
         // spin statistics over space in each frame
         Vec spin_i_avg;
         Vec spin_j_avg;
@@ -699,7 +735,7 @@ PyObject * localUpdateMC(int totOrbs, double initSpin[totOrbs], double initD[tot
     double U4=(M2/nsweep)*(M2/nsweep)/(M4/nsweep);
     double autoCorr=(MdotM_tmp/nsweep-M_tot/nsweep*M_tot/nsweep);
     PyObject *Data;
-    Data=PyTuple_New(20);
+    Data=PyTuple_New(23);
     PyTuple_SetItem(Data, 0, PyFloat_FromDouble(spin_i.x/nsweep));
     PyTuple_SetItem(Data, 1, PyFloat_FromDouble(spin_i.y/nsweep));
     PyTuple_SetItem(Data, 2, PyFloat_FromDouble(spin_i.z/nsweep));
@@ -720,5 +756,8 @@ PyObject * localUpdateMC(int totOrbs, double initSpin[totOrbs], double initD[tot
     PyTuple_SetItem(Data,17, PyFloat_FromDouble(spin_ij_r/nsweep));
     PyTuple_SetItem(Data,18, PyFloat_FromDouble(totEnergy_r/nsweep));
     PyTuple_SetItem(Data,19, PyFloat_FromDouble(E2_r/nsweep));
+    PyTuple_SetItem(Data,20, PyFloat_FromDouble(spin_i_z/nsweep));
+    PyTuple_SetItem(Data,21, PyFloat_FromDouble(spin_j_z/nsweep));
+    PyTuple_SetItem(Data,22, PyFloat_FromDouble(spin_tot_z/nsweep));
     return Data;
 }

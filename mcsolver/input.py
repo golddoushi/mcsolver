@@ -21,8 +21,8 @@ bondList=[bond1,bond2]
 
 
 #time0=time.time()
-mcslave=mc.MC(0,LMatrix,pos=pos,S=Spin,D=D,bondList=bondList,T=1,Lx=6,Ly=6,Lz=1,ki_s=0,ki_t=0,ki_overLat=[0,0,0],h=0.0)
-data=mcslave.mainLoopViaCLib_On(nsweep=1,nthermal=1000,ninterval=1,algo='Wolff',On=3,flunc=0.0,binGraph=False)
+mcslave=mc.MC(0,LMatrix,pos=pos,S=Spin,D=D,bondList=bondList,T=1,Lx=16,Ly=16,Lz=1,ki_s=0,ki_t=0,ki_overLat=[0,0,0],h=0.01)
+data=mcslave.mainLoopViaCLib_On(nsweep=360000,nthermal=80000,ninterval=1,algo='Wolff',On=3,flunc=0.0,binGraph=False)
 #data=mcslave.mainLoopViaCLib(nsweep=1,nthermal=1,ninterval=1,algo='Metroplis')
 print(data)
 #mean=np.mean(abs(np.array(totSpin)))/mcslave.totOrbs

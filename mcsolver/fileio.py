@@ -2,12 +2,13 @@ from tkinter import filedialog
 from re import findall
 import guiMain as gui
 
-global LMatrix, LPack, pos, S, DList, bondList, T0, T1, nT, nthermal, nsweep, ninterval, modelType, algorithm, GcOrb, ncores
+global LMatrix, LPack, pos, S, DList, h, bondList, T0, T1, nT, nthermal, nsweep, ninterval, modelType, algorithm, GcOrb, ncores
 # initial value
 GcOrb=[0,0,[0,0,0]]
+h=0
 
 def collectParam():
-    global LMatrix, LPack, pos, S, DList, bondList, T0, T1, nT, nthermal, nsweep, ninterval, modelType, algorithm, GcOrb, ncores
+    global LMatrix, LPack, pos, S, DList, h, bondList, T0, T1, nT, nthermal, nsweep, ninterval, modelType, algorithm, GcOrb, ncores
     # get lattice
     a1=gui.latticeGui[0].report()
     a2=gui.latticeGui[1].report()
@@ -29,6 +30,9 @@ def collectParam():
     DList=[ele[4] for ele in gui.OrbListBox.infoData]
     for ipos, iS, iD in zip(pos,S,DList):
         print('positions:',ipos,'Spin:',iS,'onsite-Anisotropy:',iD)
+
+    # set field
+    print('isotropic magnetic field is set to %.3f'%h)
 
     # get bonds
     bondList=[
@@ -68,7 +72,7 @@ def collectParam():
     print('using %d cores'%ncores)
 
 def saveParam():
-    global LMatrix, LPack, pos, S, DList, bondList, T0, T1, nT, nthermal, nsweep, ninterval, modelType, algorithm, GcOrb, ncores
+    global LMatrix, LPack, pos, S, DList, h, bondList, T0, T1, nT, nthermal, nsweep, ninterval, modelType, algorithm, GcOrb, ncores
     collectParam()
     # write into files
     filePath=filedialog.asksaveasfilename()
@@ -86,9 +90,9 @@ def saveParam():
     f.write("%d\n"%len(pos))
     f.write("Postions, initial spin states and onsite-anisotropy of every orbitals:\n")
     for ele in gui.OrbListBox.infoData:
-        f.write("orb %d: type %d spin %.9f pos [%.9f %.9f %.9f] Dz %.9f Dx %.9f Dy %.9f\n"%(ele[0],ele[1],ele[2],\
+        f.write("orb %d: type %d spin %.9f pos [%.9f %.9f %.9f] Dz %.9f Dx %.9f Dy %.9f h %.9f\n"%(ele[0],ele[1],ele[2],\
                                                                                             ele[3][0],ele[3][1],ele[3][2],\
-                                                                                            ele[4][0],ele[4][1],ele[4][2]))
+                                                                                            ele[4][0],ele[4][1],ele[4][2],h))
     f.write("Bonds:\n")
     f.write("%d\n"%len(bondList))
     f.write("id, source, target, overLat, Jz, Jx, Jy of each bond:\n")
@@ -114,7 +118,7 @@ def saveParam():
     f.close()
 
 def loadParam(updateGUI=True,rpath='./mcInput'):
-    global LMatrix, LPack, pos, S, DList, bondList, T0, T1, nT, nthermal, nsweep, ninterval, modelType, algorithm, GcOrb, ncores
+    global LMatrix, LPack, pos, S, DList, h, bondList, T0, T1, nT, nthermal, nsweep, ninterval, modelType, algorithm, GcOrb, ncores
     filePath=filedialog.askopenfilename() if updateGUI else rpath
     f=open(filePath,'r')
     data=[line for line in f.read().split('\n') if line]
@@ -174,6 +178,8 @@ def loadParam(updateGUI=True,rpath='./mcInput'):
         pos.append([float(ele[3]),float(ele[4]),float(ele[5])])
         S.append(float(ele[2]))
         DList.append([float(ele[6]),float(ele[7]),float(ele[8])])
+        if len(ele)==10:
+            h=float(ele[9])
     # load bonds
     nbonds=int(findall(r"[0-9]+",data[tagBonds+1])[0])
     bondInfo=[]
