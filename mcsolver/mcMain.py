@@ -145,8 +145,8 @@ class MC:
             E*=self.T;E2*=self.T**2;E_rnorm*=self.T;E2_rnorm*=self.T**2 # recover the real energies
             #print("T=%.3f, <Si>=%.3f, <Sj>=%.3f, <SiSj>=%.3f, <E>=%.3f, <E2>=%.3f, <Er>=%.3f, <E2_r>=%.3f, C=%.6f, Cr=%.6f"%(
             #       self.T,    spin_i,    spin_j,     spin_ij,        autoCorr,   E,        E2,   E_rnorm,    E2_rnorm, E2-E**2, E2_rnorm-E_rnorm**2))
-            print("%.3f %.3f %.3f %.3f %.6f %.3f %.3f %.3f %.3f %.6f %.6f %.6f"%(
-                   self.T,    spin_i,    spin_j,     spin_ij,        autoCorr,    E,        E2,   E_rnorm,    E2_rnorm, E2-E**2, E2_rnorm-E_rnorm**2, U4))
+            print("%.3f %.3f %.3f %.3f %.3f %.6f %.3f %.3f %.3f %.3f %.6f %.6f %.6f"%(
+                   self.T, self.h,    spin_i,    spin_j,     spin_ij,        autoCorr,    E,        E2,   E_rnorm,    E2_rnorm, E2-E**2, E2_rnorm-E_rnorm**2, U4))
             
             return spin_i, spin_j, spin_ij, autoCorr, E, E2, U4
         elif algo=='Metroplis':
@@ -158,8 +158,8 @@ class MC:
             E*=self.T;E2*=self.T**2;E_rnorm*=self.T;E2_rnorm*=self.T**2 # recover the real energies
             #print("T=%.3f, <Si>=%.3f, <Sj>=%.3f, <SiSj>=%.3f, <E>=%.3f, <E2>=%.3f, <Er>=%.3f, <E2_r>=%.3f, C=%.6f, Cr=%.6f"%(
             #       self.T,    spin_i,    spin_j,     spin_ij,        autoCorr,   E,        E2,   E_rnorm,    E2_rnorm, E2-E**2, E2_rnorm-E_rnorm**2))
-            print("%.3f %.3f %.3f %.3f %.6f %.3f %.3f %.3f %.3f %.6f %.6f %.6f"%(
-                   self.T,    spin_i,    spin_j,     spin_ij,        autoCorr,    E,        E2,   E_rnorm,    E2_rnorm, E2-E**2, E2_rnorm-E_rnorm**2, U4))
+            print("%.3f %.3f %.3f %.3f %.3f %.6f %.3f %.3f %.3f %.3f %.6f %.6f %.6f"%(
+                   self.T, self.h,   spin_i,    spin_j,     spin_ij,        autoCorr,    E,        E2,   E_rnorm,    E2_rnorm, E2-E**2, E2_rnorm-E_rnorm**2, U4))
             
             return spin_i, spin_j, spin_ij, autoCorr, E, E2, U4
 
@@ -290,14 +290,16 @@ class MC:
             C_r=E2_r-E_r*E_r
             spin_i=np.array([spin_i_x, spin_i_y, spin_i_z])
             spin_j=np.array([spin_j_x, spin_j_y, spin_j_z])
+            spin_i_len=np.sqrt(np.dot(spin_i,spin_i))
+            spin_j_len=np.sqrt(np.dot(spin_j,spin_j))
             spin_i_r=np.array([spin_i_r_x, spin_i_r_y, spin_i_r_z])
             spin_j_r=np.array([spin_j_r_x, spin_j_r_y, spin_j_r_z])
             #      T       <i><j>     <ij>      <autoCorr>      <E>      <E2>      <U4>      <E_r>      <E2_r>  C  C_v
-            print('%.3f %.3f %.3f %.3f %.3f %.3f %.6f %.3f %.3f %.3f %.3f %.3f %.3f %.3f %.6f %.6f'%(
-                   self.T,spin_i_tot_z,spin_j_tot_z,spin_tot_z,np.dot(spin_i,spin_j),spin_ij,autoCorr,E,E2,       U4,np.dot(spin_i_r,spin_j_r),spin_ij_r,       E_r,      E2_r,   C, C_r))
+            print('%.3f %.3f %.3f %.3f %.3f %.3f %.3f %.6f %.3f %.3f %.3f %.3f %.3f %.3f %.3f'%(
+                   self.T,spin_i_tot_z,spin_j_tot_z,spin_tot_z,spin_i_len,spin_j_len,spin_ij,np.dot(spin_i,spin_j),E,E2,       U4,spin_ij_r,np.dot(spin_i_r,spin_j_r),       E_r,      E2_r))
             with open('./out','a') as fout:
-                fout.write('%.3f %.3f %.3f %.3f %.3f %.3f %.6f %.3f %.3f %.3f %.3f %.3f %.3f %.3f %.6f %.6f\n'%(
-                   self.T,spin_i_tot_z,spin_j_tot_z,spin_tot_z,np.dot(spin_i,spin_j),spin_ij,autoCorr,E,E2,       U4,np.dot(spin_i_r,spin_j_r),spin_ij_r,       E_r,      E2_r,   C, C_r))
+                fout.write('%.3f %.3f %.3f %.3f %.3f %.3f %.3f %.6f %.3f %.3f %.3f %.3f %.3f %.3f %.3f'%(
+                   self.T,spin_i_tot_z,spin_j_tot_z,spin_tot_z,spin_i_len,spin_j_len,spin_ij,np.dot(spin_i,spin_j),E,E2,       U4,spin_ij_r,np.dot(spin_i_r,spin_j_r),       E_r,      E2_r))
             '''
             if binGraph:
                 data=np.zeros((200,200))
@@ -324,11 +326,11 @@ class MC:
             spin_i_r=np.array([spin_i_r_x, spin_i_r_y, spin_i_r_z])
             spin_j_r=np.array([spin_j_r_x, spin_j_r_y, spin_j_r_z])
             #      T       <i><j>     <ij>      <autoCorr>      <E>      <E2>      <U4>      <E_r>      <E2_r>  C  C_v
-            print('%.3f %.3f %.3f %.3f %.3f %.3f %.6f %.3f %.3f %.3f %.3f %.3f %.3f %.3f %.6f %.6f'%(
-                   self.T,spin_i_tot_z,spin_j_tot_z,spin_tot_z,np.dot(spin_i,spin_j),spin_ij,autoCorr,E,E2,       U4,np.dot(spin_i_r,spin_j_r),spin_ij_r,       E_r,      E2_r,   C, C_r))
+            print('%.3f %.3f %.3f %.3f %.3f %.3f %.3f %.6f %.3f %.3f %.3f %.3f %.3f %.3f %.3f'%(
+                   self.T,spin_i_tot_z,spin_j_tot_z,spin_tot_z,spin_i_len,spin_j_len,spin_ij,np.dot(spin_i,spin_j),E,E2,       U4,spin_ij_r,np.dot(spin_i_r,spin_j_r),       E_r,      E2_r))
             with open('./out','a') as fout:
-                fout.write('%.3f %.3f %.3f %.3f %.3f %.3f %.6f %.3f %.3f %.3f %.3f %.3f %.3f %.3f %.6f %.6f\n'%(
-                   self.T,spin_i_tot_z,spin_j_tot_z,spin_tot_z,np.dot(spin_i,spin_j),spin_ij,autoCorr,E,E2,       U4,np.dot(spin_i_r,spin_j_r),spin_ij_r,       E_r,      E2_r,   C, C_r))
+                fout.write('%.3f %.3f %.3f %.3f %.3f %.3f %.3f %.6f %.3f %.3f %.3f %.3f %.3f %.3f %.3f'%(
+                   self.T,spin_i_tot_z,spin_j_tot_z,spin_tot_z,spin_i_len,spin_j_len,spin_ij,np.dot(spin_i,spin_j),E,E2,       U4,spin_ij_r,np.dot(spin_i_r,spin_j_r),       E_r,      E2_r))
             
             '''
             if binGraph:

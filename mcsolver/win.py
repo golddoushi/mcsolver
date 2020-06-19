@@ -18,7 +18,7 @@ def startMC(param): # start MC for Ising model
     #mData=abs(mData)/Lx/Ly/Lz
     #eData/=(Lx*Ly*Lz)
     #print("<ij>=",np.mean(corr))
-    return ID, T, spin_i, spin_j, spin_ij, autoCorr, E, E2, U4, mcslave.totOrbs
+    return ID, T, h, spin_i, spin_j, spin_ij, autoCorr, E, E2, U4, mcslave.totOrbs
 
 def startMCForOn(param): # start MC for O(n) model
     # unzip all global parameters for every processing
@@ -27,7 +27,7 @@ def startMCForOn(param): # start MC for O(n) model
     spin_i, spin_j, spin_ij, autoCorr, E, E2, U4=mcslave.mainLoopViaCLib_On(nsweep=nsweep,nthermal=nthermal,ninterval=ninterval,algo=algorithm,On=On)
     #mData=abs(mData)/Lx/Ly/Lz
     #eData/=(Lx*Ly*Lz)
-    return ID, T, spin_i, spin_j, spin_ij, autoCorr, E, E2, U4, mcslave.totOrbs
+    return ID, T, h, spin_i, spin_j, spin_ij, autoCorr, E, E2, U4, mcslave.totOrbs
 
 def startSimulation(updateGUI=True, rpath=''):
     time0=time.time()
@@ -38,6 +38,7 @@ def startSimulation(updateGUI=True, rpath=''):
         io.loadParam(updateGUI=False, rpath=rpath)
 
     TList=np.linspace(io.T0,io.T1,io.nT)
+    HList=np.linspace(io.H0,io.H1,io.nH)
     bondList=[lat.Bond(bond_data[0],bond_data[1],                 # source and target  
                        np.array([int(x) for x in bond_data[2]]),  # over lat.
                        bond_data[3],bond_data[4],bond_data[5],    # strength
@@ -53,11 +54,12 @@ def startSimulation(updateGUI=True, rpath=''):
             return
         
         paramPack=[]
-        for iT, T in enumerate(TList):
-            paramPack.append([iT,T,bondList,LMatrix,pos,io.S,io.DList,io.h,io.nsweep,io.nthermal,io.ninterval,io.LPack[0],io.LPack[1],io.LPack[2],io.algorithm,
-                              io.GcOrb])
+        for iH, H in enumerate(HList):
+            for iT, T in enumerate(TList):
+                paramPack.append([iH*len(TList)+iT,T,bondList,LMatrix,pos,io.S,io.DList,H,io.nsweep,io.nthermal,io.ninterval,io.LPack[0],io.LPack[1],io.LPack[2],io.algorithm,
+                                 io.GcOrb])
         
-        TResult=[];SpinIResult=[];SpinJResult=[];susResult=[];energyResult=[];capaResult=[];u4Result=[];autoCorrResult=[]
+        TResult=[];HResult=[];SpinIResult=[];SpinJResult=[];susResult=[];energyResult=[];capaResult=[];u4Result=[];autoCorrResult=[]
         while(True): # using pump strategy to reduce the costs of RAM
             if len(paramPack)==0:
                 break
@@ -69,8 +71,9 @@ def startSimulation(updateGUI=True, rpath=''):
                     break
             pool=Pool(processes=io.ncores)
             for result in pool.imap_unordered(startMC,paramPack_tmp):
-                ID, T, spin_i, spin_j, spin_ij, autoCorr, E, E2, U4, N=result
+                ID, T, h, spin_i, spin_j, spin_ij, autoCorr, E, E2, U4, N=result
                 TResult.append(T)
+                HResult.append(h)
                 SpinIResult.append(spin_i)
                 SpinJResult.append(spin_j)
                 susResult.append((spin_ij-spin_i*spin_j)/T)
@@ -79,7 +82,7 @@ def startSimulation(updateGUI=True, rpath=''):
                 capaResult.append((E2-E*E)/T**2)
                 u4Result.append(U4)
             pool.close()
-        if updateGUI: gui.updateResultViewer(TList=TResult, magList=SpinIResult, susList=capaResult)
+        if updateGUI: gui.updateResultViewer(TList=HResult, magList=[(si+sj)/2 for si,sj in zip(SpinIResult,SpinJResult)], susList=capaResult)
     # continuous model settings
     elif(io.modelType=='XY' or io.modelType=='Heisenberg'):
         for bond in bondList:
@@ -91,11 +94,12 @@ def startSimulation(updateGUI=True, rpath=''):
 
         On=2 if io.modelType=='XY' else 3
         paramPack=[]
-        for iT, T in enumerate(TList):
-            paramPack.append([iT,T,bondList,LMatrix,pos,io.S,io.DList,io.h,io.nsweep,io.nthermal,io.ninterval,io.LPack[0],io.LPack[1],io.LPack[2],io.algorithm,On,
-                              io.GcOrb])
+        for iH, H in enumerate(HList):
+            for iT, T in enumerate(TList):
+                paramPack.append([iH*len(TList)+iT,T,bondList,LMatrix,pos,io.S,io.DList,H,io.nsweep,io.nthermal,io.ninterval,io.LPack[0],io.LPack[1],io.LPack[2],io.algorithm,On,
+                                  io.GcOrb])
 
-        TResult=[];SpinIResult=[];SpinJResult=[];susResult=[];energyResult=[];capaResult=[];u4Result=[];autoCorrResult=[]
+        TResult=[];HResult=[];SpinIResult=[];SpinJResult=[];susResult=[];energyResult=[];capaResult=[];u4Result=[];autoCorrResult=[]
         while(True): # using pump strategy to reduce the costs of RAM
             if len(paramPack)==0:
                 break
@@ -107,8 +111,9 @@ def startSimulation(updateGUI=True, rpath=''):
                     break
             pool=Pool(processes=io.ncores)
             for result in pool.imap_unordered(startMCForOn,paramPack_tmp):
-                ID, T, spin_i, spin_j, spin_ij, autoCorr, E, E2, U4, N =result
+                ID, T, h, spin_i, spin_j, spin_ij, autoCorr, E, E2, U4, N =result
                 TResult.append(T)
+                HResult.append(h)
                 SpinIResult.append(np.sqrt(sum(spin_i*spin_i)))
                 SpinJResult.append(np.sqrt(sum(spin_j*spin_j)))
                 susResult.append((spin_ij-np.dot(spin_i,spin_j))/T)
@@ -117,7 +122,7 @@ def startSimulation(updateGUI=True, rpath=''):
                 capaResult.append((E2-E*E)/T**2)
                 u4Result.append(U4)
             pool.close()
-        if updateGUI: gui.updateResultViewer(TList=TResult, magList=SpinIResult, susList=capaResult)
+        if updateGUI: gui.updateResultViewer(TList=HResult, magList=SpinIResult, susList=capaResult)
     else:
         print("for now only Ising, XY and Heisenberg model is supported")
         if updateGUI: gui.submitBtn.config(state='normal')

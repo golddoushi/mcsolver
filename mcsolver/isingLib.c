@@ -371,8 +371,8 @@ PyObject * localUpdateMC(int totOrbs, double initSpin[totOrbs], int nthermal, in
         MdotM_tmp+=M_tmp*M;
         M_tmp=M;
 
-        spin_i+=fabs(spin_i_avg)/nLat;
-        spin_j+=fabs(spin_j_avg)/nLat;
+        spin_i+=(spin_i_avg)/nLat;//fabs(spin_i_avg)/nLat;
+        spin_j+=(spin_j_avg)/nLat;//fabs(spin_j_avg)/nLat;
         spin_ij+=corrAvg/nLat;
 
         // energy stored in each frame

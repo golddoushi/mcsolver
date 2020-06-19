@@ -2,13 +2,14 @@ from tkinter import filedialog
 from re import findall
 import guiMain as gui
 
-global LMatrix, LPack, pos, S, DList, h, bondList, T0, T1, nT, nthermal, nsweep, ninterval, modelType, algorithm, GcOrb, ncores
+global LMatrix, LPack, pos, S, DList, h, H0, H1, nH, bondList, T0, T1, nT, nthermal, nsweep, ninterval, modelType, algorithm, GcOrb, ncores
 # initial value
 GcOrb=[0,0,[0,0,0]]
 h=0
+H0,H1,nH=0,0,1
 
 def collectParam():
-    global LMatrix, LPack, pos, S, DList, h, bondList, T0, T1, nT, nthermal, nsweep, ninterval, modelType, algorithm, GcOrb, ncores
+    global LMatrix, LPack, pos, S, DList, h, H0, H1, nH, bondList, T0, T1, nT, nthermal, nsweep, ninterval, modelType, algorithm, GcOrb, ncores
     # get lattice
     a1=gui.latticeGui[0].report()
     a2=gui.latticeGui[1].report()
@@ -72,7 +73,7 @@ def collectParam():
     print('using %d cores'%ncores)
 
 def saveParam():
-    global LMatrix, LPack, pos, S, DList, h, bondList, T0, T1, nT, nthermal, nsweep, ninterval, modelType, algorithm, GcOrb, ncores
+    global LMatrix, LPack, pos, S, DList, h, H0, H1, nH, bondList, T0, T1, nT, nthermal, nsweep, ninterval, modelType, algorithm, GcOrb, ncores
     collectParam()
     # write into files
     filePath=filedialog.asksaveasfilename()
@@ -90,14 +91,14 @@ def saveParam():
     f.write("%d\n"%len(pos))
     f.write("Postions, initial spin states and onsite-anisotropy of every orbitals:\n")
     for ele in gui.OrbListBox.infoData:
-        f.write("orb %d: type %d spin %.9f pos [%.9f %.9f %.9f] Dz %.9f Dx %.9f Dy %.9f h %.9f\n"%(ele[0],ele[1],ele[2],\
+        f.write("orb %d: type %d spin %.9f pos [%.9f %.9f %.9f] Dx %.9f Dy %.9f Dz %.9f h %.9f\n"%(ele[0],ele[1],ele[2],\
                                                                                             ele[3][0],ele[3][1],ele[3][2],\
                                                                                             ele[4][0],ele[4][1],ele[4][2],h))
     f.write("Bonds:\n")
     f.write("%d\n"%len(bondList))
     f.write("id, source, target, overLat, Jz, Jx, Jy of each bond:\n")
     for bond_data in gui.BondBox.infoData:
-        f.write("bond %d: Jz %.9f Jx %.9f Jy %.9f orb %d to orb %d over [%d %d %d]\n"%\
+        f.write("bond %d: Jx %.9f Jy %.9f Jz %.9f orb %d to orb %d over [%d %d %d]\n"%\
             (bond_data[0],\
              bond_data[1][0],bond_data[1][1],bond_data[1][2],\
              bond_data[2][0],bond_data[2][1],bond_data[2][2][0],bond_data[2][2][1],bond_data[2][2][2]\
@@ -105,6 +106,8 @@ def saveParam():
 
     f.write("Temperature scanning region:\n")
     f.write("Tmin %.9f Tmax %.9f nT %d\n"%(T0, T1, nT))
+    f.write("Field scanning region:\n")
+    f.write("Hmin %.9f Hmax %.9f nH %d\n"%(H0, H1, nH))
     f.write("Mesurement:\n")
     f.write("mesure the correlation function between orb%d and orb%d over [%d %d %d]\n"%(GcOrb[0][0],GcOrb[0][1],GcOrb[1][0],GcOrb[1][1],GcOrb[1][2]))
     f.write("Sweeps for thermalization and statistics, and relaxiation step for each sweep:\n")
@@ -118,7 +121,7 @@ def saveParam():
     f.close()
 
 def loadParam(updateGUI=True,rpath='./mcInput'):
-    global LMatrix, LPack, pos, S, DList, h, bondList, T0, T1, nT, nthermal, nsweep, ninterval, modelType, algorithm, GcOrb, ncores
+    global LMatrix, LPack, pos, S, DList, h, bondList, T0, T1, nT, H0, H1, nH, nthermal, nsweep, ninterval, modelType, algorithm, GcOrb, ncores
     filePath=filedialog.askopenfilename() if updateGUI else rpath
     f=open(filePath,'r')
     data=[line for line in f.read().split('\n') if line]
@@ -145,6 +148,8 @@ def loadParam(updateGUI=True,rpath='./mcInput'):
             tagBonds=iline
         if keyword[0]=='Temperature':
             tagTemperature=iline
+        if keyword[0]=='Field':
+            tagField=iline
         if keyword[0]=='Sweeps':
             tagSweeps=iline
         if keyword[0]=='Model':
@@ -178,8 +183,7 @@ def loadParam(updateGUI=True,rpath='./mcInput'):
         pos.append([float(ele[3]),float(ele[4]),float(ele[5])])
         S.append(float(ele[2]))
         DList.append([float(ele[6]),float(ele[7]),float(ele[8])])
-        if len(ele)==10:
-            h=float(ele[9])
+        
     # load bonds
     nbonds=int(findall(r"[0-9]+",data[tagBonds+1])[0])
     bondInfo=[]
@@ -200,6 +204,8 @@ def loadParam(updateGUI=True,rpath='./mcInput'):
     # load other parameters
     Tpack=findall(r"[0-9\.]+",data[tagTemperature+1])
     T0, T1, nT = float(Tpack[0]), float(Tpack[1]), int(Tpack[2])
+    Hpack=findall(r'[0-9\.\-]+',data[tagField+1])
+    H0, H1, nH = float(Hpack[0]), float(Hpack[1]), int(Hpack[2])
     nTermSweep=findall(r"[0-9\.\-]+",data[tagSweeps+1])
     nthermal, nsweep, ninterval=[int(x) for x in nTermSweep]
     modelType=data[tagModel+1]

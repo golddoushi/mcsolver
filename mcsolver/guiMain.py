@@ -143,7 +143,7 @@ def loadOrbitals():
 
     anis_base=Frame(addOrbFrameBase)
     anis_base.grid(row=2,column=0,sticky=(W,E))
-    AnisotropyNote=toolbox.NoteFrm(anis_base, init_notes=['Ani: Dz','Dx','Dy'],init_data=[0,0,0],row=True,entryWidth=6)
+    AnisotropyNote=toolbox.NoteFrm(anis_base, init_notes=['Ani: Dx','Dy','Dz'],init_data=[0,0,0],row=True,entryWidth=6)
 
     addBtn=Button(addOrbFrameBase,text='add',command=addOrb)
     addBtn.grid(row=0,column=1,rowspan=3)
@@ -223,7 +223,7 @@ def loadBonds():
 
     id_base=Frame(addBondFrameBase)
     id_base.grid(row=0,column=0,sticky=(W,E))
-    IDandTypeOfBondNote=toolbox.NoteFrm(id_base, init_notes=['ID:','Jz','Jx','Jy'],init_data=[1,-1,-1,-1],row=True,entryWidth=5)
+    IDandTypeOfBondNote=toolbox.NoteFrm(id_base, init_notes=['ID:','Jx','Jy','Jz'],init_data=[1,-1,-1,-1],row=True,entryWidth=5)
     IDandTypeOfBondNote.entry_list[0].config(state='disabled')
 
     detail_base=Frame(addBondFrameBase)
