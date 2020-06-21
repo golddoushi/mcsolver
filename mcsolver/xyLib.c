@@ -423,16 +423,16 @@ PyObject * blockUpdateMC(int totOrbs, double initSpin[totOrbs], double initD[tot
 
     Vec spin_direction;
     double spin_i_z, spin_j_z, spin_tot_z;
+    double spin_i_h, spin_j_h, spin_tot_h;
     spin_i_z=0;spin_j_z=0;spin_tot_z=0;
+    spin_i_h=0;spin_j_h=0;spin_tot_h=0;
+
     for(int i=0;i<nsweep;i++){
         for(int j=0;j<ninterval;j++) blockUpdate(totOrbs, lattice, p_energy, p_totSpin);
         // find the main axis
         spin_direction.x=p_totSpin->x;
         spin_direction.y=p_totSpin->y;
         normalize(&spin_direction);
-        spin_i_z+=dot(spin_direction,lattice[corrOrbPair[0][0]].spin);
-        spin_j_z+=dot(spin_direction,lattice[corrOrbPair[0][1]].spin);
-        spin_tot_z+=(dot(spin_direction,*p_totSpin)/nLat);
 
         // spin statistics over space in each frame
         Vec spin_i_avg;
@@ -442,12 +442,39 @@ PyObject * blockUpdateMC(int totOrbs, double initSpin[totOrbs], double initD[tot
         spin_j_avg.x=0;
         spin_j_avg.y=0;
         double spin_ij_avg=0.0;
+
+        double spin_i_z_avg, spin_j_z_avg;
+        double spin_i_h_avg, spin_j_h_avg;
+        spin_i_z_avg=0;spin_j_z_avg=0;
+        spin_i_h_avg=0;spin_j_h_avg=0;
         for(int j=0;j<nLat;j++){
             plusEqual(&spin_i_avg, lattice[corrOrbPair[j][0]].spin);
             plusEqual(&spin_j_avg, lattice[corrOrbPair[j][1]].spin);
             spin_ij_avg+=dot(lattice[corrOrbPair[j][0]].spin,lattice[corrOrbPair[j][1]].spin);
+
+            // spin along main axis
+            spin_i_z_avg+=dot(spin_direction,lattice[corrOrbPair[j][0]].spin);
+            spin_j_z_avg+=dot(spin_direction,lattice[corrOrbPair[j][1]].spin);
+
+            // spin projected to z axis
+            spin_i_h_avg+=lattice[corrOrbPair[j][0]].spin.x;
+            spin_j_h_avg+=lattice[corrOrbPair[j][1]].spin.x;
             
         }
+
+        spin_i_z+=spin_i_z_avg/nLat;
+        spin_j_z+=spin_j_z_avg/nLat;
+        spin_tot_z+=(dot(spin_direction,*p_totSpin)/nLat);
+        if(h<0.00001){// avoid faults time reversal symmetry
+            spin_i_h+=fabs(spin_i_h_avg)/nLat;
+            spin_j_h+=fabs(spin_j_h_avg)/nLat;
+            spin_tot_h+=fabs(p_totSpin->x/nLat);
+        }else{
+            spin_i_h+=spin_i_h_avg/nLat;
+            spin_j_h+=spin_j_h_avg/nLat;
+            spin_tot_h+=p_totSpin->x/nLat;
+        }
+
         M=sqrt(dot(spin_i_avg,spin_i_avg))/nLat;
         M2+=M*M;
         M4+=M*M*M*M;
@@ -532,7 +559,7 @@ PyObject * blockUpdateMC(int totOrbs, double initSpin[totOrbs], double initD[tot
     double U4=(M2/nsweep)*(M2/nsweep)/(M4/nsweep);
     double autoCorr=(MdotM_tmp/nsweep-(M_tot/nsweep)*(M_tot/nsweep));
     PyObject *Data;
-    Data=PyTuple_New(23);
+    Data=PyTuple_New(26);
     PyTuple_SetItem(Data, 0, PyFloat_FromDouble(spin_i.x/nsweep));
     PyTuple_SetItem(Data, 1, PyFloat_FromDouble(spin_i.y/nsweep));
     PyTuple_SetItem(Data, 2, PyFloat_FromDouble(0));
@@ -556,6 +583,9 @@ PyObject * blockUpdateMC(int totOrbs, double initSpin[totOrbs], double initD[tot
     PyTuple_SetItem(Data,20, PyFloat_FromDouble(spin_i_z/nsweep));
     PyTuple_SetItem(Data,21, PyFloat_FromDouble(spin_j_z/nsweep));
     PyTuple_SetItem(Data,22, PyFloat_FromDouble(spin_tot_z/nsweep));
+    PyTuple_SetItem(Data,23, PyFloat_FromDouble(spin_i_h/nsweep));
+    PyTuple_SetItem(Data,24, PyFloat_FromDouble(spin_j_h/nsweep));
+    PyTuple_SetItem(Data,25, PyFloat_FromDouble(spin_tot_h/nsweep));
     return Data;
 }
 
@@ -603,17 +633,17 @@ PyObject * localUpdateMC(int totOrbs, double initSpin[totOrbs], double initD[tot
 
     Vec spin_direction;
     double spin_i_z, spin_j_z, spin_tot_z;
+    double spin_i_h, spin_j_h, spin_tot_h;
     spin_i_z=0;spin_j_z=0;spin_tot_z=0;
+    spin_i_h=0;spin_j_h=0;spin_tot_h=0;
+
     for(int i=0;i<nsweep;i++){
         for(int j=0;j<ninterval;j++) localUpdate(totOrbs, lattice, p_energy, p_totSpin);
         // find the main axis
         spin_direction.x=p_totSpin->x;
         spin_direction.y=p_totSpin->y;
         normalize(&spin_direction);
-        spin_i_z+=dot(spin_direction,lattice[corrOrbPair[0][0]].spin);
-        spin_j_z+=dot(spin_direction,lattice[corrOrbPair[0][1]].spin);
-        spin_tot_z+=(dot(spin_direction,*p_totSpin)/nLat);
-        
+
         // spin statistics over space in each frame
         Vec spin_i_avg;
         Vec spin_j_avg;
@@ -622,11 +652,38 @@ PyObject * localUpdateMC(int totOrbs, double initSpin[totOrbs], double initD[tot
         spin_j_avg.x=0;
         spin_j_avg.y=0;
         double spin_ij_avg=0.0;
+
+        double spin_i_z_avg, spin_j_z_avg;
+        double spin_i_h_avg, spin_j_h_avg;
+        spin_i_z_avg=0;spin_j_z_avg=0;
+        spin_i_h_avg=0;spin_j_h_avg=0;
         for(int j=0;j<nLat;j++){
             plusEqual(&spin_i_avg, lattice[corrOrbPair[j][0]].spin);
             plusEqual(&spin_j_avg, lattice[corrOrbPair[j][1]].spin);
             spin_ij_avg+=dot(lattice[corrOrbPair[j][0]].spin,lattice[corrOrbPair[j][1]].spin);
+
+            // spin along main axis
+            spin_i_z_avg+=dot(spin_direction,lattice[corrOrbPair[j][0]].spin);
+            spin_j_z_avg+=dot(spin_direction,lattice[corrOrbPair[j][1]].spin);
+
+            // spin projected to z axis
+            spin_i_h_avg+=lattice[corrOrbPair[j][0]].spin.x;
+            spin_j_h_avg+=lattice[corrOrbPair[j][1]].spin.x;
         }
+
+        spin_i_z+=spin_i_z_avg/nLat;
+        spin_j_z+=spin_j_z_avg/nLat;
+        spin_tot_z+=(dot(spin_direction,*p_totSpin)/nLat);
+        if(h<0.00001){// avoid faults time reversal symmetry
+            spin_i_h+=fabs(spin_i_h_avg)/nLat;
+            spin_j_h+=fabs(spin_j_h_avg)/nLat;
+            spin_tot_h+=fabs(p_totSpin->x/nLat);
+        }else{
+            spin_i_h+=spin_i_h_avg/nLat;
+            spin_j_h+=spin_j_h_avg/nLat;
+            spin_tot_h+=p_totSpin->x/nLat;
+        }
+
         M=sqrt(dot(spin_i_avg,spin_i_avg))/nLat;
         M2+=M*M;
         M4+=M*M*M*M;
@@ -698,7 +755,7 @@ PyObject * localUpdateMC(int totOrbs, double initSpin[totOrbs], double initD[tot
     double U4=(M2/nsweep)*(M2/nsweep)/(M4/nsweep);
     double autoCorr=(MdotM_tmp/nsweep-M_tot/nsweep*M_tot/nsweep);
     PyObject *Data;
-    Data=PyTuple_New(23);
+    Data=PyTuple_New(26);
     PyTuple_SetItem(Data, 0, PyFloat_FromDouble(spin_i.x/nsweep));
     PyTuple_SetItem(Data, 1, PyFloat_FromDouble(spin_i.y/nsweep));
     PyTuple_SetItem(Data, 2, PyFloat_FromDouble(0));
@@ -722,5 +779,8 @@ PyObject * localUpdateMC(int totOrbs, double initSpin[totOrbs], double initD[tot
     PyTuple_SetItem(Data,20, PyFloat_FromDouble(spin_i_z/nsweep));
     PyTuple_SetItem(Data,21, PyFloat_FromDouble(spin_j_z/nsweep));
     PyTuple_SetItem(Data,22, PyFloat_FromDouble(spin_tot_z/nsweep));
+    PyTuple_SetItem(Data,23, PyFloat_FromDouble(spin_i_h/nsweep));
+    PyTuple_SetItem(Data,24, PyFloat_FromDouble(spin_j_h/nsweep));
+    PyTuple_SetItem(Data,25, PyFloat_FromDouble(spin_tot_h/nsweep));
     return Data;
 }

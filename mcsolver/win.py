@@ -31,6 +31,9 @@ def startMCForOn(param): # start MC for O(n) model
 
 def startSimulation(updateGUI=True, rpath=''):
     time0=time.time()
+    with open('./out','w') as fout:
+        fout.write('#T #H\n')
+
     if updateGUI:
         gui.submitBtn.config(state='disabled')
         io.collectParam()

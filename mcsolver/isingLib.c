@@ -262,6 +262,8 @@ PyObject * blockUpdateMC(int totOrbs, double initSpin[totOrbs], int nthermal, in
     double E2=0, E2_rnorm=0;
     double M=0,M2=0,M4=0;
     double M_tmp=0,MdotM_tmp=0,M_tot=0;
+
+    double spin_tot=0;
     for(int i=0;i<nsweep;i++){
         for(int j=0;j<ninterval;j++) blockUpdate(totOrbs, lattice, p_energy, p_totSpin, p_energy_rnorm); // one sweep
         //printf("sweep%d finished\n",i);
@@ -276,6 +278,8 @@ PyObject * blockUpdateMC(int totOrbs, double initSpin[totOrbs], int nthermal, in
             spin_j_avg+=sj_tmp;
             corrAvg+=si_tmp*sj_tmp;
         }
+        spin_tot+=totSpin;
+
         M=spin_i_avg/nLat;
         M2+=M*M;
         M4+=M*M*M*M;
@@ -303,7 +307,7 @@ PyObject * blockUpdateMC(int totOrbs, double initSpin[totOrbs], int nthermal, in
     double U4=(M2/nsweep)*(M2/nsweep)/(M4/nsweep);
     double autoCorr=(MdotM_tmp/nsweep-(M_tot/nsweep)*(M_tot/nsweep));
     PyObject *Data;
-    Data=PyTuple_New(9);
+    Data=PyTuple_New(10);
     PyTuple_SetItem(Data, 0, PyFloat_FromDouble(spin_i/nsweep));
     PyTuple_SetItem(Data, 1, PyFloat_FromDouble(spin_j/nsweep));
     PyTuple_SetItem(Data, 2, PyFloat_FromDouble(spin_ij/nsweep));
@@ -313,6 +317,7 @@ PyObject * blockUpdateMC(int totOrbs, double initSpin[totOrbs], int nthermal, in
     PyTuple_SetItem(Data, 6, PyFloat_FromDouble(totEnergy_rnorm/nsweep));
     PyTuple_SetItem(Data, 7, PyFloat_FromDouble(E2_rnorm/nsweep));
     PyTuple_SetItem(Data, 8, PyFloat_FromDouble(U4));
+    PyTuple_SetItem(Data, 9, PyFloat_FromDouble(spin_tot/nsweep/nLat));
     return Data;
 }
 
@@ -340,6 +345,8 @@ PyObject * localUpdateMC(int totOrbs, double initSpin[totOrbs], int nthermal, in
     *p_energy=0;
     double M=0,M2=0,M4=0;
     double M_tmp=0,MdotM_tmp=0,M_tot=0;
+
+    double spin_tot=0;
     for(int i=0;i<totOrbs;i++){ // calc. energy in renormalized system
         *p_energy+=getCorrEnergy(lattice+i);
     }
@@ -363,6 +370,7 @@ PyObject * localUpdateMC(int totOrbs, double initSpin[totOrbs], int nthermal, in
             spin_j_avg+=sj_tmp;
             corrAvg+=si_tmp*sj_tmp;
         }
+        spin_tot+=totSpin;
         M=spin_i_avg/nLat;
         M2+=M*M;
         M4+=M*M*M*M;
@@ -388,7 +396,7 @@ PyObject * localUpdateMC(int totOrbs, double initSpin[totOrbs], int nthermal, in
     double U4=(M2/nsweep)*(M2/nsweep)/(M4/nsweep);
     double autoCorr=(MdotM_tmp/nsweep-(M_tot/nsweep)*(M_tot/nsweep));
     PyObject *Data;
-    Data=PyTuple_New(9);
+    Data=PyTuple_New(10);
     PyTuple_SetItem(Data, 0, PyFloat_FromDouble(spin_i/nsweep));
     PyTuple_SetItem(Data, 1, PyFloat_FromDouble(spin_j/nsweep));
     PyTuple_SetItem(Data, 2, PyFloat_FromDouble(spin_ij/nsweep));
@@ -398,5 +406,6 @@ PyObject * localUpdateMC(int totOrbs, double initSpin[totOrbs], int nthermal, in
     PyTuple_SetItem(Data, 6, PyFloat_FromDouble(totEnergy_rnorm/nsweep));
     PyTuple_SetItem(Data, 7, PyFloat_FromDouble(E2_rnorm/nsweep));
     PyTuple_SetItem(Data, 8, PyFloat_FromDouble(U4));
+    PyTuple_SetItem(Data, 9, PyFloat_FromDouble(spin_tot/nsweep/nLat));
     return Data;
 }
