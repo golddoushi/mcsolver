@@ -192,7 +192,7 @@ double getCorrEnergy(Orb *source){
 }
 
 double getOnsiteEnergy(Orb *source){  // onsite term
-    return diagonalDot(source->onsiteAnisotropy,source->spin,source->spin)+source->spin.z*source->h;
+    return diagonalDot(source->onsiteAnisotropy,source->spin,source->spin)-source->spin.z*source->h;
 }
 
 Vec getMajoritySpin(Orb*_orb){ // core algorithm for renormalization
@@ -225,7 +225,7 @@ double getOnsiteEnergy_rnorm(Orb *source){
     Vec avgSpin_source=getMajoritySpin(source);
     return source->onsiteAnisotropy.x*avgSpin_source.x*avgSpin_source.x+
            source->onsiteAnisotropy.y*avgSpin_source.y*avgSpin_source.y+
-           source->onsiteAnisotropy.z*avgSpin_source.z*avgSpin_source.z+source->h*avgSpin_source.z;
+           source->onsiteAnisotropy.z*avgSpin_source.z*avgSpin_source.z-source->h*avgSpin_source.z;
 }
 
 double getDeltaCorrEnergy(Orb *source){
@@ -243,7 +243,7 @@ double getDeltaOnsiteEnergy(Orb *source){
     //printf("h %.3f, transSpin %.3f\n",source->h,source->transSpin.z);
     return source->onsiteAnisotropy.x*(s1x*s1x-source->spin.x*source->spin.x)+
            source->onsiteAnisotropy.y*(s1y*s1y-source->spin.y*source->spin.y)+
-           source->onsiteAnisotropy.z*(s1z*s1z-source->spin.z*source->spin.z)+
+           source->onsiteAnisotropy.z*(s1z*s1z-source->spin.z*source->spin.z)-
            source->h*source->transSpin.z;
 }
 
@@ -484,15 +484,15 @@ PyObject * blockUpdateMC(int totOrbs, double initSpin[totOrbs], double initD[tot
         spin_i_z+=spin_i_z_avg/nLat;
         spin_j_z+=spin_j_z_avg/nLat;
         spin_tot_z+=(dot(spin_direction,*p_totSpin)/nLat);
-        if(h<0.00001){// avoid faults time reversal symmetry
-            spin_i_h+=fabs(spin_i_h_avg)/nLat;
-            spin_j_h+=fabs(spin_j_h_avg)/nLat;
-            spin_tot_h+=fabs(p_totSpin->z/nLat);
-        }else{
+        //if(h<0.00001){// avoid faults time reversal symmetry
+        //    spin_i_h+=fabs(spin_i_h_avg)/nLat;
+        //    spin_j_h+=fabs(spin_j_h_avg)/nLat;
+        //    spin_tot_h+=fabs(p_totSpin->z/nLat);
+        //}else{
             spin_i_h+=spin_i_h_avg/nLat;
             spin_j_h+=spin_j_h_avg/nLat;
             spin_tot_h+=p_totSpin->z/nLat;
-        }
+        //}
 
 
         M=sqrt(dot(*p_totSpin,*p_totSpin))/nLat;
@@ -697,15 +697,15 @@ PyObject * localUpdateMC(int totOrbs, double initSpin[totOrbs], double initD[tot
         spin_i_z+=spin_i_z_avg/nLat;
         spin_j_z+=spin_j_z_avg/nLat;
         spin_tot_z+=(dot(spin_direction,*p_totSpin)/nLat);
-        if(h<0.00001){// avoid faults time reversal symmetry
-            spin_i_h+=fabs(spin_i_h_avg)/nLat;
-            spin_j_h+=fabs(spin_j_h_avg)/nLat;
-            spin_tot_h+=fabs(p_totSpin->z)/nLat;
-        }else{
+        //if(h<0.00001){// avoid faults time reversal symmetry
+        //    spin_i_h+=fabs(spin_i_h_avg)/nLat;
+        //    spin_j_h+=fabs(spin_j_h_avg)/nLat;
+        //    spin_tot_h+=fabs(p_totSpin->z)/nLat;
+        //}else{
             spin_i_h+=spin_i_h_avg/nLat;
             spin_j_h+=spin_j_h_avg/nLat;
             spin_tot_h+=p_totSpin->z/nLat;
-        }
+        //}
 
         M=sqrt(dot(spin_i_avg,spin_i_avg))/nLat;
         M2+=M*M;

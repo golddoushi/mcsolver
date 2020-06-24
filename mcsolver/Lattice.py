@@ -5,7 +5,7 @@ class Orbital:
     '''
     represent the orbital, it is linked to many other orbitals
     '''
-    def __init__(self,id,spin=1.,D=[],x=0.,y=0.,z=0.):
+    def __init__(self,id,spin=1.,D=[],x=0.,y=0.,z=0.,R=np.array([0,0,0])):
         self.id=id
         self.linkedOrb=[]
         self.linkStrength=[]
@@ -18,21 +18,37 @@ class Orbital:
         self.y=y
         self.z=z
 
+        self.r=np.array([x,y,z])
+
         # mark for renormalization
         self.chosen=False
         self.orb_cluster=[]
         self.linkedOrb_rnorm=[]
         self.linkStrength_rnorm=[]
     
-    def addLinking(self,targetOrb,strength):
+    def addLinking(self,targetOrb,strength,quiet=False,forceAdd=False):
         # check redundancy
-        for orb in self.linkedOrb:
+        for iorb, orb in enumerate(self.linkedOrb):
+            if forceAdd:
+                break
             if targetOrb.id==orb.id:
-                print('Warning: redundant bonding between orb: %d and %d'%(self.id, orb.id))
+                if not quiet: print('Warning: maybe redundant bonding between orb: %d and %d'%(self.id, orb.id))
+                # check if they are equal
+                existed_bond_strength=self.linkStrength[iorb]
+                diff_bond_strength=abs(existed_bond_strength-strength)
+                if type(strength) is float and diff_bond_strength<1e-5:
+                    if not quiet: print("the difference between this bond and existed bond is negligible (<1e-5), therefore we skip it")
+                    return
+                if type(strength) is np.ndarray and sum(diff_bond_strength)<1e-5:
+                    if not quiet: print("the difference between this bond and existed bond is negligible (<1e-5), therefore we skip it")
+                    return
+                if not quiet: print('Since the two bond strength is different, now try to add the strength to existed one')
+                self.linkStrength[iorb]+=strength
                 return
         self.linkedOrb.append(targetOrb)
         self.linkStrength.append(strength)
         #print(strength)
+        #exit()
     
     def addLinking_rnorm(self,targetOrb,strength):
         for orb in self.linkedOrb_rnorm:
@@ -140,7 +156,7 @@ def establishLattice(Lx=1,Ly=1,Lz=1,norb=1,Lmatrix=np.array([[1,0,0],[0,1,0],[0,
                 for o in range(norb):
                     pos=np.dot(np.array([x,y,z])+bmatrix[o],Lmatrix)
                     orbital=Orbital(id,spin=SpinList[o],D=DList[o],
-                                    x=pos[0],y=pos[1],z=pos[2])
+                                    x=pos[0],y=pos[1],z=pos[2],R=np.array([x,y,z]))
                     lattice_z.append(orbital)
                     lattice_flatten.append(orbital)
                     id+=1
@@ -176,7 +192,7 @@ def establishLattice(Lx=1,Ly=1,Lz=1,norb=1,Lmatrix=np.array([[1,0,0],[0,1,0],[0,
     print("<<<<<<")'''       
     return lattice, lattice_flatten
 
-def establishLinking(lattice,bondList,ki_s=0,ki_t=0,ki_overLat=[0,0,0]):
+def establishLinking(lattice,bondList,ki_s=0,ki_t=0,ki_overLat=[0,0,0],dipoleAlpha=0):
     Lx=len(lattice)
     Ly=len(lattice[0])
     Lz=len(lattice[0][0])
@@ -184,7 +200,6 @@ def establishLinking(lattice,bondList,ki_s=0,ki_t=0,ki_overLat=[0,0,0]):
 
     correlatedOrbitalPair=[]
     # uncode every orbitals
-    On=False
     for x in range(Lx):
         for y in range(Ly):
             for z in range(Lz):
@@ -208,6 +223,7 @@ def establishLinking(lattice,bondList,ki_s=0,ki_t=0,ki_overLat=[0,0,0]):
                                     targetOrb.addLinking_rnorm(sourceOrb,bond.strength)
                 # save the correlated orbital pairs
                 correlatedOrbitalPair.append([lattice[x][y][z][ki_s].id, lattice[(x+ki_overLat[0])%Lx][(y+ki_overLat[1])%Ly][(z+ki_overLat[2])%Lz][ki_t].id])
+    
     # after process
     '''
     On=bondList[0].On
@@ -218,6 +234,30 @@ def establishLinking(lattice,bondList,ki_s=0,ki_t=0,ki_overLat=[0,0,0]):
                     lattice[x][y][z][o].classifyTheLinking(On=On)
     '''
     return correlatedOrbitalPair
+
+def generateDipoleBondings(lattice,dipoleAlpha,On=1):
+    # long-range dipole coupling
+    print("Dipole interaction factor %.6f larger than 1e-5, try to construct dipole couplings, note open border condition is employed for dipole interactions"%dipoleAlpha)
+    for sourceOrb in lattice:
+        for targetOrb in lattice:
+            if sourceOrb.id==targetOrb.id:
+                continue
+            r12=sourceOrb.r-targetOrb.r
+            r12_len=np.sqrt(np.dot(r12,r12))
+            r12_n=r12/r12_len
+            if On==1: # Ising type only AFM part
+                dipole_AFM=dipoleAlpha/r12_len**3
+                sourceOrb.addLinking(targetOrb,dipole_AFM,forceAdd=True)
+                continue
+            x,y,z=r12_n
+            dipole_AFM=(dipoleAlpha/r12_len**3)*np.eye(3)
+            dipole_FM=(-3*dipoleAlpha/r12_len**3)*np.array([[x*x,x*y,x*z],
+                                                            [y*x,y*y,y*z],
+                                                            [z*x,z*y,z*z]])
+            sourceOrb.addLinking(targetOrb,dipole_AFM+dipole_FM,forceAdd=True)
+            print("Error reported by Lattice.py::establishLinking  Now dipole interaction for On(2/3) model consists of non-diagonal coupling elements, which is still in development. Therefore, let's stop here.")
+            exit()
+    print("dipole coupling established")
 
 def plotLattice(lattice):
     '''

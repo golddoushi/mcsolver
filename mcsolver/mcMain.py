@@ -6,7 +6,7 @@ import time
 import win
 
 class MC:
-    def __init__(self,ID,LMatrix,pos=[],S=[],D=[],bondList=[],T=1,Lx=1,Ly=1,Lz=1,ki_s=0,ki_t=0,ki_overLat=[0,0,0],h=0.): # init for specified temperature
+    def __init__(self,ID,LMatrix,pos=[],S=[],D=[],bondList=[],T=1,Lx=1,Ly=1,Lz=1,ki_s=0,ki_t=0,ki_overLat=[0,0,0],h=0.,dipoleAlpha=0,On=1): # init for specified temperature
         norb=len(pos)
         totOrbs=Lx*Ly*Lz*norb
         # to aviod 0K
@@ -30,7 +30,11 @@ class MC:
             raise("Input Error!")
             ki_s=norb-1 if ki_s >= norb else ki_s
             ki_t=norb-1 if ki_t >= norb else ki_t
-        self.correlatedOrbitalPair=lat.establishLinking(lattice_array,bondT,ki_s=ki_s,ki_t=ki_t,ki_overLat=ki_overLat)
+        self.correlatedOrbitalPair=lat.establishLinking(lattice_array,bondT,ki_s=ki_s,ki_t=ki_t,ki_overLat=ki_overLat,dipoleAlpha=dipoleAlpha)
+        self.dipoleCorrection = False 
+        if abs(dipoleAlpha)>1e-5:
+            self.dipoleCorrection=True
+            lat.generateDipoleBondings(lattice,dipoleAlpha/T,On=On)
         self.ID=ID
         self.T=T
         self.Sz=Lx*Ly*Lz*sum(S)
@@ -122,7 +126,6 @@ class MC:
         #for cnt in range(totOrb_rnorm*maxNLinking):
         #    print(linkData_rnorm[cnt])
         #-------------------------------------------------------------------------------#
-        
         maxNLinking=c_int(maxNLinking)
         
         # field info.
@@ -135,12 +138,14 @@ class MC:
             corrOrbitalPair[ipair*2]=pair[0]
             corrOrbitalPair[ipair*2+1]=pair[1]
 
+        # renormalization calc. switch
+        renormOn = c_int(0) if self.dipoleCorrection else c_int(1)
         mylib=CDLL(win.path+"isinglib.so")
         if algo=='Wolff':
             cMC=mylib.blockUpdateMC
             cMC.restype=py_object
             data=cMC(self.totOrbs, initSpin, nthermal, nsweep, maxNLinking, nlinking, linkStrength, linkData, ninterval, nLat, corrOrbitalPair, h,
-                     totOrb_rnorm, norbInCluster, rOrb, rOrbCluster, linkData_rnorm)
+                     renormOn, totOrb_rnorm, norbInCluster, rOrb, rOrbCluster, linkData_rnorm)
             spin_i, spin_j, spin_ij, autoCorr, E, E2, E_rnorm, E2_rnorm, U4, spin_tot = data
             E*=self.T;E2*=self.T**2;E_rnorm*=self.T;E2_rnorm*=self.T**2 # recover the real energies
             #print("T=%.3f, <Si>=%.3f, <Sj>=%.3f, <SiSj>=%.3f, <E>=%.3f, <E2>=%.3f, <Er>=%.3f, <E2_r>=%.3f, C=%.6f, Cr=%.6f"%(
@@ -156,7 +161,7 @@ class MC:
             cMC=mylib.localUpdateMC
             cMC.restype=py_object
             data=cMC(self.totOrbs, initSpin, nthermal, nsweep, maxNLinking, nlinking, linkStrength, linkData, ninterval, nLat, corrOrbitalPair, h,
-                     totOrb_rnorm, norbInCluster, rOrb, rOrbCluster, linkData_rnorm)
+                     renormOn, totOrb_rnorm, norbInCluster, rOrb, rOrbCluster, linkData_rnorm)
             spin_i, spin_j, spin_ij, autoCorr, E, E2, E_rnorm, E2_rnorm, U4, spin_tot = data
             E*=self.T;E2*=self.T**2;E_rnorm*=self.T;E2_rnorm*=self.T**2 # recover the real energies
             #print("T=%.3f, <Si>=%.3f, <Sj>=%.3f, <SiSj>=%.3f, <E>=%.3f, <E2>=%.3f, <Er>=%.3f, <E2_r>=%.3f, C=%.6f, Cr=%.6f"%(
@@ -301,11 +306,11 @@ class MC:
             spin_i_r=np.array([spin_i_r_x, spin_i_r_y, spin_i_r_z])
             spin_j_r=np.array([spin_j_r_x, spin_j_r_y, spin_j_r_z])
             #      T       <i><j>     <ij>      <autoCorr>      <E>      <E2>      <U4>      <E_r>      <E2_r>  C  C_v
-            print('%.3f %.3f %.3f %.3f %.3f %.3f %.3f %.3f %.3f %.3f %.6f %.3f %.3f %.3f %.3f %.3f %.3f %.3f'%(
-                   self.T,spin_i_tot_z,spin_j_tot_z,spin_tot_z,spin_i_h,spin_j_h,spin_tot_h,spin_i_len,spin_j_len,spin_ij,np.dot(spin_i,spin_j),E,E2,       U4,spin_ij_r,np.dot(spin_i_r,spin_j_r),       E_r,      E2_r))
+            print('%.3f %.3f %.3f %.3f %.3f %.3f %.3f %.3f %.3f %.3f %.3f %.6f %.3f %.3f %.3f %.3f %.3f %.3f %.3f'%(
+                   self.T,self.h,spin_i_tot_z,spin_j_tot_z,spin_tot_z,spin_i_h,spin_j_h,spin_tot_h,spin_i_len,spin_j_len,spin_ij,np.dot(spin_i,spin_j),E,E2,       U4,spin_ij_r,np.dot(spin_i_r,spin_j_r),       E_r,      E2_r))
             with open('./out','a') as fout:
-                fout.write('%.3f %.3f %.3f %.3f %.3f %.3f %.3f %.3f %.3f %.3f %.6f %.3f %.3f %.3f %.3f %.3f %.3f %.3f\n'%(
-                   self.T,spin_i_tot_z,spin_j_tot_z,spin_tot_z,spin_i_h,spin_j_h,spin_tot_h,spin_i_len,spin_j_len,spin_ij,np.dot(spin_i,spin_j),E,E2,       U4,spin_ij_r,np.dot(spin_i_r,spin_j_r),       E_r,      E2_r))
+                fout.write('%.3f %.3f %.3f %.3f %.3f %.3f %.3f %.3f %.3f %.3f %.3f %.6f %.3f %.3f %.3f %.3f %.3f %.3f %.3f\n'%(
+                   self.T,self.h,spin_i_tot_z,spin_j_tot_z,spin_tot_z,spin_i_h,spin_j_h,spin_tot_h,spin_i_len,spin_j_len,spin_ij,np.dot(spin_i,spin_j),E,E2,       U4,spin_ij_r,np.dot(spin_i_r,spin_j_r),       E_r,      E2_r))
             '''
             if binGraph:
                 data=np.zeros((200,200))
@@ -334,11 +339,11 @@ class MC:
             spin_i_r=np.array([spin_i_r_x, spin_i_r_y, spin_i_r_z])
             spin_j_r=np.array([spin_j_r_x, spin_j_r_y, spin_j_r_z])
             #      T       <i><j>     <ij>      <autoCorr>      <E>      <E2>      <U4>      <E_r>      <E2_r>  C  C_v
-            print('%.3f %.3f %.3f %.3f %.3f %.3f %.3f %.3f %.3f %.3f %.6f %.3f %.3f %.3f %.3f %.3f %.3f %.3f'%(
-                   self.T,spin_i_tot_z,spin_j_tot_z,spin_tot_z,spin_i_h,spin_j_h,spin_tot_h,spin_i_len,spin_j_len,spin_ij,np.dot(spin_i,spin_j),E,E2,       U4,spin_ij_r,np.dot(spin_i_r,spin_j_r),       E_r,      E2_r))
+            print('%.3f %.3f %.3f %.3f %.3f %.3f %.3f %.3f %.3f %.3f %.3f %.6f %.3f %.3f %.3f %.3f %.3f %.3f %.3f'%(
+                   self.T,self.h,spin_i_tot_z,spin_j_tot_z,spin_tot_z,spin_i_h,spin_j_h,spin_tot_h,spin_i_len,spin_j_len,spin_ij,np.dot(spin_i,spin_j),E,E2,       U4,spin_ij_r,np.dot(spin_i_r,spin_j_r),       E_r,      E2_r))
             with open('./out','a') as fout:
-                fout.write('%.3f %.3f %.3f %.3f %.3f %.3f %.3f %.3f %.3f %.3f %.6f %.3f %.3f %.3f %.3f %.3f %.3f %.3f\n'%(
-                   self.T,spin_i_tot_z,spin_j_tot_z,spin_tot_z,spin_i_h,spin_j_h,spin_tot_h,spin_i_len,spin_j_len,spin_ij,np.dot(spin_i,spin_j),E,E2,       U4,spin_ij_r,np.dot(spin_i_r,spin_j_r),       E_r,      E2_r))
+                fout.write('%.3f %.3f %.3f %.3f %.3f %.3f %.3f %.3f %.3f %.3f %.3f %.6f %.3f %.3f %.3f %.3f %.3f %.3f %.3f\n'%(
+                   self.T,self.h,spin_i_tot_z,spin_j_tot_z,spin_tot_z,spin_i_h,spin_j_h,spin_tot_h,spin_i_len,spin_j_len,spin_ij,np.dot(spin_i,spin_j),E,E2,       U4,spin_ij_r,np.dot(spin_i_r,spin_j_r),       E_r,      E2_r))
             
             '''
             if binGraph:

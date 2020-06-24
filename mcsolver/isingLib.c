@@ -27,6 +27,11 @@ void establishLattice(Orb *lattice, int totOrbs, double initSpin[totOrbs], int m
         lattice[i].linkStrength=linkStrength[i];
         lattice[i].chosen=0;
     }
+    //printf("verify lattice\n");
+    //for(int i=0;i<totOrbs;i++){
+    //    printf("orb%d spin: %.3f nlink: %d\n",lattice[i].id,lattice[i].spin,lattice[i].nlink);
+    //    for(int j=0;j<nlink[i];j++) printf(" coupling%d: %.6f\n",j,lattice[i].linkStrength[j]);
+    //}
     //printf("now checking the orb cluster\n");
     for(int i=0;i<totOrb_rnorm;i++){
         int id=rOrb[i];
@@ -49,6 +54,13 @@ void establishLinking(Orb *lattice, int totOrbs, int maxNLinking, int nlink[maxN
             lattice[iorb].linkedOrb[ilink]=lattice+linkedOrb[iorb][ilink];
         }
     }
+    //printf("verify linking\n");
+    //for(int iorb=0;iorb<totOrbs;iorb++){
+    //    for(int ilink=0;ilink<nlink[iorb];ilink++){
+    //        lattice[iorb].linkedOrb[ilink]=lattice+linkedOrb[iorb][ilink];
+    //        printf("orb%d ~ orb%d strength: %.6f\n",lattice[iorb].id,lattice[iorb].linkedOrb[ilink]->id,lattice[iorb].linkStrength[ilink]);
+    //    }
+    //}
     for(int i=0;i<totOrb_rnorm;i++){
         int iorb=rOrb[i];
         lattice[iorb].linkedOrb_rnorm=(Orb**)malloc(nlink[iorb]*sizeof(Orb*));
@@ -179,7 +191,7 @@ int expandBlock(int*beginIndex, int*endIndex, Orb *buffer[], int*blockLen, Orb *
     return 1;
 }
 
-void blockUpdate(int totOrbs, Orb lattice[], double*p_energy, double*p_totSpin, double*p_energy_rnorm){
+void blockUpdate(int totOrbs, Orb lattice[], double*p_energy, double*p_totSpin){
     //printf("one block update step is initializaing...\n");
     Orb *block[totOrbs];
     Orb *buffer[totOrbs];
@@ -201,23 +213,16 @@ void blockUpdate(int totOrbs, Orb lattice[], double*p_energy, double*p_totSpin, 
         if(block[i]->id<totOrbs-1) *p_totSpin+=(block[i]->spin*2);
     }
     *p_energy=0.;
-    for(i=0;i<totOrbs-1;i++){
+    for(i=0;i<totOrbs;i++){
         *p_energy+=getCorrEnergy(lattice+i);
     }
     *p_energy/=2;
-    // energy of renormalized lattice
-    //printf("try to evaluate the energy of renormalized system\n");
-    *p_energy_rnorm=0.;
-    for(i=0;i<totOrbs-1;i++){
-        if(lattice[i].chosen>0) *p_energy_rnorm+=getCorrEnergy_rnorm(lattice+i);
-    }
-    *p_energy_rnorm/=2;
 }
 
 void localUpdate(int totOrbs, Orb lattice[], double *p_energy, double *p_totSpin, double h){
     int seedID=rand()%totOrbs;
     double corr=2*(getCorrEnergy(lattice+seedID)-h*lattice[seedID].spin);
-
+    //printf("local update: try to flip orb%d, corr=%.6f\n",lattice[seedID].id,corr);
     if(corr>=0){
         lattice[seedID].spin*=-1;
         *p_totSpin+=(lattice[seedID].spin*2);
@@ -227,12 +232,13 @@ void localUpdate(int totOrbs, Orb lattice[], double *p_energy, double *p_totSpin
         *p_totSpin+=(lattice[seedID].spin*2);
         *p_energy-=corr;
     }
+    //printf("local update finished\n");
 }
  
 PyObject * blockUpdateMC(int totOrbs, double initSpin[totOrbs], int nthermal, int nsweep, 
                    int maxNLinking, int nlink[totOrbs], double linkStrength[totOrbs][maxNLinking], int linkedOrb[totOrbs][maxNLinking],
                    int ninterval, int nLat, int corrOrbPair[nLat][2], double h,
-                   int totOrb_rnorm, int nOrbInCluster, int rOrb[totOrb_rnorm], int rOrbCluster[totOrb_rnorm][nOrbInCluster], int linkedOrb_rnorm[totOrb_rnorm][maxNLinking]){
+                   int renormOn, int totOrb_rnorm, int nOrbInCluster, int rOrb[totOrb_rnorm], int rOrbCluster[totOrb_rnorm][nOrbInCluster], int linkedOrb_rnorm[totOrb_rnorm][maxNLinking]){
     //printf("hello block algorithm!\n");
     // initialize lattice including one ghost spin
     //totOrbs+=1;
@@ -251,7 +257,7 @@ PyObject * blockUpdateMC(int totOrbs, double initSpin[totOrbs], int nthermal, in
     for(int i=0;i<totOrbs;i++) lattice[i].inBlock=0;
     //printf("initialization success\n");
 
-    for(int i=0;i<nthermal*ninterval;i++) blockUpdate(totOrbs, lattice, p_energy, p_totSpin, p_energy_rnorm); //thermalization
+    for(int i=0;i<nthermal*ninterval;i++) blockUpdate(totOrbs, lattice, p_energy, p_totSpin); //thermalization
     //printf("thermalization finished\n");
 
     //printf("start sweeping\n");
@@ -265,7 +271,7 @@ PyObject * blockUpdateMC(int totOrbs, double initSpin[totOrbs], int nthermal, in
 
     double spin_tot=0;
     for(int i=0;i<nsweep;i++){
-        for(int j=0;j<ninterval;j++) blockUpdate(totOrbs, lattice, p_energy, p_totSpin, p_energy_rnorm); // one sweep
+        for(int j=0;j<ninterval;j++) blockUpdate(totOrbs, lattice, p_energy, p_totSpin); // one sweep
         //printf("sweep%d finished\n",i);
         // spin statistics over space in each frame
         double spin_i_avg=0;
@@ -295,8 +301,17 @@ PyObject * blockUpdateMC(int totOrbs, double initSpin[totOrbs], int nthermal, in
         // energy stored in each frame
         //printf("for full lattice with %d orbs, energy is %.3f\n",totOrbs,*p_energy);
         //printf("for renormalized lattice with %d orbs, energy is %.3f\n",totOrb_rnorm,*p_energy_rnorm);
+        // energy of renormalized lattice
+        //printf("try to evaluate the energy of renormalized system\n");
+        *p_energy_rnorm=0.;
+        if(renormOn>0){
+            for(int j=0;j<totOrbs;j++){
+                if(lattice[j].chosen>0) *p_energy_rnorm+=getCorrEnergy_rnorm(lattice+j);
+            }
+        *p_energy_rnorm/=2;
+        }
         double e_avg=*p_energy/totOrbs, e_avg_rnorm=*p_energy_rnorm/totOrb_rnorm;
-        //printf("avg: %.3f, %.3f\n",e_avg,e_avg_rnorm);
+        //printf("iter %d avg: %.3f, %.3f\n",i,e_avg,e_avg_rnorm);
         totEnergy+=e_avg;
         totEnergy_rnorm+=e_avg_rnorm;
         E2+=e_avg*e_avg;
@@ -324,7 +339,7 @@ PyObject * blockUpdateMC(int totOrbs, double initSpin[totOrbs], int nthermal, in
 PyObject * localUpdateMC(int totOrbs, double initSpin[totOrbs], int nthermal, int nsweep, 
                    int maxNLinking, int nlink[totOrbs], double linkStrength[totOrbs][maxNLinking], int linkedOrb[totOrbs][maxNLinking],
                    int ninterval, int nLat, int corrOrbPair[nLat][2], double h,
-                   int totOrb_rnorm, int nOrbInCluster, int rOrb[totOrb_rnorm], int rOrbCluster[totOrb_rnorm][nOrbInCluster], int linkedOrb_rnorm[totOrb_rnorm][maxNLinking]){
+                   int renormOn, int totOrb_rnorm, int nOrbInCluster, int rOrb[totOrb_rnorm], int rOrbCluster[totOrb_rnorm][nOrbInCluster], int linkedOrb_rnorm[totOrb_rnorm][maxNLinking]){
     // initialize lattice 
     Orb lattice[totOrbs];
     establishLattice(lattice, totOrbs, initSpin, maxNLinking, nlink, linkStrength, totOrb_rnorm, nOrbInCluster, rOrb, rOrbCluster);
@@ -347,18 +362,20 @@ PyObject * localUpdateMC(int totOrbs, double initSpin[totOrbs], int nthermal, in
     double M_tmp=0,MdotM_tmp=0,M_tot=0;
 
     double spin_tot=0;
-    for(int i=0;i<totOrbs;i++){ // calc. energy in renormalized system
-        *p_energy+=getCorrEnergy(lattice+i);
-    }
-    *p_energy/=2;
+    //for(int i=0;i<totOrbs;i++) *p_energy+=getCorrEnergy(lattice+i);
+    //*p_energy/=2;
     for(int i=0;i<nsweep;i++){
         //printf("sweep%d/%d\n",i,nsweep);
         for(int j=0;j<ninterval;j++) localUpdate(totOrbs, lattice, p_energy, p_totSpin, h); // one sweep
+        //printf("start statistics\n");
         *p_energy_rnorm=0;
-        for(int j=0;j<totOrbs;j++){ // calc. energy in renormalized system
-            if(lattice[j].chosen>0) *p_energy_rnorm+=getCorrEnergy_rnorm(lattice+j);
+        if(renormOn>0){
+            for(int j=0;j<totOrbs;j++){ // calc. energy in renormalized system
+                if(lattice[j].chosen>0) *p_energy_rnorm+=getCorrEnergy_rnorm(lattice+j);
+            }
+            *p_energy_rnorm/=2;
+            //printf("calc. energy for renormalized lattice done\n");
         }
-        *p_energy_rnorm/=2;
         // spin statistics over space in each frame
         double spin_i_avg=0;
         double spin_j_avg=0;
