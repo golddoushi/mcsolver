@@ -12,8 +12,8 @@ path='./'
 
 def startMC(param): # start MC for Ising model
     # unzip all global parameters for every processing
-    ID, T, bondList,LMatrix,pos,S,DList,h,nsweep,nthermal,ninterval,Lx,Ly,Lz,algorithm,GcOrb,dipoleAlpha=param
-    mcslave=mc.MC(ID,LMatrix,pos=pos,S=S,D=DList,bondList=bondList,T=T,Lx=Lx,Ly=Ly,Lz=Lz,ki_s=GcOrb[0][0],ki_t=GcOrb[0][1],ki_overLat=GcOrb[1],h=h,dipoleAlpha=dipoleAlpha)
+    ID, T, bondList,LMatrix,pos,S,DList,h,nsweep,nthermal,ninterval,Lx,Ly,Lz,algorithm,GcOrb,dipoleAlpha,spinFrame=param
+    mcslave=mc.MC(ID,LMatrix,pos=pos,S=S,D=DList,bondList=bondList,T=T,Lx=Lx,Ly=Ly,Lz=Lz,ki_s=GcOrb[0][0],ki_t=GcOrb[0][1],ki_overLat=GcOrb[1],h=h,dipoleAlpha=dipoleAlpha,spinFrame=spinFrame)
     spin_i, spin_j, spin_ij, autoCorr, E, E2, U4=mcslave.mainLoopViaCLib(nsweep=nsweep,nthermal=nthermal,ninterval=ninterval,algo=algorithm)
     #mData=abs(mData)/Lx/Ly/Lz
     #eData/=(Lx*Ly*Lz)
@@ -51,8 +51,8 @@ def startSimulation(updateGUI=True, rpath=''):
     pos=np.array(io.pos)
     
     if(io.modelType=='Ising'):
-        if io.algorithm!='Metroplis' and io.algorithm!='Wolff':
-            print('For now, only Metroplis and Wolff algorithm is supported for Ising model')
+        if io.algorithm!='Metropolis' and io.algorithm!='Wolff':
+            print('For now, only Metropolis and Wolff algorithm is supported for Ising model')
             if updateGUI: gui.submitBtn.config(state='normal')
             return
         
@@ -60,7 +60,7 @@ def startSimulation(updateGUI=True, rpath=''):
         for iH, H in enumerate(HList):
             for iT, T in enumerate(TList):
                 paramPack.append([iH*len(TList)+iT,T,bondList,LMatrix,pos,io.S,io.DList,H,io.nsweep,io.nthermal,io.ninterval,io.LPack[0],io.LPack[1],io.LPack[2],io.algorithm,
-                                 io.GcOrb,io.dipoleAlpha])
+                                 io.GcOrb,io.dipoleAlpha,io.spinFrame])
         
         TResult=[];HResult=[];SpinIResult=[];SpinJResult=[];susResult=[];energyResult=[];capaResult=[];u4Result=[];autoCorrResult=[]
         while(True): # using pump strategy to reduce the costs of RAM
@@ -85,13 +85,13 @@ def startSimulation(updateGUI=True, rpath=''):
                 capaResult.append((E2-E*E)/T**2)
                 u4Result.append(U4)
             pool.close()
-        if updateGUI: gui.updateResultViewer(TList=HResult, magList=[(si+sj)/2 for si,sj in zip(SpinIResult,SpinJResult)], susList=capaResult)
+        if updateGUI: gui.updateResultViewer(TList=TResult if io.xAxisType=='T' else HResult, magList=[(si+sj)/2 for si,sj in zip(SpinIResult,SpinJResult)], susList=capaResult)
     # continuous model settings
     elif(io.modelType=='XY' or io.modelType=='Heisenberg'):
         for bond in bondList:
             bond.On=True # switch on the vector type bonding
-        if io.algorithm!='Metroplis' and io.algorithm!='Wolff':
-            print('For now, only Metroplis and Wolff algorithm is supported for O(n) model')
+        if io.algorithm!='Metropolis' and io.algorithm!='Wolff':
+            print('For now, only Metropolis and Wolff algorithm is supported for O(n) model')
             if updateGUI: gui.submitBtn.config(state='normal')
             return
 

@@ -2,15 +2,17 @@ from tkinter import filedialog
 from re import findall
 import guiMain as gui
 
-global LMatrix, LPack, pos, S, DList, h, H0, H1, nH, dipoleAlpha, bondList, T0, T1, nT, nthermal, nsweep, ninterval, modelType, algorithm, GcOrb, ncores
+global LMatrix, LPack, pos, S, DList, h, H0, H1, nH, dipoleAlpha, bondList, T0, T1, nT, nthermal, nsweep, ninterval, xAxisType, modelType, algorithm, GcOrb, ncores, spinFrame
 # initial value
+xAxisType='T'
 GcOrb=[0,0,[0,0,0]]
 h=0
 H0,H1,nH=0,0,1
 dipoleAlpha=0
+spinFrame=0
 
 def collectParam():
-    global LMatrix, LPack, pos, S, DList, h, H0, H1, nH, dipoleAlpha, bondList, T0, T1, nT, nthermal, nsweep, ninterval, modelType, algorithm, GcOrb, ncores
+    global LMatrix, LPack, pos, S, DList, h, H0, H1, nH, dipoleAlpha, bondList, T0, T1, nT, nthermal, nsweep, ninterval, xAxisType, modelType, algorithm, GcOrb, ncores, spinFrame
     # get lattice
     a1=gui.latticeGui[0].report()
     a2=gui.latticeGui[1].report()
@@ -52,12 +54,19 @@ def collectParam():
     nT=int(nT)
     print('Temperature range: %.2f ~ %.2f with %d sampling points'%(T0, T1, nT))
 
+    # get HList
+    H0, H1, nH=gui.HListGui.report()
+    nH=int(nH)
+    print('Magnetic field range: %.2f ~ %.2f with %d sampling points'%(H0, H1, nH))
+
     # get thermalizations and sweeps
     nthermal, nsweep, ninterval= [int(x) for x in gui.MCparamGui.report()]
     print('thermalizations, sweeps and tau:')
     print(nthermal, nsweep, ninterval)
 
     # get model and algorithm
+    xAxisType=gui.xAxisGui.get()
+    print('X Axis is',xAxisType)
     modelType = gui.modelGui.get()
     print('Model:',modelType)
     algorithm = gui.algorithmGui.get()
@@ -74,7 +83,7 @@ def collectParam():
     print('using %d cores'%ncores)
 
 def saveParam():
-    global LMatrix, LPack, pos, S, DList, h, H0, H1, nH, dipoleAlpha, bondList, T0, T1, nT, nthermal, nsweep, ninterval, modelType, algorithm, GcOrb, ncores
+    global LMatrix, LPack, pos, S, DList, h, H0, H1, nH, dipoleAlpha, bondList, T0, T1, nT, nthermal, nsweep, ninterval, xAxisType, modelType, algorithm, GcOrb, ncores, spinFrame
     collectParam()
     # write into files
     filePath=filedialog.asksaveasfilename()
@@ -113,8 +122,11 @@ def saveParam():
     f.write("alpha %.6f\n"%dipoleAlpha)
     f.write("Mesurement:\n")
     f.write("mesure the correlation function between orb%d and orb%d over [%d %d %d]\n"%(GcOrb[0][0],GcOrb[0][1],GcOrb[1][0],GcOrb[1][1],GcOrb[1][2]))
+    f.write("Distribution output frame: %d\n"%spinFrame)
     f.write("Sweeps for thermalization and statistics, and relaxiation step for each sweep:\n")
     f.write("%d %d %d\n"%(nthermal, nsweep, ninterval))
+    f.write("XAxis type:\n")
+    f.write(xAxisType+'\n')
     f.write("Model type:\n")
     f.write(modelType+'\n')
     f.write("Algorithm:\n")
@@ -124,7 +136,7 @@ def saveParam():
     f.close()
 
 def loadParam(updateGUI=True,rpath='./mcInput'):
-    global LMatrix, LPack, pos, S, DList, h, bondList, T0, T1, nT, H0, H1, nH, dipoleAlpha, nthermal, nsweep, ninterval, modelType, algorithm, GcOrb, ncores
+    global LMatrix, LPack, pos, S, DList, h, bondList, T0, T1, nT, H0, H1, nH, dipoleAlpha, nthermal, nsweep, ninterval, xAxisType, modelType, algorithm, GcOrb, ncores, spinFrame
     filePath=filedialog.askopenfilename() if updateGUI else rpath
     f=open(filePath,'r')
     data=[line for line in f.read().split('\n') if line]
@@ -165,8 +177,12 @@ def loadParam(updateGUI=True,rpath='./mcInput'):
             tagMesurement=iline
         if keyword[0]=='Ncores':
             tagNcores=iline
+        if keyword[0]=='Distribution':
+            tagDistribution=iline
+        if keyword[0]=='XAxis':
+            tagXAxis=iline
 
-    if tagLattice*tagSupercell*tagOrbitals*tagBonds*tagTemperature*tagSweeps*tagModel*tagAlgorithm*tagNcores*tagField*tagDipole==0:
+    if tagLattice*tagSupercell*tagOrbitals*tagBonds*tagTemperature*tagSweeps*tagModel*tagAlgorithm*tagNcores*tagField*tagDipole*tagDistribution*tagXAxis==0:
         print("cannot find some tags")
         return False
     
@@ -212,8 +228,10 @@ def loadParam(updateGUI=True,rpath='./mcInput'):
     Hpack=findall(r'[0-9\.\-]+',data[tagField+1])
     H0, H1, nH = float(Hpack[0]), float(Hpack[1]), int(Hpack[2])
     dipoleAlpha=float(findall(r'[0-9\.\-]+',data[tagDipole+1])[0])
+    spinFrame=float(findall(r'[0-9]+',data[tagDistribution])[0])
     nTermSweep=findall(r"[0-9\.\-]+",data[tagSweeps+1])
     nthermal, nsweep, ninterval=[int(x) for x in nTermSweep]
+    xAxisType=data[tagXAxis+1]
     modelType=data[tagModel+1]
     algorithm=data[tagAlgorithm+1]
     _ncores=[int(data[tagNcores+1])]
@@ -231,6 +249,7 @@ def loadParam(updateGUI=True,rpath='./mcInput'):
     gui.TListGui.setValue(Tpack)
     gui.corrGui.setValue(GcPack)
     gui.MCparamGui.setValue(nTermSweep)
+    gui.xaxisStr.set(xAxisType)
     gui.modelStr.set(modelType)
     gui.algoStr.set(algorithm)
     gui.coreGui.setValue(_ncores)

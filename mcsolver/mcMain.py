@@ -6,7 +6,7 @@ import time
 import win
 
 class MC:
-    def __init__(self,ID,LMatrix,pos=[],S=[],D=[],bondList=[],T=1,Lx=1,Ly=1,Lz=1,ki_s=0,ki_t=0,ki_overLat=[0,0,0],h=0.,dipoleAlpha=0,On=1): # init for specified temperature
+    def __init__(self,ID,LMatrix,pos=[],S=[],D=[],bondList=[],T=1,Lx=1,Ly=1,Lz=1,ki_s=0,ki_t=0,ki_overLat=[0,0,0],h=0.,dipoleAlpha=0,On=1,spinFrame=0): # init for specified temperature
         norb=len(pos)
         totOrbs=Lx*Ly*Lz*norb
         # to aviod 0K
@@ -45,6 +45,7 @@ class MC:
         self.ki_s=ki_s
         self.ki_t=ki_t
         self.h=h
+        self.spinFrame=spinFrame
 
     def mainLoopViaCLib(self,nsweep=1000,nthermal=500,ninterval=-1,algo='Wolff'):
         self.nsweep=nsweep
@@ -130,7 +131,6 @@ class MC:
         
         # field info.
         h=c_double(self.h)
-
         # correlated info.
         nLat=len(self.correlatedOrbitalPair)
         corrOrbitalPair=(c_int*(nLat*2))()
@@ -140,39 +140,31 @@ class MC:
 
         # renormalization calc. switch
         renormOn = c_int(0) if self.dipoleCorrection else c_int(1)
+
+        # num. of returned spin frame
+        spinFrame=c_int(int(self.spinFrame))
+
         mylib=CDLL(win.path+"isinglib.so")
-        if algo=='Wolff':
+        cMC=mylib.localUpdateMC # default Ising solver
+        if algo=='Wolff': # Other choices
+            if abs(self.h)>1e-5:
+                print("WARNING: external field has not been developed in Wolff algorithm (not effiecient), now the job continues but field is skipped, please switch to Metropolis algorithm to include field effects")
             cMC=mylib.blockUpdateMC
-            cMC.restype=py_object
-            data=cMC(self.totOrbs, initSpin, nthermal, nsweep, maxNLinking, nlinking, linkStrength, linkData, ninterval, nLat, corrOrbitalPair, h,
-                     renormOn, totOrb_rnorm, norbInCluster, rOrb, rOrbCluster, linkData_rnorm)
-            spin_i, spin_j, spin_ij, autoCorr, E, E2, E_rnorm, E2_rnorm, U4, spin_tot = data
-            E*=self.T;E2*=self.T**2;E_rnorm*=self.T;E2_rnorm*=self.T**2 # recover the real energies
-            #print("T=%.3f, <Si>=%.3f, <Sj>=%.3f, <SiSj>=%.3f, <E>=%.3f, <E2>=%.3f, <Er>=%.3f, <E2_r>=%.3f, C=%.6f, Cr=%.6f"%(
-            #       self.T,    spin_i,    spin_j,     spin_ij,        autoCorr,   E,        E2,   E_rnorm,    E2_rnorm, E2-E**2, E2_rnorm-E_rnorm**2))
-            print("%.3f %.3f %.3f %.3f %.3f %.3f %.6f %.3f %.3f %.3f %.3f %.6f %.6f %.6f"%(
-                   self.T, self.h,   spin_i,    spin_j,  spin_tot,   spin_ij,        autoCorr,    E,        E2,   E_rnorm,    E2_rnorm, E2-E**2, E2_rnorm-E_rnorm**2, U4))
-            with open('./out','a') as fout:
-                fout.write("%.3f %.3f %.3f %.3f %.3f %.3f %.3f %.3f %.3f %.3f %.6f\n"%(
-                   self.T, self.h,   spin_i,    spin_j,  spin_tot,   spin_ij,        E,        E2,   E_rnorm,    E2_rnorm, U4))
+        # uncode returned Data
+        cMC.restype=py_object
+        data=cMC(self.totOrbs, initSpin, nthermal, nsweep, maxNLinking, nlinking, linkStrength, linkData, ninterval, nLat, corrOrbitalPair, h,
+                 renormOn, totOrb_rnorm, norbInCluster, rOrb, rOrbCluster, linkData_rnorm,
+                 spinFrame)
+        #print('data has been returned successfully, dim=%d'%len(data))
+        spin_i, spin_j, spin_ij, autoCorr, E, E2, E_rnorm, E2_rnorm, U4, spin_tot, spinDistributionList = data
+        E*=self.T;E2*=self.T**2;E_rnorm*=self.T;E2_rnorm*=self.T**2 # recover the real energies
+        print("%.3f %.3f %.3f %.3f %.3f %.3f %.6f %.3f %.3f %.3f %.3f %.6f %.6f %.6f"%(
+               self.T, self.h,   spin_i,    spin_j,  spin_tot,   spin_ij,        autoCorr,    E,        E2,   E_rnorm,    E2_rnorm, E2-E**2, E2_rnorm-E_rnorm**2, U4))
+        with open('./out','a') as fout:
+            fout.write("%.3f %.3f %.3f %.3f %.3f %.3f %.3f %.3f %.3f %.3f %.6f\n"%(
+                self.T, self.h,   spin_i,    spin_j,  spin_tot,   spin_ij,        E,        E2,   E_rnorm,    E2_rnorm, U4))
             
-            return spin_i, spin_j, spin_ij, autoCorr, E, E2, U4
-        elif algo=='Metroplis':
-            cMC=mylib.localUpdateMC
-            cMC.restype=py_object
-            data=cMC(self.totOrbs, initSpin, nthermal, nsweep, maxNLinking, nlinking, linkStrength, linkData, ninterval, nLat, corrOrbitalPair, h,
-                     renormOn, totOrb_rnorm, norbInCluster, rOrb, rOrbCluster, linkData_rnorm)
-            spin_i, spin_j, spin_ij, autoCorr, E, E2, E_rnorm, E2_rnorm, U4, spin_tot = data
-            E*=self.T;E2*=self.T**2;E_rnorm*=self.T;E2_rnorm*=self.T**2 # recover the real energies
-            #print("T=%.3f, <Si>=%.3f, <Sj>=%.3f, <SiSj>=%.3f, <E>=%.3f, <E2>=%.3f, <Er>=%.3f, <E2_r>=%.3f, C=%.6f, Cr=%.6f"%(
-            #       self.T,    spin_i,    spin_j,     spin_ij,        autoCorr,   E,        E2,   E_rnorm,    E2_rnorm, E2-E**2, E2_rnorm-E_rnorm**2))
-            print("%.3f %.3f %.3f %.3f %.3f %.3f %.6f %.3f %.3f %.3f %.3f %.6f %.6f %.6f"%(
-                   self.T, self.h,   spin_i,    spin_j,  spin_tot,   spin_ij,        autoCorr,    E,        E2,   E_rnorm,    E2_rnorm, E2-E**2, E2_rnorm-E_rnorm**2, U4))
-            with open('./out','a') as fout:
-                fout.write("%.3f %.3f %.3f %.3f %.3f %.3f %.3f %.3f %.3f %.3f %.6f\n"%(
-                   self.T, self.h,   spin_i,    spin_j,  spin_tot,   spin_ij,        E,        E2,   E_rnorm,    E2_rnorm, U4))
-            
-            return spin_i, spin_j, spin_ij, autoCorr, E, E2, U4
+        return spin_i, spin_j, spin_ij, autoCorr, E, E2, U4
 
     def mainLoopViaCLib_On(self,nsweep=1000,nthermal=5000,ninterval=-1,algo='Metroplis',On=3,flunc=0.0,h=0.,binGraph=False):
         self.nsweep=nsweep
