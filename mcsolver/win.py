@@ -22,8 +22,8 @@ def startMC(param): # start MC for Ising model
 
 def startMCForOn(param): # start MC for O(n) model
     # unzip all global parameters for every processing
-    ID, T, bondList,LMatrix,pos,S,DList,h,nsweep,nthermal,ninterval,Lx,Ly,Lz,algorithm,On,GcOrb,dipoleAlpha=param
-    mcslave=mc.MC(ID,LMatrix,pos=pos,S=S,D=DList,bondList=bondList,T=T,Lx=Lx,Ly=Ly,Lz=Lz,ki_s=GcOrb[0][0],ki_t=GcOrb[0][1],ki_overLat=GcOrb[1],h=h,dipoleAlpha=dipoleAlpha,On=On)
+    ID, T, bondList,LMatrix,pos,S,DList,h,nsweep,nthermal,ninterval,Lx,Ly,Lz,algorithm,On,GcOrb,dipoleAlpha,spinFrame=param
+    mcslave=mc.MC(ID,LMatrix,pos=pos,S=S,D=DList,bondList=bondList,T=T,Lx=Lx,Ly=Ly,Lz=Lz,ki_s=GcOrb[0][0],ki_t=GcOrb[0][1],ki_overLat=GcOrb[1],h=h,dipoleAlpha=dipoleAlpha,On=On,spinFrame=spinFrame)
     spin_i, spin_j, spin_ij, autoCorr, E, E2, U4=mcslave.mainLoopViaCLib_On(nsweep=nsweep,nthermal=nthermal,ninterval=ninterval,algo=algorithm,On=On)
     #mData=abs(mData)/Lx/Ly/Lz
     #eData/=(Lx*Ly*Lz)
@@ -100,7 +100,7 @@ def startSimulation(updateGUI=True, rpath=''):
         for iH, H in enumerate(HList):
             for iT, T in enumerate(TList):
                 paramPack.append([iH*len(TList)+iT,T,bondList,LMatrix,pos,io.S,io.DList,H,io.nsweep,io.nthermal,io.ninterval,io.LPack[0],io.LPack[1],io.LPack[2],io.algorithm,On,
-                                  io.GcOrb,io.dipoleAlpha])
+                                  io.GcOrb,io.dipoleAlpha,io.spinFrame])
 
         TResult=[];HResult=[];SpinIResult=[];SpinJResult=[];susResult=[];energyResult=[];capaResult=[];u4Result=[];autoCorrResult=[]
         while(True): # using pump strategy to reduce the costs of RAM
@@ -125,7 +125,7 @@ def startSimulation(updateGUI=True, rpath=''):
                 capaResult.append((E2-E*E)/T**2)
                 u4Result.append(U4)
             pool.close()
-        if updateGUI: gui.updateResultViewer(TList=HResult, magList=SpinIResult, susList=capaResult)
+        if updateGUI: gui.updateResultViewer(TList=TResult if io.xAxisType=='T' else HResult, magList=SpinIResult, susList=capaResult)
     else:
         print("for now only Ising, XY and Heisenberg model is supported")
         if updateGUI: gui.submitBtn.config(state='normal')

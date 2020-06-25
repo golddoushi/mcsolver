@@ -16,7 +16,7 @@ global nOrbnBondGui, nOrb, nBonds  # read number of orbitals and bonds
 global OrbListBox, IDandTypeNote, PosNote, AnisotropyNote
 global BondBox, IDandTypeOfBondNote, BondDetailNote
 
-global TlistGui, HListGui, MCparamGui, xaxisStr, xAxisGui, modelGui, modelStr, algorithmGui, algoStr, corrGui, coreGui
+global TlistGui, HListGui, MCparamGui, xaxisStr, xAxisGui, modelGui, modelStr, algorithmGui, algoStr, corrGui, spinFrameGui, coreGui
 global resultViewerBase, resultViewer, structureFrame, structureViewer, structureAxis
 global submitBtn
 
@@ -245,17 +245,17 @@ def loadBonds():
 ###############
 
 def loadMCSettings():
-    global gui, TListGui, HListGui, MCparamGui, xaxisStr, xAxisGui, modelGui, modelStr, algorithmGui, algoStr, corrGui, coreGui
+    global gui, TListGui, HListGui, MCparamGui, xaxisStr, xAxisGui, modelGui, modelStr, algorithmGui, algoStr, corrGui, spinFrameGui, coreGui
     SettingFrame=LabelFrame(gui,text='Other settings')
     SettingFrame.grid(row=3,column=0,sticky=(W,E))
 
     temp_base=Frame(SettingFrame)
     temp_base.grid(row=0,column=0)
-    TListGui=toolbox.NoteFrm(temp_base, init_notes=['T start:','T end','total points:'], init_data=[2.0,2.4,20],row=True,entryWidth=6)
+    TListGui=toolbox.NoteFrm(temp_base, init_notes=['T start:','T end','total points:'], init_data=[0.9,1.2,8],row=True,entryWidth=6)
 
     field_base=Frame(SettingFrame)
     field_base.grid(row=1,column=0)
-    HListGui=toolbox.NoteFrm(field_base, init_notes=['H start:','H end','total points:'], init_data=[0,0,1],row=True,entryWidth=6)
+    HListGui=toolbox.NoteFrm(field_base, init_notes=['H start:','H end','total points:'], init_data=[0,0.1,1],row=True,entryWidth=6)
 
     MCparam_base=Frame(SettingFrame)
     MCparam_base.grid(row=2,column=0,sticky='W')
@@ -264,7 +264,7 @@ def loadMCSettings():
     model_base=Frame(SettingFrame)
     model_base.grid(row=3,column=0,sticky='W')
 
-    label0=Label(model_base,text='xaxis:')
+    label0=Label(model_base,text='xAxis:')
     label0.grid(row=0,column=0)
     xaxisStr=StringVar()
     xAxisGui=Spinbox(model_base,from_=1, to=2, values=['T','H'],textvariable=xaxisStr,width=2)
@@ -275,6 +275,7 @@ def loadMCSettings():
     modelStr=StringVar()
     modelGui=Spinbox(model_base,from_=1, to=3, values=['Ising','XY','Heisenberg'],textvariable=modelStr,width=6)
     modelGui.grid(row=0,column=3)
+    modelStr.set('XY')
     
     label2=Label(model_base,text='Algorithm:')
     label2.grid(row=0,column=4)
@@ -286,9 +287,16 @@ def loadMCSettings():
     corr_base.grid(row=4,column=0,sticky='W')
     corrGui=toolbox.NoteFrm(corr_base, init_notes=['Mesure corr. si','sj','overLat:','',''], init_data=[0,0,0,0,0],entryWidth=3,row=True)
 
-    core_base=Frame(SettingFrame)
-    core_base.grid(row=5,column=0,sticky='W')
-    coreGui=toolbox.NoteFrm(core_base, init_notes=['core:'], init_data=[np.max([1,int(cpu_count()/2)])])
+    lastline=Frame(SettingFrame)
+    lastline.grid(row=5,column=0,sticky='W')
+
+    spinFrame_base=Frame(lastline)
+    spinFrame_base.grid(row=0,column=0,sticky='W')
+    spinFrameGui=toolbox.NoteFrm(spinFrame_base, init_notes=['nFrame:'], init_data=[1],entryWidth=3)
+
+    core_base=Frame(lastline)
+    core_base.grid(row=0,column=1,sticky='W')
+    coreGui=toolbox.NoteFrm(core_base, init_notes=['core:'], init_data=[np.max([1,int(cpu_count()/2)])],entryWidth=3)
 
 ########################
 # Structure visualizer #

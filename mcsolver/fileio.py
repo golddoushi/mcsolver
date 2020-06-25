@@ -78,6 +78,10 @@ def collectParam():
     GcOrb=[[s,t],[v1,v2,v3]]
     print('Measure correlation between orb%d and orb%d with overLat: (%d, %d, %d)'%(s,t,v1,v2,v3))
 
+    # get num. of output spin frames
+    spinFrame=int(gui.spinFrameGui.report()[0])
+    print('For each setting, %d frames of spin distribution in real space would be output'%spinFrame)
+
     # get ncores
     ncores= int(gui.coreGui.report()[0])
     print('using %d cores'%ncores)
@@ -228,7 +232,7 @@ def loadParam(updateGUI=True,rpath='./mcInput'):
     Hpack=findall(r'[0-9\.\-]+',data[tagField+1])
     H0, H1, nH = float(Hpack[0]), float(Hpack[1]), int(Hpack[2])
     dipoleAlpha=float(findall(r'[0-9\.\-]+',data[tagDipole+1])[0])
-    spinFrame=float(findall(r'[0-9]+',data[tagDistribution])[0])
+    spinFrame=int(findall(r'[0-9]+',data[tagDistribution])[0])
     nTermSweep=findall(r"[0-9\.\-]+",data[tagSweeps+1])
     nthermal, nsweep, ninterval=[int(x) for x in nTermSweep]
     xAxisType=data[tagXAxis+1]
@@ -252,6 +256,7 @@ def loadParam(updateGUI=True,rpath='./mcInput'):
     gui.xaxisStr.set(xAxisType)
     gui.modelStr.set(modelType)
     gui.algoStr.set(algorithm)
+    gui.spinFrameGui.setValue([spinFrame])
     gui.coreGui.setValue(_ncores)
     gui.updateStructureViewer()
     return True

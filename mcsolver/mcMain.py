@@ -163,7 +163,8 @@ class MC:
         with open('./out','a') as fout:
             fout.write("%.3f %.3f %.3f %.3f %.3f %.3f %.3f %.3f %.3f %.3f %.6f\n"%(
                 self.T, self.h,   spin_i,    spin_j,  spin_tot,   spin_ij,        E,        E2,   E_rnorm,    E2_rnorm, U4))
-            
+        if self.spinFrame>0:
+            self.outputSpinDistributionForIsing(spinDistributionList)
         return spin_i, spin_j, spin_ij, autoCorr, E, E2, U4
 
     def mainLoopViaCLib_On(self,nsweep=1000,nthermal=5000,ninterval=-1,algo='Metroplis',On=3,flunc=0.0,h=0.,binGraph=False):
@@ -280,76 +281,51 @@ class MC:
             print("Error: undefined O(n)")
             return
         
+        spinFrame=c_int(int(self.spinFrame))
+
+        cMC=mylib.localUpdateMC # default On solver
         if algo=='Wolff':
-            #print('Wolff')
             cMC=mylib.blockUpdateMC
-            cMC.restype=py_object
-            data = cMC(self.totOrbs, initSpin, initD, nthermal, nsweep, maxNLinking_, nlinking, linkStrength, linkData, ninterval, nLat, corrOrbitalPair, flunc_, h,
-                       totOrb_rnorm, norbInCluster, rOrb, rOrbCluster, linkData_rnorm)
-            #spin, energy = data[0], data[1], data[2], data[3]
-            spin_i_x, spin_i_y, spin_i_z, spin_j_x, spin_j_y, spin_j_z, spin_ij, autoCorr, E, E2, U4, spin_i_r_x, spin_i_r_y, spin_i_r_z, spin_j_r_x, spin_j_r_y, spin_j_r_z, spin_ij_r, E_r, E2_r, spin_i_tot_z,spin_j_tot_z,spin_tot_z,spin_i_h,spin_j_h,spin_tot_h=data
-            E*=self.T;E2*=self.T**2;E_r*=self.T;E2_r*=self.T**2 # recover the real energies
-            C=E2-E*E
-            C_r=E2_r-E_r*E_r
-            spin_i=np.array([spin_i_x, spin_i_y, spin_i_z])
-            spin_j=np.array([spin_j_x, spin_j_y, spin_j_z])
-            spin_i_len=np.sqrt(np.dot(spin_i,spin_i))
-            spin_j_len=np.sqrt(np.dot(spin_j,spin_j))
-            spin_i_r=np.array([spin_i_r_x, spin_i_r_y, spin_i_r_z])
-            spin_j_r=np.array([spin_j_r_x, spin_j_r_y, spin_j_r_z])
-            #      T       <i><j>     <ij>      <autoCorr>      <E>      <E2>      <U4>      <E_r>      <E2_r>  C  C_v
-            print('%.3f %.3f %.3f %.3f %.3f %.3f %.3f %.3f %.3f %.3f %.3f %.6f %.3f %.3f %.3f %.3f %.3f %.3f %.3f'%(
-                   self.T,self.h,spin_i_tot_z,spin_j_tot_z,spin_tot_z,spin_i_h,spin_j_h,spin_tot_h,spin_i_len,spin_j_len,spin_ij,np.dot(spin_i,spin_j),E,E2,       U4,spin_ij_r,np.dot(spin_i_r,spin_j_r),       E_r,      E2_r))
-            with open('./out','a') as fout:
-                fout.write('%.3f %.3f %.3f %.3f %.3f %.3f %.3f %.3f %.3f %.3f %.3f %.6f %.3f %.3f %.3f %.3f %.3f %.3f %.3f\n'%(
-                   self.T,self.h,spin_i_tot_z,spin_j_tot_z,spin_tot_z,spin_i_h,spin_j_h,spin_tot_h,spin_i_len,spin_j_len,spin_ij,np.dot(spin_i,spin_j),E,E2,       U4,spin_ij_r,np.dot(spin_i_r,spin_j_r),       E_r,      E2_r))
-            '''
-            if binGraph:
-                data=np.zeros((200,200))
-                S=abs(orb.spin)
-                for sx, sy in zip(xspin,yspin):
-                    data[int(100*(sx/self.totOrbs+S)/S)][int(100*(sy/self.totOrbs+S)/S)]+=1
-                import matplotlib.pyplot as plt
-                plt.imshow(data)
-                plt.show()
-            print('<x> %.3f <y> %.3f <z> %.3f <tot> %.3f <energy> %.3f'%(np.mean(np.abs(xspin))/self.totOrbs,np.mean(np.abs(yspin))/self.totOrbs,np.mean(np.abs(zspin))/self.totOrbs,np.mean(np.abs(spin))/self.totOrbs,np.mean(energy)/self.totOrbs))
-            '''
-            return spin_i, spin_j, spin_ij, autoCorr, E, E2, U4
-        elif algo=='Metroplis':
-            cMC=mylib.localUpdateMC
-            cMC.restype=py_object
-            data = cMC(self.totOrbs, initSpin, initD, nthermal, nsweep, maxNLinking_, nlinking, linkStrength, linkData, ninterval, nLat, corrOrbitalPair, flunc_, h,
-                       totOrb_rnorm, norbInCluster, rOrb, rOrbCluster, linkData_rnorm)
-            spin_i_x, spin_i_y, spin_i_z, spin_j_x, spin_j_y, spin_j_z, spin_ij, autoCorr, E, E2, U4, spin_i_r_x, spin_i_r_y, spin_i_r_z, spin_j_r_x, spin_j_r_y, spin_j_r_z, spin_ij_r, E_r, E2_r, spin_i_tot_z,spin_j_tot_z,spin_tot_z,spin_i_h,spin_j_h,spin_tot_h=data
-            E*=self.T;E2*=self.T**2;E_r*=self.T;E2_r*=self.T**2 # recover the real energies
-            C=E2-E*E
-            C_r=E2_r-E_r*E_r
-            spin_i=np.array([spin_i_x, spin_i_y, spin_i_z])
-            spin_j=np.array([spin_j_x, spin_j_y, spin_j_z])
-            spin_i_len=np.sqrt(np.dot(spin_i,spin_i))
-            spin_j_len=np.sqrt(np.dot(spin_j,spin_j))
-            spin_i_r=np.array([spin_i_r_x, spin_i_r_y, spin_i_r_z])
-            spin_j_r=np.array([spin_j_r_x, spin_j_r_y, spin_j_r_z])
-            #      T       <i><j>     <ij>      <autoCorr>      <E>      <E2>      <U4>      <E_r>      <E2_r>  C  C_v
-            print('%.3f %.3f %.3f %.3f %.3f %.3f %.3f %.3f %.3f %.3f %.3f %.6f %.3f %.3f %.3f %.3f %.3f %.3f %.3f'%(
-                   self.T,self.h,spin_i_tot_z,spin_j_tot_z,spin_tot_z,spin_i_h,spin_j_h,spin_tot_h,spin_i_len,spin_j_len,spin_ij,np.dot(spin_i,spin_j),E,E2,       U4,spin_ij_r,np.dot(spin_i_r,spin_j_r),       E_r,      E2_r))
-            with open('./out','a') as fout:
-                fout.write('%.3f %.3f %.3f %.3f %.3f %.3f %.3f %.3f %.3f %.3f %.3f %.6f %.3f %.3f %.3f %.3f %.3f %.3f %.3f\n'%(
-                   self.T,self.h,spin_i_tot_z,spin_j_tot_z,spin_tot_z,spin_i_h,spin_j_h,spin_tot_h,spin_i_len,spin_j_len,spin_ij,np.dot(spin_i,spin_j),E,E2,       U4,spin_ij_r,np.dot(spin_i_r,spin_j_r),       E_r,      E2_r))
             
-            '''
-            if binGraph:
-                data=np.zeros((200,200))
-                S=abs(orb.spin)
-                for sx, sy in zip(xspin,yspin):
-                    data[int(100*(sx/self.totOrbs+S)/S)][int(100*(sy/self.totOrbs+S)/S)]+=1
-                import matplotlib.pyplot as plt
-                plt.imshow(data)
-                plt.show()
-            print('<x> %.3f <y> %.3f <z> %.3f <tot> %.3f <energy> %.3f'%(np.mean(np.abs(xspin))/self.totOrbs,np.mean(np.abs(yspin))/self.totOrbs,np.mean(np.abs(zspin))/self.totOrbs,np.mean(np.abs(spin))/self.totOrbs,np.mean(energy)/self.totOrbs))
-            '''
-            return spin_i, spin_j, spin_ij, autoCorr, E, E2, U4
+        cMC.restype=py_object
+        data = cMC(self.totOrbs, initSpin, initD, nthermal, nsweep, maxNLinking_, nlinking, linkStrength, linkData, ninterval, nLat, corrOrbitalPair, flunc_, h,
+                   totOrb_rnorm, norbInCluster, rOrb, rOrbCluster, linkData_rnorm,
+                   spinFrame)
+        spin_i_x, spin_i_y, spin_i_z, spin_j_x, spin_j_y, spin_j_z, spin_ij, autoCorr, E, E2, U4, spin_i_r_x, spin_i_r_y, spin_i_r_z, spin_j_r_x, spin_j_r_y, spin_j_r_z, spin_ij_r, E_r, E2_r, spin_i_tot_z,spin_j_tot_z,spin_tot_z,spin_i_h,spin_j_h,spin_tot_h, spinDistributionList=data
+        E*=self.T;E2*=self.T**2;E_r*=self.T;E2_r*=self.T**2 # recover the real energies
+        C=E2-E*E
+        C_r=E2_r-E_r*E_r
+        spin_i=np.array([spin_i_x, spin_i_y, spin_i_z])
+        spin_j=np.array([spin_j_x, spin_j_y, spin_j_z])
+        spin_i_len=np.sqrt(np.dot(spin_i,spin_i))
+        spin_j_len=np.sqrt(np.dot(spin_j,spin_j))
+        spin_i_r=np.array([spin_i_r_x, spin_i_r_y, spin_i_r_z])
+        spin_j_r=np.array([spin_j_r_x, spin_j_r_y, spin_j_r_z])
+        #      T       <i><j>     <ij>      <autoCorr>      <E>      <E2>      <U4>      <E_r>      <E2_r>  C  C_v
+        print('%.3f %.3f %.3f %.3f %.3f %.3f %.3f %.3f %.3f %.3f %.3f %.6f %.3f %.3f %.3f %.3f %.3f %.3f %.3f'%(
+               self.T,self.h,spin_i_tot_z,spin_j_tot_z,spin_tot_z,spin_i_h,spin_j_h,spin_tot_h,spin_i_len,spin_j_len,spin_ij,np.dot(spin_i,spin_j),E,E2,       U4,spin_ij_r,np.dot(spin_i_r,spin_j_r),       E_r,      E2_r))
+        with open('./out','a') as fout:
+            fout.write('%.3f %.3f %.3f %.3f %.3f %.3f %.3f %.3f %.3f %.3f %.3f %.6f %.3f %.3f %.3f %.3f %.3f %.3f %.3f\n'%(
+                   self.T,self.h,spin_i_tot_z,spin_j_tot_z,spin_tot_z,spin_i_h,spin_j_h,spin_tot_h,spin_i_len,spin_j_len,spin_ij,np.dot(spin_i,spin_j),E,E2,       U4,spin_ij_r,np.dot(spin_i_r,spin_j_r),       E_r,      E2_r))
+        if self.spinFrame>0:self.outputSpinDistributionForOn(spinDistributionList)
+        return spin_i, spin_j, spin_ij, autoCorr, E, E2, U4
         
+    def outputSpinDistributionForIsing(self,distributionList):
+        for iframe in range(self.spinFrame):
+            with open('./IsingSpinDistribution.T%.3f.H%.3f.%d.txt'%(self.T,self.h,iframe),'w') as fout:
+                fout.write("#x       #y       #z       #spin\n")
+                for orb in self.lattice:
+                    fout.write('%.6f %.6f %.6f %.3f\n'%(orb.x,orb.y,orb.z,
+                                distributionList[iframe][orb.id]))
+    
+    def outputSpinDistributionForOn(self,distributionList):
+        for iframe in range(self.spinFrame):
+            with open('./OnSpinDistribution.T%.3f.H%.3f.%d.txt'%(self.T,self.h,iframe),'w') as fout:
+                fout.write("#x       #y       #z       #spinx  #spiny  #spinz\n")
+                for orb in self.lattice:
+                    fout.write('%.6f %.6f %.6f %.6f %.6f %.6f\n'%(orb.x,orb.y,orb.z,
+                                distributionList[iframe][orb.id][0],distributionList[iframe][orb.id][1],distributionList[iframe][orb.id][2]))
+
     def mainLoop(self,nsweep=10000,nthermal=5000):
         self.nsweep=nsweep
         self.nthermal=nthermal

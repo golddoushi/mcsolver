@@ -400,7 +400,8 @@ void localUpdate(int totOrbs, Orb lattice[], double *p_energy, Vec *p_totSpin){
 PyObject * blockUpdateMC(int totOrbs, double initSpin[totOrbs], double initD[totOrbs][3], int nthermal, int nsweep, 
                    int maxNLinking, int nlink[totOrbs], double linkStrength[totOrbs][maxNLinking][3], int linkedOrb[totOrbs][maxNLinking],
                    int ninterval, int nLat, int corrOrbPair[nLat][2], double flunc, double h,
-                   int totOrb_rnorm, int nOrbInCluster, int rOrb[totOrb_rnorm], int rOrbCluster[totOrb_rnorm][nOrbInCluster], int linkedOrb_rnorm[totOrb_rnorm][maxNLinking]){
+                   int totOrb_rnorm, int nOrbInCluster, int rOrb[totOrb_rnorm], int rOrbCluster[totOrb_rnorm][nOrbInCluster], int linkedOrb_rnorm[totOrb_rnorm][maxNLinking],
+                   int spinFrame){
     // initialize lattice
     Orb lattice[totOrbs];
     //printf("hello here is C lib\n");
@@ -444,8 +445,33 @@ PyObject * blockUpdateMC(int totOrbs, double initSpin[totOrbs], double initD[tot
     spin_i_z=0;spin_j_z=0;spin_tot_z=0;
     spin_i_h=0;spin_j_h=0;spin_tot_h=0;
 
+    // prepare for output spin frame
+    int output_per_sweep=nsweep;
+    int iFrame=0;
+    PyObject *spinFrameData;
+    if(spinFrame>0){
+        output_per_sweep=nsweep/spinFrame;
+        spinFrameData=PyTuple_New(spinFrame);
+    }else{
+        spinFrameData=PyFloat_FromDouble(0.0);
+    }
+
     for(int i=0;i<nsweep;i++){
         for(int j=0;j<ninterval;j++) blockUpdate(totOrbs, lattice, p_energy, p_totSpin);
+        // record the spin vector field distribution
+        if(spinFrame>0 & i%output_per_sweep==0){
+            PyObject *spinDistribution=PyTuple_New(totOrbs);
+            for(int j=0;j<totOrbs;j++){
+                PyObject *spinJVec=PyTuple_New(3);
+                PyTuple_SetItem(spinJVec, 0, PyFloat_FromDouble(lattice[j].spin.x));
+                PyTuple_SetItem(spinJVec, 1, PyFloat_FromDouble(lattice[j].spin.y));
+                PyTuple_SetItem(spinJVec, 2, PyFloat_FromDouble(lattice[j].spin.z));
+                PyTuple_SetItem(spinDistribution, j, spinJVec);
+            }
+            PyTuple_SetItem(spinFrameData, iFrame, spinDistribution);
+            iFrame+=1;
+        }
+
         // find the main axis
         spin_direction.x=p_totSpin->x;
         spin_direction.y=p_totSpin->y;
@@ -577,7 +603,7 @@ PyObject * blockUpdateMC(int totOrbs, double initSpin[totOrbs], double initD[tot
     double U4=(M2/nsweep)*(M2/nsweep)/(M4/nsweep);
     double autoCorr=(MdotM_tmp/nsweep-M_tot/nsweep*M_tot/nsweep);
     PyObject *Data;
-    Data=PyTuple_New(26);
+    Data=PyTuple_New(27);
     PyTuple_SetItem(Data, 0, PyFloat_FromDouble(spin_i.x/nsweep));
     PyTuple_SetItem(Data, 1, PyFloat_FromDouble(spin_i.y/nsweep));
     PyTuple_SetItem(Data, 2, PyFloat_FromDouble(spin_i.z/nsweep));
@@ -604,6 +630,7 @@ PyObject * blockUpdateMC(int totOrbs, double initSpin[totOrbs], double initD[tot
     PyTuple_SetItem(Data,23, PyFloat_FromDouble(spin_i_h/nsweep));
     PyTuple_SetItem(Data,24, PyFloat_FromDouble(spin_j_h/nsweep));
     PyTuple_SetItem(Data,25, PyFloat_FromDouble(spin_tot_h/nsweep));
+    PyTuple_SetItem(Data, 26, spinFrameData);
     return Data;
 }
 
@@ -612,7 +639,8 @@ PyObject * blockUpdateMC(int totOrbs, double initSpin[totOrbs], double initD[tot
 PyObject * localUpdateMC(int totOrbs, double initSpin[totOrbs], double initD[totOrbs][3], int nthermal, int nsweep, 
                    int maxNLinking, int nlink[totOrbs], double linkStrength[totOrbs][maxNLinking][3], int linkedOrb[totOrbs][maxNLinking],
                    int ninterval, int nLat, int corrOrbPair[nLat][2], double flunc, double h,
-                   int totOrb_rnorm, int nOrbInCluster, int rOrb[totOrb_rnorm], int rOrbCluster[totOrb_rnorm][nOrbInCluster], int linkedOrb_rnorm[totOrb_rnorm][maxNLinking]){
+                   int totOrb_rnorm, int nOrbInCluster, int rOrb[totOrb_rnorm], int rOrbCluster[totOrb_rnorm][nOrbInCluster], int linkedOrb_rnorm[totOrb_rnorm][maxNLinking],
+                   int spinFrame){
     // initialize lattice
     Orb lattice[totOrbs];
     //printf("hello here is C lib\n");
@@ -656,8 +684,33 @@ PyObject * localUpdateMC(int totOrbs, double initSpin[totOrbs], double initD[tot
     spin_i_z=0;spin_j_z=0;spin_tot_z=0;
     spin_i_h=0;spin_j_h=0;spin_tot_h=0;
 
+    // prepare for output spin frame
+    int output_per_sweep=nsweep;
+    int iFrame=0;
+    PyObject *spinFrameData;
+    if(spinFrame>0){
+        output_per_sweep=nsweep/spinFrame;
+        spinFrameData=PyTuple_New(spinFrame);
+    }else{
+        spinFrameData=PyFloat_FromDouble(0.0);
+    }
+
     for(int i=0;i<nsweep;i++){
         for(int j=0;j<ninterval;j++) localUpdate(totOrbs, lattice, p_energy, p_totSpin);
+        // record the spin vector field distribution
+        if(spinFrame>0 & i%output_per_sweep==0){
+            PyObject *spinDistribution=PyTuple_New(totOrbs);
+            for(int j=0;j<totOrbs;j++){
+                PyObject *spinJVec=PyTuple_New(3);
+                PyTuple_SetItem(spinJVec, 0, PyFloat_FromDouble(lattice[j].spin.x));
+                PyTuple_SetItem(spinJVec, 1, PyFloat_FromDouble(lattice[j].spin.y));
+                PyTuple_SetItem(spinJVec, 2, PyFloat_FromDouble(lattice[j].spin.z));
+                PyTuple_SetItem(spinDistribution, j, spinJVec);
+            }
+            PyTuple_SetItem(spinFrameData, iFrame, spinDistribution);
+            iFrame+=1;
+        }
+
         // find the main axis
         spin_direction.x=p_totSpin->x;
         spin_direction.y=p_totSpin->y;
@@ -791,7 +844,7 @@ PyObject * localUpdateMC(int totOrbs, double initSpin[totOrbs], double initD[tot
     double U4=(M2/nsweep)*(M2/nsweep)/(M4/nsweep);
     double autoCorr=(MdotM_tmp/nsweep-M_tot/nsweep*M_tot/nsweep);
     PyObject *Data;
-    Data=PyTuple_New(26);
+    Data=PyTuple_New(27);
     PyTuple_SetItem(Data, 0, PyFloat_FromDouble(spin_i.x/nsweep));
     PyTuple_SetItem(Data, 1, PyFloat_FromDouble(spin_i.y/nsweep));
     PyTuple_SetItem(Data, 2, PyFloat_FromDouble(spin_i.z/nsweep));
@@ -818,5 +871,6 @@ PyObject * localUpdateMC(int totOrbs, double initSpin[totOrbs], double initD[tot
     PyTuple_SetItem(Data,23, PyFloat_FromDouble(spin_i_h/nsweep));
     PyTuple_SetItem(Data,24, PyFloat_FromDouble(spin_j_h/nsweep));
     PyTuple_SetItem(Data,25, PyFloat_FromDouble(spin_tot_h/nsweep));
+    PyTuple_SetItem(Data, 26, spinFrameData);
     return Data;
 }
