@@ -85,6 +85,7 @@ typedef struct Orb
     double S; // maximum spin number
     Vec spin;
     Vec transSpin;
+    Vec perpenSpin;
     int nlink;
     Vec4 *linkStrength;
     int inBlock;
@@ -129,6 +130,8 @@ void establishLattice(Orb *lattice, int totOrbs, double initSpin[totOrbs], doubl
         //printf("orb %d spin: %.3f %.3f %.3f\n",i,lattice[i].spin.coor[0],lattice[i].spin.coor[1],lattice[i].spin.coor[2]);
         lattice[i].transSpin.x=0;  // allocate trans spin vector for each orb
         lattice[i].transSpin.y=0;
+        lattice[i].perpenSpin.x=0;
+        lattice[i].perpenSpin.y=0;
         lattice[i].nlink=nlink[i];
         //printf("check point 1, orb: %d\n",lattice[i].id);
         lattice[i].linkStrength=(Vec4*)malloc(lattice[i].nlink*sizeof(Vec4)); // allocate strength for each linking
@@ -255,9 +258,11 @@ int expandBlock(int*beginIndex, int*endIndex, Orb *buffer[], int*blockLen, Orb *
     //*endIndex-=1; // pop out the last element
 
     if(outOrb->isProjected==0){
-        outOrb->sDotN=-2*dot(outOrb->spin,refDirection);
+        outOrb->sDotN=-dot(outOrb->spin,refDirection);
         equal(&outOrb->transSpin, refDirection);
         cTimes(&outOrb->transSpin, outOrb->sDotN);
+        equal(&outOrb->perpenSpin,outOrb->spin);
+        plusEqual(&outOrb->perpenSpin,outOrb->transSpin);
         outOrb->isProjected=1;
     }
     //printf("center orb: %d\n", outOrb->id);
@@ -277,13 +282,15 @@ int expandBlock(int*beginIndex, int*endIndex, Orb *buffer[], int*blockLen, Orb *
             //printf("      spin of orb %d is %.3f %.3f %.3f and bond strength is %.3f\n",linkedOrb->id,linkedOrb->spin.coor[0],linkedOrb->spin.coor[1],linkedOrb->spin.coor[2],corr);
             if (linkedOrb->isProjected==0)
             {
-                linkedOrb->sDotN=-2*dot(linkedOrb->spin,refDirection);
+                linkedOrb->sDotN=-dot(linkedOrb->spin,refDirection);
                 equal(&linkedOrb->transSpin, refDirection);
                 cTimes(&linkedOrb->transSpin, linkedOrb->sDotN);
+                equal(&linkedOrb->perpenSpin, linkedOrb->spin);
+                plusEqual(&linkedOrb->perpenSpin, linkedOrb->transSpin);
                 linkedOrb->isProjected=1;
             }
             //printf("229\n");
-            double corr=outOrb->sDotN*linkedOrb->sDotN*diagonalDot(refDirection,refDirection,outOrb->linkStrength[i])/2;
+            double corr=2*outOrb->sDotN*linkedOrb->sDotN*diagonalDot(refDirection,refDirection,outOrb->linkStrength[i]);
             
             //linkedOrb->d_onsiteEnergy=getDeltaOnsiteEnergy(linkedOrb);
             if(corr<0 && (1-exp(corr))>rand()/(double) RAND_MAX){
@@ -303,6 +310,7 @@ int expandBlock(int*beginIndex, int*endIndex, Orb *buffer[], int*blockLen, Orb *
 
 void blockUpdate(int totOrbs, Orb lattice[], double*p_energy, Vec *p_totSpin){
     //printf("one block update step is initializaing...\n");
+    for(int i=0;i<totOrbs;i++){lattice[i].isProjected=0;lattice[i].inBlock=0;} // initialize all orb status
     Orb *block[totOrbs];
     Orb *buffer[totOrbs];
     int seedID=rand()%totOrbs;
@@ -330,6 +338,7 @@ void blockUpdate(int totOrbs, Orb lattice[], double*p_energy, Vec *p_totSpin){
     
     //printf("    Block size is %d\n",*p_blockLen);
     double tot_d_onsiteEnergy=0;
+    /*
     for(i=0;i<*p_blockLen;i++){
         block[i]->isProjected=0;
         for (j = 0; j < block[i]->nlink; j++)
@@ -346,13 +355,26 @@ void blockUpdate(int totOrbs, Orb lattice[], double*p_energy, Vec *p_totSpin){
         }
         // single-ion anisotropy
         tot_d_onsiteEnergy+=getDeltaOnsiteEnergy(block[i]);
-        
+    }*/
+    // exchange anisotropy
+    for(i=0;i<*p_blockLen;i++){
+        for (j = 0; j < block[i]->nlink; j++){
+            double source_anisotropy=block[i]->sDotN*diagonalDot(*refDirection,block[i]->linkedOrb[j]->perpenSpin,block[i]->linkStrength[j]);
+            tot_d_onsiteEnergy+=source_anisotropy;
+            if(block[i]->linkedOrb[j]->inBlock>0){
+                // target anisotropy
+                tot_d_onsiteEnergy+=block[i]->linkedOrb[j]->sDotN*diagonalDot(block[i]->perpenSpin,*refDirection,block[i]->linkStrength[j]);
+            }else{
+                tot_d_onsiteEnergy+=source_anisotropy;
+            }
+        }
     }
-    for(i=0;i<*p_blockLen;i++) block[i]->inBlock=0;
-    free(refDirection);
+    // single-ion anisotropy
+    for(i=0;i<*p_blockLen;i++) tot_d_onsiteEnergy+=getDeltaOnsiteEnergy(block[i]);
     // process the onsite anisotropy
     if(tot_d_onsiteEnergy<=0 || exp(-tot_d_onsiteEnergy)>rand()/(double) RAND_MAX){
         for(i=0;i<*p_blockLen;i++){
+            cTimes(&block[i]->transSpin,2);
             plusEqual(&block[i]->spin, block[i]->transSpin);
             //printf("    after update orb %d spin converted to %.3f %.3f %.3f\n",block[i]->id,block[i]->spin.coor[0],block[i]->spin.coor[1],block[i]->spin.coor[2]);
             //block[i]->inBlock=0;
@@ -364,6 +386,8 @@ void blockUpdate(int totOrbs, Orb lattice[], double*p_energy, Vec *p_totSpin){
         *p_energy/=2; // bond term
         for(i=0;i<totOrbs;i++) *p_energy+=getOnsiteEnergy(lattice+i); // onsite term
     }
+    // clean
+    free(refDirection);
 }
 
 void localUpdate(int totOrbs, Orb lattice[], double *p_energy, Vec *p_totSpin){
@@ -418,7 +442,6 @@ PyObject * blockUpdateMC(int totOrbs, double initSpin[totOrbs], double initD[tot
     Vec*p_totSpin=&totSpin;
     for(int i=0;i<totOrbs;i++) plusEqual(p_totSpin, lattice[i].spin);
     
-    for(int i=0;i<totOrbs+1;i++) {lattice[i].inBlock=0;lattice[i].isProjected=0;}; // initialize block
     for(int i=0;i<nthermal*ninterval;i++) blockUpdate(totOrbs, lattice, p_energy, p_totSpin); //thermalization
 
     Vec spin_i, spin_i_r;
