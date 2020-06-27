@@ -47,7 +47,10 @@ def collectParam():
              ]
         
     print('bonds:')
-    print(bondList)
+    for ibond, bond in enumerate(bondList):
+        print("ID %d: orb%d-orb%d [%d %d %d] J:"%(ibond,bond[0],bond[1],bond[2][0],bond[2][1],bond[2][2]))
+        print(bond[3:])
+    #print(bondList)
 
     # get TList
     T0, T1, nT=gui.TListGui.report()
