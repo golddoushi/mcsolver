@@ -1,4 +1,4 @@
-from tkinter import Label, LabelFrame, Frame, Spinbox, Button, END, VERTICAL, N, S, W, E, StringVar, filedialog
+from tkinter import Label, LabelFrame, Frame, Spinbox, Button, END, VERTICAL, N, S, W, E, StringVar, filedialog, Toplevel
 from multiprocessing import cpu_count
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg#,NavigationToolbar2Tk
 from matplotlib.figure import Figure
@@ -162,10 +162,14 @@ def correspondToBondList(*arg):
     data=BondBox.report()
     if len(data)>0:
         IDandTypeOfBondNote.entry_list[0].config(state='normal')
-        IDandTypeOfBondNote.setValue([data[0],data[1][0],data[1][1],data[1][2]]) # id, [Jz, Jx, Jy]
+        IDandTypeOfBondNote.setValue([data[0],data[1][0],data[1][1],data[1][2],data[1][3],data[1][4],data[1][5],data[1][6],data[1][7],data[1][8]]) # id, [Jz, Jx, Jy, Jxy, Jxz, Jyz, Jyx, Jzx, Jzy]
         IDandTypeOfBondNote.entry_list[0].config(state='disabled')
         BondDetailNote.setValue([data[2][0],data[2][1],int(data[2][2][0]),int(data[2][2][1]),int(data[2][2][2])])        # fractional coordinates
         updateStructureViewer(lightID=data[0])
+
+def reviewBond():
+    bondPannel=Toplevel()
+    bondPannel.title('bond setting')
 
 def addBond():
     global BondBox, IDandTypeOfBondNote, BondDetailNote
@@ -173,7 +177,7 @@ def addBond():
     idAndType=IDandTypeOfBondNote.report()
     bondDetail=BondDetailNote.report()
     newData.append([len(newData),
-                    [idAndType[1],idAndType[2],idAndType[3]],
+                    [idAndType[1],idAndType[2],idAndType[3],idAndType[4],idAndType[5],idAndType[6],idAndType[7],idAndType[8],idAndType[9]],
                     [int(bondDetail[0]),int(bondDetail[1]),[int(bondDetail[2]),int(bondDetail[3]),int(bondDetail[4])]]])
     BondBox.updateInfo(newData)
     updateStructureViewer()
@@ -199,13 +203,13 @@ def resetBond():
     idxs=int(idAndType[0])
     newData.pop(idxs)
     newData.insert(idxs,[len(newData),
-                    [idAndType[1],idAndType[2],idAndType[3]],
+                    [idAndType[1],idAndType[2],idAndType[3],idAndType[4],idAndType[5],idAndType[6],idAndType[7],idAndType[8],idAndType[9]],
                     [int(bondDetail[0]),int(bondDetail[1]),[int(bondDetail[2]),int(bondDetail[3]),int(bondDetail[4])]]])
     BondBox.updateInfo(newData)
     updateStructureViewer()
 
 def bondDataFormat(info):
-    return 'ID: %d J: %.3f source: %d target: %d overLat: %d %d %d'%(info[0],info[1][0],info[2][0],info[2][1],info[2][2][0],info[2][2][1],info[2][2][2])
+    return 'ID%d orb%d-orb%d [%d %d %d] J: xx %.2f yy %.2f zz %.2f xy %.2f xz %.2f yz %.2f yx %.2f zx%.2f zy%.2f'%(info[0],info[2][0],info[2][1],info[2][2][0],info[2][2][1],info[2][2][2],info[1][0],info[1][1],info[1][2],info[1][3],info[1][4],info[1][5],info[1][6],info[1][7],info[1][8])
 
 def loadBonds():
     global gui, BondBox, IDandTypeOfBondNote, BondDetailNote
@@ -215,15 +219,15 @@ def loadBonds():
     list_base=Frame(BondFrame)
     list_base.grid(row=0,column=0,columnspan=2)
     BondBox=toolbox.InfoList(list_base, correspondToBondList, bondDataFormat, 
-                             initialInfo=[[0,[-1,-1,-1],[0,0,(1,0,0)]],[1,[-1,-1,-1],[0,0,(0,1,0)]]],
+                             initialInfo=[[0,[-1,-1,-1,0,0,0,0,0,0],[0,0,(1,0,0)]],[1,[-1,-1,-1,0,0,0,0,0,0],[0,0,(0,1,0)]]],
                              width=45,height=5)
 
     addBondFrameBase=Frame(BondFrame)
     addBondFrameBase.grid(row=1,column=0)
 
     id_base=Frame(addBondFrameBase)
-    id_base.grid(row=0,column=0,sticky=(W,E))
-    IDandTypeOfBondNote=toolbox.NoteFrm(id_base, init_notes=['ID:','Jx','Jy','Jz'],init_data=[1,-1,-1,-1],row=True,entryWidth=5)
+    id_base.grid(row=0,column=0,columnspan=5,sticky=(W,E))
+    IDandTypeOfBondNote=toolbox.NoteFrm(id_base, init_notes=['ID:','J:','','','','','','','',''],init_data=[1,-1,-1,-1,0,0,0,0,0,0],row=True,entryWidth=3)
     IDandTypeOfBondNote.entry_list[0].config(state='disabled')
 
     detail_base=Frame(addBondFrameBase)
@@ -233,12 +237,14 @@ def loadBonds():
     unitLabel=Label(BondFrame,text='Note all energy units are in Kelvin (1meV=11.58875K)')
     unitLabel.grid(row=2,column=0,sticky=(W,E))
 
+    #reviewBtn=Button(addBondFrameBase,text='review',command=reviewBond)
+    #reviewBtn.grid(row=1,column=1,sticky='E')
     addBtn=Button(addBondFrameBase,text='add',command=addBond)
-    addBtn.grid(row=0,column=1,rowspan=2,sticky='E')
+    addBtn.grid(row=1,column=2,rowspan=1,sticky='E')
     resetBtn=Button(addBondFrameBase,text='reset',command=resetBond)
-    resetBtn.grid(row=0,column=2,rowspan=2,sticky='E')
+    resetBtn.grid(row=1,column=3,rowspan=1,sticky='E')
     delBtn=Button(addBondFrameBase,text='delet',command=deletBond)
-    delBtn.grid(row=0,column=3,rowspan=2,sticky='E')
+    delBtn.grid(row=1,column=4,rowspan=1,sticky='E')
 
 ###############
 # MC settings #
@@ -259,7 +265,7 @@ def loadMCSettings():
 
     MCparam_base=Frame(SettingFrame)
     MCparam_base.grid(row=2,column=0,sticky='W')
-    MCparamGui=toolbox.NoteFrm(MCparam_base, init_notes=['nthermal:','nsweep:','tau:'], init_data=[20000,40000,1],row=True)
+    MCparamGui=toolbox.NoteFrm(MCparam_base, init_notes=['nthermal:','nsweep:','tau:'], init_data=[40000,80000,1],row=True)
 
     model_base=Frame(SettingFrame)
     model_base.grid(row=3,column=0,sticky='W')
@@ -292,7 +298,7 @@ def loadMCSettings():
 
     spinFrame_base=Frame(lastline)
     spinFrame_base.grid(row=0,column=0,sticky='W')
-    spinFrameGui=toolbox.NoteFrm(spinFrame_base, init_notes=['nFrame:'], init_data=[1],entryWidth=3)
+    spinFrameGui=toolbox.NoteFrm(spinFrame_base, init_notes=['nFrame:'], init_data=[0],entryWidth=3)
 
     core_base=Frame(lastline)
     core_base.grid(row=0,column=1,sticky='W')

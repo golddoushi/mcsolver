@@ -18,19 +18,16 @@ class MC:
         DT=[d/T for d in D]
         lattice_array, lattice=lat.establishLattice(Lx=Lx,Ly=Ly,Lz=Lz,norb=norb,Lmatrix=np.array(LMatrix),bmatrix=np.array(pos),SpinList=S,DList=DT)
         # create bond list for manual temperature
-        bondT=[]
+        #bondT=[]
         for bond in bondList:
-            bond_tmp=bond.copy()#lat.Bond(bond.source,bond.target,bond.overLat,bond.strength/T)
-            #print(bond_tmp.strength/T)
-            bond_tmp.strength=bond_tmp.strength/T#;bond_tmp.strength1/=T;bond_tmp.strength2/=T
-            #print(bond_tmp.strength)
-            bondT.append(bond_tmp)
+            bond.renormWithT(T)
+            #bondT.append(bond)
         if ki_s>=norb or ki_t>=norb:
             print("ERROR: index out of range ki_S=%d, ki_t=%d, norb=%d\n"%(ki_s,ki_t,norb))
             raise("Input Error!")
             ki_s=norb-1 if ki_s >= norb else ki_s
             ki_t=norb-1 if ki_t >= norb else ki_t
-        self.correlatedOrbitalPair=lat.establishLinking(lattice_array,bondT,ki_s=ki_s,ki_t=ki_t,ki_overLat=ki_overLat,dipoleAlpha=dipoleAlpha)
+        self.correlatedOrbitalPair=lat.establishLinking(lattice_array,bondList,ki_s=ki_s,ki_t=ki_t,ki_overLat=ki_overLat,dipoleAlpha=dipoleAlpha)
         self.dipoleCorrection = False 
         if abs(dipoleAlpha)>1e-5:
             self.dipoleCorrection=True
@@ -190,18 +187,18 @@ class MC:
         # link strength
         maxNLinking=np.max(nlinking_list)
         #print("maxNLinking=%d"%maxNLinking)
-        linkStrength=(c_double*(self.totOrbs*maxNLinking*3))() # thus the nlinking of every orbs are the same
+        linkStrength=(c_double*(self.totOrbs*maxNLinking*9))() # thus the nlinking of every orbs are the same
         cnt=0
         for iorb, orb in enumerate(self.lattice):
             #print("orb%d"%orb.id)
             for ilinking in range(maxNLinking):
                 if ilinking>=nlinking_list[iorb]:
-                    for i in range(3):
+                    for i in range(9):
                         linkStrength[cnt]=c_double(0.)
                         cnt+=1
                 else:
                     #print("link %d :"%ilinking,orb.linkStrength[ilinking])
-                    for i in range(3):
+                    for i in range(9):
                         linkStrength[cnt]=c_double(orb.linkStrength[ilinking][i])
                         cnt+=1
 

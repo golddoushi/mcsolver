@@ -44,7 +44,9 @@ def startSimulation(updateGUI=True, rpath=''):
     HList=np.linspace(io.H0,io.H1,io.nH)
     bondList=[lat.Bond(bond_data[0],bond_data[1],                 # source and target  
                        np.array([int(x) for x in bond_data[2]]),  # over lat.
-                       bond_data[3],bond_data[4],bond_data[5],    # strength
+                       bond_data[3],bond_data[4],bond_data[5],    # strength Jxx, Jyy, Jzz
+                       bond_data[6],bond_data[7],bond_data[8],    # strength Jxy, Jxz, Jyz
+                       bond_data[9],bond_data[10],bond_data[11],  # strength Jyx, Jzx, Jzy
                        True if io.modelType!='Ising' else False)  # On
                         for bond_data in io.bondList]             # ergodic
     LMatrix=np.array(io.LMatrix)

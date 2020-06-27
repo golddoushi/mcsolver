@@ -117,20 +117,32 @@ class Bond:
     '''
     represent the bond
     '''
-    def __init__(self,source,target,overLat,strength,strength1=0.,strength2=0.,On=False):
+    def __init__(self,source,target,overLat,Jxx,Jyy=0,Jzz=0,Jxy=0,Jxz=0,Jyz=0,Jyx=0,Jzx=0,Jzy=0,On=False):
         self.source=source
         self.target=target
         self.overLat=overLat
-        self.strength=strength
+        self.strength=Jxx
+        self.invStrength=Jxx
 
         self.On=On
         if On:
-            self.strength=np.array([strength,strength1,strength2])
-        #print('bond',strength,strength1,strength2,On,self.strength)
+            self.strength=np.array([Jxx,Jyy,Jzz,Jxy,Jxz,Jyz,Jyx,Jzx,Jzy])
+            self.invStrength=np.array([Jxx,Jyy,Jzz,Jyx,Jzx,Jzy,Jxy,Jxz,Jyz])
+        #print('new bond')
+        #print(self.invStrength)
     
+    def renormWithT(self,T):
+        if T<1e-4:
+            print("Error: Lattice::Bond::renormWithT: Temperature is too low (<1e-4)")
+            exit()
+        #print(T,self.strength)
+        self.strength=(1/T)*self.strength
+        self.invStrength=(1/T)*self.invStrength
+
     def copy(self):
         bond=Bond(self.source,self.target,self.overLat,0,0,0,self.On)
         bond.strength=np.array(list(self.strength)) if self.On else self.strength
+        bond.invStrength=np.array(list(self.invStrength)) if self.On else self.invStrength
         return bond
 
 def establishLattice(Lx=1,Ly=1,Lz=1,norb=1,Lmatrix=np.array([[1,0,0],[0,1,0],[0,0,1]]),bmatrix=[np.array([0.,0.,0.])],SpinList=[1],DList=[0.,0.,0.]):
@@ -211,7 +223,7 @@ def establishLinking(lattice,bondList,ki_s=0,ki_t=0,ki_overLat=[0,0,0],dipoleAlp
                             targetOrb=lattice[(x+bond.overLat[0])%Lx][(y+bond.overLat[1])%Ly][(z+bond.overLat[2])%Lz][bond.target]
                             sourceOrb.addLinking(targetOrb,bond.strength)
                             if sourceOrb.id!=targetOrb.id:
-                                targetOrb.addLinking(sourceOrb,bond.strength)
+                                targetOrb.addLinking(sourceOrb,bond.invStrength)
                     # type2: bond in renormalized system
                     
                     if sourceOrb.chosen:
@@ -220,7 +232,7 @@ def establishLinking(lattice,bondList,ki_s=0,ki_t=0,ki_overLat=[0,0,0],dipoleAlp
                                 targetOrb=lattice[(x+bond.overLat[0]*2)%Lx][(y+bond.overLat[1]*2)%Ly][(z+bond.overLat[2]*2)%Lz][bond.target]
                                 sourceOrb.addLinking_rnorm(targetOrb,bond.strength)
                                 if sourceOrb.id!=targetOrb.id:
-                                    targetOrb.addLinking_rnorm(sourceOrb,bond.strength)
+                                    targetOrb.addLinking_rnorm(sourceOrb,bond.invStrength)
                 # save the correlated orbital pairs
                 correlatedOrbitalPair.append([lattice[x][y][z][ki_s].id, lattice[(x+ki_overLat[0])%Lx][(y+ki_overLat[1])%Ly][(z+ki_overLat[2])%Lz][ki_t].id])
     

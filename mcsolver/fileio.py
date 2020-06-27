@@ -39,10 +39,10 @@ def collectParam():
     print('isotropic magnetic field is set to %.3f'%h)
 
     # get bonds
-    bondList=[
+    bondList=[ 
               [bond_data[2][0],bond_data[2][1],\
                bond_data[2][2],\
-               bond_data[1][0],bond_data[1][1],bond_data[1][2]] \
+               bond_data[1][0],bond_data[1][1],bond_data[1][2],bond_data[1][3],bond_data[1][4],bond_data[1][5],bond_data[1][6],bond_data[1][7],bond_data[1][8]]
                for bond_data in gui.BondBox.infoData
              ]
         
@@ -110,11 +110,11 @@ def saveParam():
                                                                                             ele[4][0],ele[4][1],ele[4][2],h))
     f.write("Bonds:\n")
     f.write("%d\n"%len(bondList))
-    f.write("id, source, target, overLat, Jz, Jx, Jy of each bond:\n")
+    f.write("id, source, target, overLat, exchange matrix elements of each bond:\n")
     for bond_data in gui.BondBox.infoData:
-        f.write("bond %d: Jx %.9f Jy %.9f Jz %.9f orb %d to orb %d over [%d %d %d]\n"%\
+        f.write("bond %d: Jx %.9f Jy %.9f Jz %.9f Jxy %.9f Jxz %.9f Jyz %.9f Jyx %.9f Jzx %.9f Jzy %.9f orb %d to orb %d over [%d %d %d]\n"%\
             (bond_data[0],\
-             bond_data[1][0],bond_data[1][1],bond_data[1][2],\
+             bond_data[1][0],bond_data[1][1],bond_data[1][2],bond_data[1][3],bond_data[1][4],bond_data[1][5],bond_data[1][6],bond_data[1][7],bond_data[1][8],\
              bond_data[2][0],bond_data[2][1],bond_data[2][2][0],bond_data[2][2][1],bond_data[2][2][2]\
             ))
 
@@ -216,11 +216,11 @@ def loadParam(updateGUI=True,rpath='./mcInput'):
     for i in range(nbonds):
         ele=findall(r"[0-9\.\-]+",data[tagBonds+3+i])
         bondInfo.append([int(ele[0]),
-                         [float(ele[1]),float(ele[2]),float(ele[3])],
-                         [int(ele[4]),int(ele[5]),(float(ele[6]),float(ele[7]),float(ele[8]))]
+                         [float(ele[1]),float(ele[2]),float(ele[3]),float(ele[4]),float(ele[5]),float(ele[6]),float(ele[7]),float(ele[8]),float(ele[9])],
+                         [int(ele[10]),int(ele[11]),(int(ele[12]),int(ele[13]),int(ele[14]))]
                         ])
-                         # source    target      [overlat.                                 ] Jz            Jx            Jy                           
-        bondList.append([int(ele[4]),int(ele[5]),[float(ele[6]),float(ele[7]),float(ele[8])],float(ele[1]),float(ele[2]),float(ele[3])])
+                         # source     target       [overlat.                              ] Jz            Jx            Jy            Jxy           Jxz           Jyz           Jyx           Jzy           Jzx
+        bondList.append([int(ele[10]),int(ele[11]),[int(ele[12]),int(ele[13]),int(ele[14])],float(ele[1]),float(ele[2]),float(ele[3]),float(ele[4]),float(ele[5]),float(ele[6]),float(ele[7]),float(ele[8]),float(ele[9])])
 
     # load mesurements
     GcPack=findall(r'[0-9\-]+',data[tagMesurement+1])
