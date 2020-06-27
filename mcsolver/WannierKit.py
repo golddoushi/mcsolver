@@ -160,8 +160,8 @@ class TBmodel(object):
             #ax.text(orb_xyz[0],orb_xyz[1],orb_xyz[2],str(iorb))
         
         for ihopping, hopping in enumerate(self.hopping):
-            if ihopping>=100:
-                print('num. of hopping >=100, some hoppings will not be illustrated')
+            if ihopping>=200:
+                print('num. of hopping >=200, some hoppings will not be illustrated')
                 break
             iorb0, iorb1, Rextra, amp, color, linewidth=hopping[0], hopping[1], hopping[2], hopping[3], hopping[4], hopping[5]
             if np.dot(Rextra,Rextra)>0:

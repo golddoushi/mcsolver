@@ -7,8 +7,9 @@ import Lattice as lat
 import mcMain as mc
 import fileio as io
 
-global path
+global path, settingFileVersion
 path='./'
+settingFileVersion=2.0
 
 def startMC(param): # start MC for Ising model
     # unzip all global parameters for every processing

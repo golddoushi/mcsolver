@@ -1,4 +1,4 @@
-This is mcsolver's save file, version: 1.2
+This is mcsolver's save file, version: 2.0
 Lattice:
 1.000000000 0.000000000 0.000000000
 -0.500000000 0.866025404 0.000000000
@@ -13,17 +13,21 @@ orb 1: type 0 spin 1.500000000 pos [0.333333333 0.666666667 0.000000000] Dz -3.1
 Bonds:
 9
 id, source, target, overLat, Jz, Jx, Jy of each bond:
-bond 0: Jz -15.068836841 Jx -14.233101020 Jy -14.233101020 orb 0 to orb 1 over [0 0 0]
-bond 1: Jz -15.068836841 Jx -14.233101020 Jy -14.233101020 orb 0 to orb 1 over [1 0 0]
-bond 2: Jz -15.068836841 Jx -14.233101020 Jy -14.233101020 orb 0 to orb 1 over [0 -1 0]
-bond 3: Jz -5.561526252 Jx -5.927310839 Jy -5.927310839 orb 0 to orb 0 over [1 0 0]
-bond 4: Jz -5.561526252 Jx -5.927310839 Jy -5.927310839 orb 0 to orb 0 over [1 1 0]
-bond 5: Jz -5.561526252 Jx -5.927310839 Jy -5.927310839 orb 0 to orb 0 over [0 1 0]
-bond 6: Jz -5.561526252 Jx -5.927310839 Jy -5.927310839 orb 1 to orb 1 over [1 0 0]
-bond 7: Jz -5.561526252 Jx -5.927310839 Jy -5.927310839 orb 1 to orb 1 over [1 1 0]
-bond 8: Jz -5.561526252 Jx -5.927310839 Jy -5.927310839 orb 1 to orb 1 over [0 1 0]
+bond 0: Jz -15.068836841 Jx -14.233101020 Jy -14.233101020 Jxy 0 Jxz 0 Jyz 0 Jyx 0 Jzx 0 Jzy 0 orb 0 to orb 1 over [0 0 0]
+bond 1: Jz -15.068836841 Jx -14.233101020 Jy -14.233101020 Jxy 0 Jxz 0 Jyz 0 Jyx 0 Jzx 0 Jzy 0 orb 0 to orb 1 over [1 0 0]
+bond 2: Jz -15.068836841 Jx -14.233101020 Jy -14.233101020 Jxy 0 Jxz 0 Jyz 0 Jyx 0 Jzx 0 Jzy 0 orb 0 to orb 1 over [0 -1 0]
+bond 3: Jz -5.561526252 Jx -5.927310839 Jy -5.927310839 Jxy 0 Jxz 0 Jyz 0 Jyx 0 Jzx 0 Jzy 0 orb 0 to orb 0 over [1 0 0]
+bond 4: Jz -5.561526252 Jx -5.927310839 Jy -5.927310839 Jxy 0 Jxz 0 Jyz 0 Jyx 0 Jzx 0 Jzy 0 orb 0 to orb 0 over [1 1 0]
+bond 5: Jz -5.561526252 Jx -5.927310839 Jy -5.927310839 Jxy 0 Jxz 0 Jyz 0 Jyx 0 Jzx 0 Jzy 0 orb 0 to orb 0 over [0 1 0]
+bond 6: Jz -5.561526252 Jx -5.927310839 Jy -5.927310839 Jxy 0 Jxz 0 Jyz 0 Jyx 0 Jzx 0 Jzy 0 orb 1 to orb 1 over [1 0 0]
+bond 7: Jz -5.561526252 Jx -5.927310839 Jy -5.927310839 Jxy 0 Jxz 0 Jyz 0 Jyx 0 Jzx 0 Jzy 0 orb 1 to orb 1 over [1 1 0]
+bond 8: Jz -5.561526252 Jx -5.927310839 Jy -5.927310839 Jxy 0 Jxz 0 Jyz 0 Jyx 0 Jzx 0 Jzy 0 orb 1 to orb 1 over [0 1 0]
+Dipole long range correction:
+alpha 0.0
 Temperature scanning region:
 Tmin 30.000000000 Tmax 50.000000000 nT 21
+Field scanning region:
+Hmin 0 Hmax 0.1 nH 1
 Mesurement:
 mesure the correlation function between orb0 and orb0 over [0 0 0]
 Sweeps for thermalization and statistics, and relaxiation step for each sweep:
@@ -32,5 +36,8 @@ Model type:
 Heisenberg
 Algorithm:
 Metroplis
+XAxis type:
+T
+Distribution output frame: 0 
 Ncores:
 6

@@ -328,7 +328,6 @@ void blockUpdate(int totOrbs, Orb lattice[], double*p_energy, Vec *p_totSpin){
     //printf("-------------------\n");
     //printf("the seed Orb is %d\n",block[0]->id);
     //printf("trial normal direction %.3f %.3f\n",refDirection->x,refDirection->y);
-    //printf("267\n");
     //double effectiveJ=diagonalDot(block[0]->linkStrength[0], *refDirection, *refDirection);
     //printf("the 0 linking has strength %.3f %.3f (original) %.3f (effective)\n",block[0]->linkStrength[0].x,block[0]->linkStrength[1].y,effectiveJ);
     while (expandBlock(p_beginIndex, p_endIndex, buffer, p_blockLen, block, *refDirection)==1)
@@ -338,24 +337,6 @@ void blockUpdate(int totOrbs, Orb lattice[], double*p_energy, Vec *p_totSpin){
     
     //printf("    Block size is %d\n",*p_blockLen);
     double tot_d_onsiteEnergy=0;
-    /*
-    for(i=0;i<*p_blockLen;i++){
-        block[i]->isProjected=0;
-        for (j = 0; j < block[i]->nlink; j++)
-        {
-            // exchange anisotropy
-            block[i]->linkedOrb[j]->isProjected=0;
-            Vec originalSj, Sj_parallel;
-            equal(&originalSj, block[i]->linkedOrb[j]->spin);
-            equal(&Sj_parallel,block[i]->linkedOrb[j]->transSpin);
-            cTimes(&Sj_parallel,0.5);
-            plusEqual(&originalSj,Sj_parallel);
-            //printf("288, orb%d, link%d: %.3f %.3f\n",block[i]->id,j,block[i]->linkStrength[j].x,block[i]->linkStrength[j].y);
-            tot_d_onsiteEnergy+=block[i]->sDotN*diagonalDot(originalSj,*refDirection,block[i]->linkStrength[j]);
-        }
-        // single-ion anisotropy
-        tot_d_onsiteEnergy+=getDeltaOnsiteEnergy(block[i]);
-    }*/
     // exchange anisotropy
     for(i=0;i<*p_blockLen;i++){
         for (j = 0; j < block[i]->nlink; j++){

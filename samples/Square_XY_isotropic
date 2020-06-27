@@ -1,4 +1,4 @@
-This is mcsolver's save file, version: 1.2
+This is mcsolver's save file, version: 2.0
 Lattice:
 1.000000000 0.000000000 0.000000000
 0.000000000 1.000000000 0.000000000
@@ -12,10 +12,14 @@ orb 0: type 0 spin 1.000000000 pos [0.000000000 0.000000000 0.000000000] Dz 0.00
 Bonds:
 2
 id, source, target, overLat, Jz, Jx, Jy of each bond:
-bond 0: Jz -1.000000000 Jx -1.000000000 Jy -1.000000000 orb 0 to orb 0 over [1 0 0]
-bond 1: Jz -1.000000000 Jx -1.000000000 Jy -1.000000000 orb 0 to orb 0 over [0 1 0]
+bond 0: Jz -1.000000000 Jx -1.000000000 Jy -1.000000000 Jxy 0 Jxz 0 Jyz 0 Jyx 0 Jzx 0 Jzy 0 orb 0 to orb 0 over [1 0 0]
+bond 1: Jz -1.000000000 Jx -1.000000000 Jy -1.000000000 Jxy 0 Jxz 0 Jyz 0 Jyx 0 Jzx 0 Jzy 0 orb 0 to orb 0 over [0 1 0]
+Dipole long range correction:
+alpha 0.0
 Temperature scanning region:
 Tmin 0.900000000 Tmax 1.200000000 nT 12
+Field scanning region:
+Hmin 0 Hmax 0.1 nH 1
 Mesurement:
 mesure the correlation function between orb0 and orb0 over [0 0 0]
 Sweeps for thermalization and statistics, and relaxiation step for each sweep:
@@ -24,5 +28,8 @@ Model type:
 XY
 Algorithm:
 Wolff
+XAxis type:
+T
+Distribution output frame: 0 
 Ncores:
 4
