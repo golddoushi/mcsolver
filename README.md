@@ -1,5 +1,7 @@
 # mcsolver
-A user friendly tools implementing Monte Carlo simulations to estimate Curie/Neel temperature
+A user friendly and efficient tool implementing Monte Carlo simulations to estimate Curie/Neel temperature
+
+Support multiple ocassions, e.g. standard ferromangetic/anti-ferromagnetic systems, DMI, Kiteav non-diagonal exchange interactions, dipole-dipole long-range couplings, with external fields.
 
 Original version contributor: Dr. Liang Liu* 1.Shenzheng University 2.Shandong University
 Email: liangliu@mail.sdu.edu.cn
@@ -27,11 +29,19 @@ A. using mcsolver via .exe, e.g., in Windows platform
 
     2. Define all basic spins in primitive cell, note that the fractional coordinates are supposed. Ani represents the single-ion anisotropies in xyz directions (It is useless in Ising model, and only former two are used in XY model). As well as, note that the units of anisotropies are in Kelvin. 
 
-    3. Define all exchange interactions (bonds). Only Jz is used for Ising model, and Jz, Jx are used for XY model, and all three J for Heisenberg model. In this step, you can click one of the bonds to review the actual linking in lattice on view pannel. Activated bond is depicted with bold and yellow line while others are green. You may drag left/right mouse Btn to rotate and expand/shrink the model shown in view pannel. 
+    3. Define all exchange interactions (bonds). There are nine matrix elements for one J including Jxx, Jyy, Jzz, Jxy, Jxz, Jyz, Jyx, Jzx, Jzy, respectively. Each element discribes the coupling between two components of spins. For example, a basic bond term can be expressed as S1\dot J\dot S2 = S_{1x}J_{xx}S_{2x} + S_{1y}J_{yy}S_{2y} + S_{1z}J_{zz}S_{2z} + S_{1x}J_{xy}S_{2y} +...
+    For Ising model, since only one component is available for each spin, only the first element Jxx is used. As well as for XY model, only Jxx, Jyy, Jxy, Jyz are used. 
+    In this step, you can click one of the bonds to review the actual linking in lattice on view pannel. Activated bond is depicted with bold and yellow line while others are green. You may drag left/right mouse Btn to rotate and expand/shrink the model shown in view pannel. 
 
-    4. Define other parameters, including the start and end temperatures, number of temperature interpolations, nthermal the total steps to make system enter balanced states, nsweep the total steps involved in mesearing, tau the MC updates for each step, and model type, algorithm (only Metropolis and Wolff are supported now)
+    4. Define other parameters, including 
+    the start and end temperatures, number of temperature interpolations (for the temperature scanning)
+    the start, end and number of samplings for external field (for the magnetic field scanning)
+    nthermal is the total steps to make system enter balanced states, nsweep is the total steps involved in mesearing, tau denotes the MC updates for each step
+    xAxis denote the physical quantity put in x-axis of right-hand Result viewer, it can be either T(for illustration of M-T curv) or H (for illustration of hysteresis loop).
+    model type, algorithm (only Metropolis and Wolff are supported now)
+    nFrame is the num. of output spin configurations, using for illustrating spin configurations in equilibrium or non-equilibrium states.
 
-    5. Set spin_i and spin_j and the lattice vector between them, for correlation mesearments.
+    5. Set spin_i and spin_j and the lattice vector between them, for correlation mesearments. (if spin_i=spin_j and overLat=0 0 0, then you will get susceptibility for spin_i)
 
     6. Set the core resources for parallel calc.
 
@@ -41,7 +51,7 @@ A. using mcsolver via .exe, e.g., in Windows platform
 
     9. Wait for the diagram update in right pannel. Afterwards, you can find a file result.txt in the root directory of mcsolver, there are many useful informations including the averaged spin (on spin_i and j defined in step 5), correlation between spin_i and j, internal energy, specific heat capacith, and Binder cumulant U4, etc. If you handle the sims with more than one cores then the results may not be ordered according to temperature, however, the correspondences in every line are ok.
 
-  Style II Define parameters via load file
+  Style II Define parameters via loading file
   
     1. click load Btn to load settings, and here I prepared the setting for CrI3 with exchanges up to 2nd nearest neiboring. You can modify the sample file for your own purposes, with any txt editor. 
 
