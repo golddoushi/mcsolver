@@ -1,7 +1,7 @@
 from tkinter import filedialog
 from re import findall
 import guiMain as gui
-from win import settingFileVersion
+import win
 
 global LMatrix, LPack, pos, S, DList, h, H0, H1, nH, dipoleAlpha, bondList, T0, T1, nT, nthermal, nsweep, ninterval, xAxisType, modelType, algorithm, GcOrb, ncores, spinFrame
 # initial value
@@ -151,8 +151,8 @@ def loadParam(updateGUI=True,rpath='./mcInput'):
     f.close()
     # load version info.
     version=findall(r"[0-9\.]+",data[0])[0]
-    if version!=str(settingFileVersion):
-        print("unknown file or version (only support v%s)"%str(settingFileVersion))
+    if version!=str(win.settingFileVersion):
+        print("unknown file or version (only support v%s)"%str(win.settingFileVersion))
         return False
     
     # decide position of each tag

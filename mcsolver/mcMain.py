@@ -1,12 +1,15 @@
 from ctypes import c_double, c_int, CDLL, py_object, c_double
 from random import random, randint
+import numpy.fft as fft
 import Lattice as lat
 import numpy as np
+import matplotlib.pyplot as plt
 import time
 import win
 
 class MC:
     def __init__(self,ID,LMatrix,pos=[],S=[],D=[],bondList=[],T=1,Lx=1,Ly=1,Lz=1,ki_s=0,ki_t=0,ki_overLat=[0,0,0],h=0.,dipoleAlpha=0,On=1,spinFrame=0): # init for specified temperature
+        self.Lx, self.Ly, self.Lz=Lx, Ly, Lz
         norb=len(pos)
         totOrbs=Lx*Ly*Lz*norb
         # to aviod 0K
@@ -37,6 +40,7 @@ class MC:
         self.Sz=Lx*Ly*Lz*sum(S)
         self.Energy=0.
         self.lattice=lattice
+        self.lattice_array=lattice_array
         self.totOrbs=totOrbs
         self.blockLen=0
         self.ki_s=ki_s
@@ -304,7 +308,10 @@ class MC:
         with open('./out','a') as fout:
             fout.write('%.3f %.3f %.3f %.3f %.3f %.3f %.3f %.3f %.3f %.3f %.3f %.6f %.3f %.3f %.3f %.3f %.3f %.3f %.3f\n'%(
                    self.T,self.h,spin_i_tot_z,spin_j_tot_z,spin_tot_z,spin_i_h,spin_j_h,spin_tot_h,spin_i_len,spin_j_len,spin_ij,np.dot(spin_i,spin_j),E,E2,       U4,spin_ij_r,np.dot(spin_i_r,spin_j_r),       E_r,      E2_r))
+        if self.spinFrame==nsweep:self.outputSpinWaveSpetra(spinDistributionList)
+        
         if self.spinFrame>0:self.outputSpinDistributionForOn(spinDistributionList)
+        
         return spin_i, spin_j, spin_ij, autoCorr, E, E2, U4
         
     def outputSpinDistributionForIsing(self,distributionList):
@@ -315,6 +322,24 @@ class MC:
                     fout.write('%.6f %.6f %.6f %.3f\n'%(orb.x,orb.y,orb.z,
                                 distributionList[iframe][orb.id]))
     
+    def outputSpinWaveSpetra(self,distributionList):
+        print("start FFT")
+        time0=time.time()
+        # get the 1st orb on gamma-K
+        cnt=0
+        id_list=[]
+        for i in range(self.Lx):
+            id_list.append(self.lattice_array[i][i][0][0].id)
+            cnt+=1
+            if cnt>=self.Ly:
+                break
+        T_R_x_data=np.array(distributionList)[:,id_list,0]
+        amplitude=np.log(abs(fft.fft2(T_R_x_data)))[:50,:]
+        print("end FFT, time elapsed %.3fs"%(time.time()-time0))
+        plt.imshow(amplitude,origin='lower',extent=(0,1,0,1))
+        plt.show()
+        exit()
+
     def outputSpinDistributionForOn(self,distributionList):
         for iframe in range(self.spinFrame):
             with open('./OnSpinDistribution.T%.3f.H%.3f.%d.txt'%(self.T,self.h,iframe),'w') as fout:
