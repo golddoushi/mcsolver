@@ -4,8 +4,10 @@ import guiMain as gui
 import win
 
 global LMatrix, LPack, pos, S, DList, h, H0, H1, nH, dipoleAlpha, bondList, T0, T1, nT, nthermal, nsweep, ninterval, xAxisType, modelType, algorithm, GcOrb, ncores, spinFrame
+global orbGroupList
 # initial value
 xAxisType='T'
+orbGroupList=[]
 GcOrb=[0,0,[0,0,0]]
 h=0
 H0,H1,nH=0,0,1
@@ -145,6 +147,7 @@ def saveParam():
 
 def loadParam(updateGUI=True,rpath='./mcInput'):
     global LMatrix, LPack, pos, S, DList, h, bondList, T0, T1, nT, H0, H1, nH, dipoleAlpha, nthermal, nsweep, ninterval, xAxisType, modelType, algorithm, GcOrb, ncores, spinFrame
+    global orbGroupList
     filePath=filedialog.askopenfilename() if updateGUI else rpath
     f=open(filePath,'r')
     data=[line for line in f.read().split('\n') if line]
@@ -183,6 +186,8 @@ def loadParam(updateGUI=True,rpath='./mcInput'):
             tagAlgorithm=iline
         if keyword[0]=='Mesurement':
             tagMesurement=iline
+        if keyword[0]=='OrbGroup':
+            tagOrbGroup=iline
         if keyword[0]=='Ncores':
             tagNcores=iline
         if keyword[0]=='Distribution':
@@ -190,7 +195,7 @@ def loadParam(updateGUI=True,rpath='./mcInput'):
         if keyword[0]=='XAxis':
             tagXAxis=iline
 
-    if tagLattice*tagSupercell*tagOrbitals*tagBonds*tagTemperature*tagSweeps*tagModel*tagAlgorithm*tagNcores*tagField*tagDipole*tagDistribution*tagXAxis==0:
+    if tagLattice*tagSupercell*tagOrbitals*tagBonds*tagTemperature*tagSweeps*tagModel*tagAlgorithm*tagNcores*tagField*tagDipole*tagDistribution*tagXAxis*tagOrbGroup==0:
         print("cannot find some tags")
         return False
     
@@ -230,6 +235,13 @@ def loadParam(updateGUI=True,rpath='./mcInput'):
     GcPack=findall(r'[0-9\-]+',data[tagMesurement+1])
     s, t, v1, v2, v3 = [int(x) for x in GcPack]
     GcOrb=[[s,t],[v1,v2,v3]]
+
+    nOrbGroup=int(findall(r"[0-9]+",data[tagOrbGroup])[0])
+    orbGroupList=[]
+    for i in range(nOrbGroup):
+        _, orbID0, orbID1 = findall(r"[0-9]+",data[tagOrbGroup+i+1])
+        orbGroupList.append([j for j in range(int(orbID0),int(orbID1)+1)])
+
     # load other parameters
     Tpack=findall(r"[0-9\.]+",data[tagTemperature+1])
     T0, T1, nT = float(Tpack[0]), float(Tpack[1]), int(Tpack[2])

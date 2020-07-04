@@ -436,7 +436,7 @@ void localUpdate(int totOrbs, Orb lattice[], double *p_energy, Vec *p_totSpin){
 
 PyObject * blockUpdateMC(int totOrbs, double initSpin[totOrbs], double initD[totOrbs][3], int nthermal, int nsweep, 
                    int maxNLinking, int nlink[totOrbs], double linkStrength[totOrbs][maxNLinking][9], int linkedOrb[totOrbs][maxNLinking],
-                   int ninterval, int nLat, int corrOrbPair[nLat][2], double flunc, double h,
+                   int ninterval, int nLat, int corrOrbPair[nLat][2], int nOrbGroup, int maxOrbGroupSize, int orbGroupList[nOrbGroup][maxOrbGroupSize], double flunc, double h,
                    int totOrb_rnorm, int nOrbInCluster, int rOrb[totOrb_rnorm], int rOrbCluster[totOrb_rnorm][nOrbInCluster], int linkedOrb_rnorm[totOrb_rnorm][maxNLinking],
                    int spinFrame){
     // initialize lattice
@@ -490,6 +490,10 @@ PyObject * blockUpdateMC(int totOrbs, double initSpin[totOrbs], double initD[tot
         spinFrameData=PyFloat_FromDouble(0.0);
     }
 
+    // prepare for orb group statistics
+    double spinDotSpinBetweenGroup[(nOrbGroup+1)*(nOrbGroup+1)];
+    for(int i=0;i<(nOrbGroup+1)*(nOrbGroup+1);i++) spinDotSpinBetweenGroup[i]=0.0;
+    
     for(int i=0;i<nsweep;i++){
         for(int j=0;j<ninterval;j++) blockUpdate(totOrbs, lattice, p_energy, p_totSpin);
         // record the spin vector field distribution
@@ -633,11 +637,43 @@ PyObject * blockUpdateMC(int totOrbs, double initSpin[totOrbs], double initD[tot
         e_avg_rnorm/=totOrb_rnorm;
         totEnergy_r+=e_avg_rnorm;
         E2_r+=e_avg_rnorm*e_avg_rnorm;
+
+        // orb group statistics
+        Vec summedSpinOfGroup[nOrbGroup+1];
+        int iOrbGroup, jOrbGroup;
+        for(iOrbGroup=0;iOrbGroup<nOrbGroup;iOrbGroup++){
+            Vec summedSpin;
+            summedSpin.x=0;summedSpin.y=0;summedSpin.z=0;
+            int k;
+            for(k=0;k<maxOrbGroupSize;k++){
+                if(orbGroupList[iOrbGroup][k]<0) break;
+                plusEqual(&summedSpin,lattice[orbGroupList[iOrbGroup][k]].spin);
+            }
+            summedSpinOfGroup[iOrbGroup].x=summedSpin.x;
+            summedSpinOfGroup[iOrbGroup].y=summedSpin.y;
+            summedSpinOfGroup[iOrbGroup].z=summedSpin.z;
+        }
+        summedSpinOfGroup[iOrbGroup].x=p_totSpin->x/nLat;
+        summedSpinOfGroup[iOrbGroup].y=p_totSpin->y/nLat;
+        summedSpinOfGroup[iOrbGroup].z=p_totSpin->z/nLat;
+        //printf("nOrbGroup: %d\n",nOrbGroup);
+        for(iOrbGroup=0;iOrbGroup<(nOrbGroup+1);iOrbGroup++) for(jOrbGroup=0;jOrbGroup<(nOrbGroup+1);jOrbGroup++) spinDotSpinBetweenGroup[iOrbGroup*(nOrbGroup+1)+jOrbGroup]+=dot(summedSpinOfGroup[iOrbGroup],summedSpinOfGroup[jOrbGroup]);
     }
     double U4=(M2/nsweep)*(M2/nsweep)/(M4/nsweep);
     double autoCorr=(MdotM_tmp/nsweep-M_tot/nsweep*M_tot/nsweep);
+    PyObject *spinDotSpinBetweenGroup_Tuple;
+    spinDotSpinBetweenGroup_Tuple=PyTuple_New((nOrbGroup+1)*(nOrbGroup+1));
+    for(int iOrbGroup=0;iOrbGroup<(nOrbGroup+1);iOrbGroup++){
+        for(int jOrbGroup=0;jOrbGroup<(nOrbGroup+1);jOrbGroup++){
+            int index=iOrbGroup*(nOrbGroup+1)+jOrbGroup;
+            double result=spinDotSpinBetweenGroup[index]/nsweep;
+            PyTuple_SetItem(spinDotSpinBetweenGroup_Tuple, index, PyFloat_FromDouble(result));
+        }
+    }
+    if(nOrbGroup==0) spinDotSpinBetweenGroup_Tuple=PyFloat_FromDouble(0);
+
     PyObject *Data;
-    Data=PyTuple_New(27);
+    Data=PyTuple_New(28);
     PyTuple_SetItem(Data, 0, PyFloat_FromDouble(spin_i.x/nsweep));
     PyTuple_SetItem(Data, 1, PyFloat_FromDouble(spin_i.y/nsweep));
     PyTuple_SetItem(Data, 2, PyFloat_FromDouble(spin_i.z/nsweep));
@@ -665,6 +701,7 @@ PyObject * blockUpdateMC(int totOrbs, double initSpin[totOrbs], double initD[tot
     PyTuple_SetItem(Data,24, PyFloat_FromDouble(spin_j_h/nsweep));
     PyTuple_SetItem(Data,25, PyFloat_FromDouble(spin_tot_h/nsweep));
     PyTuple_SetItem(Data, 26, spinFrameData);
+    PyTuple_SetItem(Data, 27, spinDotSpinBetweenGroup_Tuple);
     return Data;
 }
 
@@ -672,7 +709,7 @@ PyObject * blockUpdateMC(int totOrbs, double initSpin[totOrbs], double initD[tot
 // self.totOrbs, initSpin, nthermal, nsweep, maxNLinking, nlinking, linkStrength, linkData
 PyObject * localUpdateMC(int totOrbs, double initSpin[totOrbs], double initD[totOrbs][3], int nthermal, int nsweep, 
                    int maxNLinking, int nlink[totOrbs], double linkStrength[totOrbs][maxNLinking][9], int linkedOrb[totOrbs][maxNLinking],
-                   int ninterval, int nLat, int corrOrbPair[nLat][2], double flunc, double h,
+                   int ninterval, int nLat, int corrOrbPair[nLat][2], int nOrbGroup, int maxOrbGroupSize, int orbGroupList[nOrbGroup][maxOrbGroupSize], double flunc, double h,
                    int totOrb_rnorm, int nOrbInCluster, int rOrb[totOrb_rnorm], int rOrbCluster[totOrb_rnorm][nOrbInCluster], int linkedOrb_rnorm[totOrb_rnorm][maxNLinking],
                    int spinFrame){
     // initialize lattice
@@ -728,6 +765,10 @@ PyObject * localUpdateMC(int totOrbs, double initSpin[totOrbs], double initD[tot
     }else{
         spinFrameData=PyFloat_FromDouble(0.0);
     }
+
+    // prepare for orb group statistics
+    double spinDotSpinBetweenGroup[(nOrbGroup+1)*(nOrbGroup+1)];
+    for(int i=0;i<(nOrbGroup+1)*(nOrbGroup+1);i++) spinDotSpinBetweenGroup[i]=0.0;
 
     for(int i=0;i<nsweep;i++){
         for(int j=0;j<ninterval;j++) localUpdate(totOrbs, lattice, p_energy, p_totSpin);
@@ -874,11 +915,43 @@ PyObject * localUpdateMC(int totOrbs, double initSpin[totOrbs], double initD[tot
         e_avg_rnorm/=totOrb_rnorm;
         totEnergy_r+=e_avg_rnorm;
         E2_r+=e_avg_rnorm*e_avg_rnorm;
+
+        // orb group statistics
+        Vec summedSpinOfGroup[nOrbGroup+1];
+        int iOrbGroup, jOrbGroup;
+        for(iOrbGroup=0;iOrbGroup<nOrbGroup;iOrbGroup++){
+            Vec summedSpin;
+            summedSpin.x=0;summedSpin.y=0;summedSpin.z=0;
+            int k;
+            for(k=0;k<maxOrbGroupSize;k++){
+                if(orbGroupList[iOrbGroup][k]<0) break;
+                plusEqual(&summedSpin,lattice[orbGroupList[iOrbGroup][k]].spin);
+            }
+            summedSpinOfGroup[iOrbGroup].x=summedSpin.x;
+            summedSpinOfGroup[iOrbGroup].y=summedSpin.y;
+            summedSpinOfGroup[iOrbGroup].z=summedSpin.z;
+        }
+        summedSpinOfGroup[iOrbGroup].x=p_totSpin->x/nLat;
+        summedSpinOfGroup[iOrbGroup].y=p_totSpin->y/nLat;
+        summedSpinOfGroup[iOrbGroup].z=p_totSpin->z/nLat;
+        //printf("nOrbGroup: %d\n",nOrbGroup);
+        for(iOrbGroup=0;iOrbGroup<(nOrbGroup+1);iOrbGroup++) for(jOrbGroup=0;jOrbGroup<(nOrbGroup+1);jOrbGroup++) spinDotSpinBetweenGroup[iOrbGroup*(nOrbGroup+1)+jOrbGroup]+=dot(summedSpinOfGroup[iOrbGroup],summedSpinOfGroup[jOrbGroup]);
     }
     double U4=(M2/nsweep)*(M2/nsweep)/(M4/nsweep);
     double autoCorr=(MdotM_tmp/nsweep-M_tot/nsweep*M_tot/nsweep);
+    PyObject *spinDotSpinBetweenGroup_Tuple;
+    spinDotSpinBetweenGroup_Tuple=PyTuple_New((nOrbGroup+1)*(nOrbGroup+1));
+    for(int iOrbGroup=0;iOrbGroup<(nOrbGroup+1);iOrbGroup++){
+        for(int jOrbGroup=0;jOrbGroup<(nOrbGroup+1);jOrbGroup++){
+            int index=iOrbGroup*(nOrbGroup+1)+jOrbGroup;
+            double result=spinDotSpinBetweenGroup[index]/nsweep;
+            PyTuple_SetItem(spinDotSpinBetweenGroup_Tuple, index, PyFloat_FromDouble(result));
+        }
+    }
+    if(nOrbGroup==0) spinDotSpinBetweenGroup_Tuple=PyFloat_FromDouble(0);
+
     PyObject *Data;
-    Data=PyTuple_New(27);
+    Data=PyTuple_New(28);
     PyTuple_SetItem(Data, 0, PyFloat_FromDouble(spin_i.x/nsweep));
     PyTuple_SetItem(Data, 1, PyFloat_FromDouble(spin_i.y/nsweep));
     PyTuple_SetItem(Data, 2, PyFloat_FromDouble(spin_i.z/nsweep));
@@ -906,5 +979,6 @@ PyObject * localUpdateMC(int totOrbs, double initSpin[totOrbs], double initD[tot
     PyTuple_SetItem(Data,24, PyFloat_FromDouble(spin_j_h/nsweep));
     PyTuple_SetItem(Data,25, PyFloat_FromDouble(spin_tot_h/nsweep));
     PyTuple_SetItem(Data, 26, spinFrameData);
+    PyTuple_SetItem(Data, 27, spinDotSpinBetweenGroup_Tuple);
     return Data;
 }

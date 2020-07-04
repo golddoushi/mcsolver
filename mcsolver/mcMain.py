@@ -8,7 +8,7 @@ import time
 import win
 
 class MC:
-    def __init__(self,ID,LMatrix,pos=[],S=[],D=[],bondList=[],T=1,Lx=1,Ly=1,Lz=1,ki_s=0,ki_t=0,ki_overLat=[0,0,0],h=0.,dipoleAlpha=0,On=1,spinFrame=0): # init for specified temperature
+    def __init__(self,ID,LMatrix,pos=[],S=[],D=[],bondList=[],T=1,Lx=1,Ly=1,Lz=1,ki_s=0,ki_t=0,ki_overLat=[0,0,0],orbGroupList=[],h=0.,dipoleAlpha=0,On=1,spinFrame=0): # init for specified temperature
         self.Lx, self.Ly, self.Lz=Lx, Ly, Lz
         norb=len(pos)
         totOrbs=Lx*Ly*Lz*norb
@@ -19,7 +19,7 @@ class MC:
         #******************************************************#
         # create orbs for manual temperature
         DT=[d/T for d in D]
-        lattice_array, lattice=lat.establishLattice(Lx=Lx,Ly=Ly,Lz=Lz,norb=norb,Lmatrix=np.array(LMatrix),bmatrix=np.array(pos),SpinList=S,DList=DT)
+        lattice_array, lattice, orbGroup=lat.establishLattice(Lx=Lx,Ly=Ly,Lz=Lz,norb=norb,Lmatrix=np.array(LMatrix),bmatrix=np.array(pos),SpinList=S,DList=DT,orbGroupList=orbGroupList)
         # create bond list for manual temperature
         #bondT=[]
         for bond in bondList:
@@ -41,6 +41,7 @@ class MC:
         self.Energy=0.
         self.lattice=lattice
         self.lattice_array=lattice_array
+        self.orbGroup=orbGroup
         self.totOrbs=totOrbs
         self.blockLen=0
         self.ki_s=ki_s
@@ -273,6 +274,25 @@ class MC:
             corrOrbitalPair[ipair*2+1]=pair[1]
             #print(pair[0],pair[1])
         
+        # orb group
+        nOrbGroup=len(self.orbGroup)
+        maxOrbGroupSize=1
+        if nOrbGroup>0:
+            maxOrbGroupSize=len(self.orbGroup[0])
+        if nOrbGroup>1:
+            maxOrbGroupSize=np.max([len(subGroup) for subGroup in self.orbGroup])
+        orbGroupList=(c_int*(nOrbGroup*maxOrbGroupSize))()
+        cnt=0
+        for subGroup in self.orbGroup:
+            for iorb in range(maxOrbGroupSize):
+                if iorb<len(subGroup):
+                    orbGroupList[cnt]=subGroup[iorb].id
+                else:
+                    orbGroupList[cnt]=-1
+                cnt+=1
+        nOrbGroup=c_int(nOrbGroup)
+        maxOrbGroupSize=c_int(maxOrbGroupSize)
+
         flunc_=c_double(flunc)
         if On==2:
             mylib=CDLL(win.path+"xylib.so")
@@ -289,10 +309,12 @@ class MC:
             cMC=mylib.blockUpdateMC
             
         cMC.restype=py_object
-        data = cMC(self.totOrbs, initSpin, initD, nthermal, nsweep, maxNLinking_, nlinking, linkStrength, linkData, ninterval, nLat, corrOrbitalPair, flunc_, h,
+        data = cMC(self.totOrbs, initSpin, initD, nthermal, nsweep, maxNLinking_, nlinking, linkStrength, linkData, ninterval, nLat, 
+                   corrOrbitalPair, nOrbGroup, maxOrbGroupSize, orbGroupList,
+                   flunc_, h,
                    totOrb_rnorm, norbInCluster, rOrb, rOrbCluster, linkData_rnorm,
                    spinFrame)
-        spin_i_x, spin_i_y, spin_i_z, spin_j_x, spin_j_y, spin_j_z, spin_ij, autoCorr, E, E2, U4, spin_i_r_x, spin_i_r_y, spin_i_r_z, spin_j_r_x, spin_j_r_y, spin_j_r_z, spin_ij_r, E_r, E2_r, spin_i_tot_z,spin_j_tot_z,spin_tot_z,spin_i_h,spin_j_h,spin_tot_h, spinDistributionList=data
+        spin_i_x, spin_i_y, spin_i_z, spin_j_x, spin_j_y, spin_j_z, spin_ij, autoCorr, E, E2, U4, spin_i_r_x, spin_i_r_y, spin_i_r_z, spin_j_r_x, spin_j_r_y, spin_j_r_z, spin_ij_r, E_r, E2_r, spin_i_tot_z,spin_j_tot_z,spin_tot_z,spin_i_h,spin_j_h,spin_tot_h, spinDistributionList, spinDotSpinBetweenGroups=data
         E*=self.T;E2*=self.T**2;E_r*=self.T;E2_r*=self.T**2 # recover the real energies
         C=E2-E*E
         C_r=E2_r-E_r*E_r
@@ -312,8 +334,23 @@ class MC:
         
         if self.spinFrame>0:self.outputSpinDistributionForOn(spinDistributionList)
         
+        if len(self.orbGroup)>0:self.outputSpinGroup(spinDotSpinBetweenGroups)
         return spin_i, spin_j, spin_ij, autoCorr, E, E2, U4
         
+    def outputSpinGroup(self,spinDotSpinData):
+        with open('./spinDotSpin.txt','a') as fout:
+            # title
+            fout.write('%.3f %.3f '%(self.T,self.h))
+            cnt=0
+            for i in range(len(self.orbGroup)+1):
+                for j in range(len(self.orbGroup)+1):
+                    #keyword1='group_%d'%i if i!=self.orbGroup else 'Total'
+                    #keyword2='group_%d'%j if j!=self.orbGroup else 'Total'
+                    #title='#'+keyword1+'_'+keyword2+' '
+                    fout.write('%.6f '%spinDotSpinData[cnt])
+                    cnt+=1
+            fout.write('\n')
+
     def outputSpinDistributionForIsing(self,distributionList):
         for iframe in range(self.spinFrame):
             with open('./IsingSpinDistribution.T%.3f.H%.3f.%d.txt'%(self.T,self.h,iframe),'w') as fout:

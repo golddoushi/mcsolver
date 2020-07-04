@@ -145,7 +145,7 @@ class Bond:
         bond.invStrength=np.array(list(self.invStrength)) if self.On else self.invStrength
         return bond
 
-def establishLattice(Lx=1,Ly=1,Lz=1,norb=1,Lmatrix=np.array([[1,0,0],[0,1,0],[0,0,1]]),bmatrix=[np.array([0.,0.,0.])],SpinList=[1],DList=[0.,0.,0.]):
+def establishLattice(Lx=1,Ly=1,Lz=1,norb=1,Lmatrix=np.array([[1,0,0],[0,1,0],[0,0,1]]),bmatrix=[np.array([0.,0.,0.])],SpinList=[1],DList=[0.,0.,0.],orbGroupList=[]):
     '''
     create a Lx X Ly X Lz lattice, and create norb orbitals
     for each cell
@@ -194,6 +194,9 @@ def establishLattice(Lx=1,Ly=1,Lz=1,norb=1,Lmatrix=np.array([[1,0,0],[0,1,0],[0,
                         orbital.addOrbIntoCluster(lattice[(x+1)%Lx][(y+1)%Ly][z][o])
                         orbital.addOrbIntoCluster(lattice[(x+1)%Lx][(y+1)%Ly][(z+1)%Lz][o])
 
+    # construct orb groups
+    orbGroup=[[lattice[0][0][0][id] for id in subGroup] for subGroup in orbGroupList]
+    
     # check cluster
     '''print("checking orb cluster after building >>>>>>")
     for orb in lattice_flatten:
@@ -202,7 +205,7 @@ def establishLattice(Lx=1,Ly=1,Lz=1,norb=1,Lmatrix=np.array([[1,0,0],[0,1,0],[0,
             for sub_orb in orb.orb_cluster:
                 print("    orb%d"%sub_orb.id)        
     print("<<<<<<")'''       
-    return lattice, lattice_flatten
+    return lattice, lattice_flatten, orbGroup
 
 def establishLinking(lattice,bondList,ki_s=0,ki_t=0,ki_overLat=[0,0,0],dipoleAlpha=0):
     Lx=len(lattice)
