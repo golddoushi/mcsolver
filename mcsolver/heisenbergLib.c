@@ -493,11 +493,13 @@ PyObject * blockUpdateMC(int totOrbs, double initSpin[totOrbs], double initD[tot
     // prepare for orb group statistics
     double spinDotSpinBetweenGroup[(nOrbGroup+1)*(nOrbGroup+1)];
     for(int i=0;i<(nOrbGroup+1)*(nOrbGroup+1);i++) spinDotSpinBetweenGroup[i]=0.0;
+    double spin4Order[nOrbGroup+1];
+    for(int i=0;i<nOrbGroup+1;i++) spin4Order[i]=0.0;
     
     for(int i=0;i<nsweep;i++){
         for(int j=0;j<ninterval;j++) blockUpdate(totOrbs, lattice, p_energy, p_totSpin);
         // record the spin vector field distribution
-        if(spinFrame>0 & i%output_per_sweep==0){
+        if((spinFrame>0) & (i%output_per_sweep==0)){
             PyObject *spinDistribution=PyTuple_New(totOrbs);
             for(int j=0;j<totOrbs;j++){
                 PyObject *spinJVec=PyTuple_New(3);
@@ -657,12 +659,19 @@ PyObject * blockUpdateMC(int totOrbs, double initSpin[totOrbs], double initD[tot
         summedSpinOfGroup[iOrbGroup].y=p_totSpin->y/nLat;
         summedSpinOfGroup[iOrbGroup].z=p_totSpin->z/nLat;
         //printf("nOrbGroup: %d\n",nOrbGroup);
-        for(iOrbGroup=0;iOrbGroup<(nOrbGroup+1);iOrbGroup++) for(jOrbGroup=0;jOrbGroup<(nOrbGroup+1);jOrbGroup++) spinDotSpinBetweenGroup[iOrbGroup*(nOrbGroup+1)+jOrbGroup]+=dot(summedSpinOfGroup[iOrbGroup],summedSpinOfGroup[jOrbGroup]);
+        for(iOrbGroup=0;iOrbGroup<(nOrbGroup+1);iOrbGroup++){
+            for(jOrbGroup=0;jOrbGroup<(nOrbGroup+1);jOrbGroup++){
+                double spin_i_dot_spin_j=dot(summedSpinOfGroup[iOrbGroup],summedSpinOfGroup[jOrbGroup]);
+                spinDotSpinBetweenGroup[iOrbGroup*(nOrbGroup+1)+jOrbGroup]+=spin_i_dot_spin_j;
+                //printf("i=%d, j=%d, spin_i_dot_j=%.6f\n",iOrbGroup,jOrbGroup,spin_i_dot_spin_j);
+                if(iOrbGroup==jOrbGroup) spin4Order[iOrbGroup]+=spin_i_dot_spin_j*spin_i_dot_spin_j;
+            }
+        }
     }
     double U4=(M2/nsweep)*(M2/nsweep)/(M4/nsweep);
     double autoCorr=(MdotM_tmp/nsweep-M_tot/nsweep*M_tot/nsweep);
     PyObject *spinDotSpinBetweenGroup_Tuple;
-    spinDotSpinBetweenGroup_Tuple=PyTuple_New((nOrbGroup+1)*(nOrbGroup+1));
+    spinDotSpinBetweenGroup_Tuple=PyTuple_New((nOrbGroup+2)*(nOrbGroup+1));
     for(int iOrbGroup=0;iOrbGroup<(nOrbGroup+1);iOrbGroup++){
         for(int jOrbGroup=0;jOrbGroup<(nOrbGroup+1);jOrbGroup++){
             int index=iOrbGroup*(nOrbGroup+1)+jOrbGroup;
@@ -670,7 +679,14 @@ PyObject * blockUpdateMC(int totOrbs, double initSpin[totOrbs], double initD[tot
             PyTuple_SetItem(spinDotSpinBetweenGroup_Tuple, index, PyFloat_FromDouble(result));
         }
     }
-    if(nOrbGroup==0) spinDotSpinBetweenGroup_Tuple=PyFloat_FromDouble(0);
+    for(int iOrbGroup=0;iOrbGroup<(nOrbGroup+1);iOrbGroup++){
+        int index=(nOrbGroup+1)*(nOrbGroup+1)+iOrbGroup;
+        double result=spin4Order[iOrbGroup]/nsweep;
+        PyTuple_SetItem(spinDotSpinBetweenGroup_Tuple, index, PyFloat_FromDouble(result));
+    }
+    if(nOrbGroup==0){
+        spinDotSpinBetweenGroup_Tuple=PyFloat_FromDouble(0);
+    }
 
     PyObject *Data;
     Data=PyTuple_New(28);
@@ -769,11 +785,13 @@ PyObject * localUpdateMC(int totOrbs, double initSpin[totOrbs], double initD[tot
     // prepare for orb group statistics
     double spinDotSpinBetweenGroup[(nOrbGroup+1)*(nOrbGroup+1)];
     for(int i=0;i<(nOrbGroup+1)*(nOrbGroup+1);i++) spinDotSpinBetweenGroup[i]=0.0;
+    double spin4Order[nOrbGroup+1];
+    for(int i=0;i<nOrbGroup+1;i++) spin4Order[i]=0.0;
 
     for(int i=0;i<nsweep;i++){
         for(int j=0;j<ninterval;j++) localUpdate(totOrbs, lattice, p_energy, p_totSpin);
         // record the spin vector field distribution
-        if(spinFrame>0 & i%output_per_sweep==0){
+        if((spinFrame>0) & (i%output_per_sweep==0)){
             PyObject *spinDistribution=PyTuple_New(totOrbs);
             for(int j=0;j<totOrbs;j++){
                 PyObject *spinJVec=PyTuple_New(3);
@@ -935,12 +953,18 @@ PyObject * localUpdateMC(int totOrbs, double initSpin[totOrbs], double initD[tot
         summedSpinOfGroup[iOrbGroup].y=p_totSpin->y/nLat;
         summedSpinOfGroup[iOrbGroup].z=p_totSpin->z/nLat;
         //printf("nOrbGroup: %d\n",nOrbGroup);
-        for(iOrbGroup=0;iOrbGroup<(nOrbGroup+1);iOrbGroup++) for(jOrbGroup=0;jOrbGroup<(nOrbGroup+1);jOrbGroup++) spinDotSpinBetweenGroup[iOrbGroup*(nOrbGroup+1)+jOrbGroup]+=dot(summedSpinOfGroup[iOrbGroup],summedSpinOfGroup[jOrbGroup]);
+        for(iOrbGroup=0;iOrbGroup<(nOrbGroup+1);iOrbGroup++){
+            for(jOrbGroup=0;jOrbGroup<(nOrbGroup+1);jOrbGroup++){
+                double spin_i_dot_spin_j=dot(summedSpinOfGroup[iOrbGroup],summedSpinOfGroup[jOrbGroup]);
+                spinDotSpinBetweenGroup[iOrbGroup*(nOrbGroup+1)+jOrbGroup]+=spin_i_dot_spin_j;
+                if(iOrbGroup==jOrbGroup) spin4Order[iOrbGroup]+=spin_i_dot_spin_j*spin_i_dot_spin_j;
+            }
+        }
     }
     double U4=(M2/nsweep)*(M2/nsweep)/(M4/nsweep);
     double autoCorr=(MdotM_tmp/nsweep-M_tot/nsweep*M_tot/nsweep);
     PyObject *spinDotSpinBetweenGroup_Tuple;
-    spinDotSpinBetweenGroup_Tuple=PyTuple_New((nOrbGroup+1)*(nOrbGroup+1));
+    spinDotSpinBetweenGroup_Tuple=PyTuple_New((nOrbGroup+2)*(nOrbGroup+1));
     for(int iOrbGroup=0;iOrbGroup<(nOrbGroup+1);iOrbGroup++){
         for(int jOrbGroup=0;jOrbGroup<(nOrbGroup+1);jOrbGroup++){
             int index=iOrbGroup*(nOrbGroup+1)+jOrbGroup;
@@ -948,7 +972,14 @@ PyObject * localUpdateMC(int totOrbs, double initSpin[totOrbs], double initD[tot
             PyTuple_SetItem(spinDotSpinBetweenGroup_Tuple, index, PyFloat_FromDouble(result));
         }
     }
-    if(nOrbGroup==0) spinDotSpinBetweenGroup_Tuple=PyFloat_FromDouble(0);
+    for(int iOrbGroup=0;iOrbGroup<(nOrbGroup+1);iOrbGroup++){
+        int index=(nOrbGroup+1)*(nOrbGroup+1)+iOrbGroup;
+        double result=spin4Order[iOrbGroup]/nsweep;
+        PyTuple_SetItem(spinDotSpinBetweenGroup_Tuple, index, PyFloat_FromDouble(result));
+    }
+    if(nOrbGroup==0){
+        spinDotSpinBetweenGroup_Tuple=PyFloat_FromDouble(0);
+    }
 
     PyObject *Data;
     Data=PyTuple_New(28);

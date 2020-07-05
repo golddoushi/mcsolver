@@ -349,6 +349,9 @@ class MC:
                     #title='#'+keyword1+'_'+keyword2+' '
                     fout.write('%.6f '%spinDotSpinData[cnt])
                     cnt+=1
+            for i in range(len(self.orbGroup)+1):
+                fout.write('%.6f '%spinDotSpinData[cnt])
+                cnt+=1
             fout.write('\n')
 
     def outputSpinDistributionForIsing(self,distributionList):

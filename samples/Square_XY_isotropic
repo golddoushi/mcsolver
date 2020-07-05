@@ -22,10 +22,9 @@ Field scanning region:
 Hmin 0 Hmax 0.1 nH 1
 Mesurement:
 mesure the correlation function between orb0 and orb0 over [0 0 0]
-OrbGroup: 2
+OrbGroup: 1
 Supergroup
 group0 orb0-orb0
-group1 orb0-orb0
 Sweeps for thermalization and statistics, and relaxiation step for each sweep:
 80000 160000 1
 Model type:
