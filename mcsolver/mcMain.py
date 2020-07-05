@@ -8,7 +8,7 @@ import time
 import win
 
 class MC:
-    def __init__(self,ID,LMatrix,pos=[],S=[],D=[],bondList=[],T=1,Lx=1,Ly=1,Lz=1,ki_s=0,ki_t=0,ki_overLat=[0,0,0],orbGroupList=[],h=0.,dipoleAlpha=0,On=1,spinFrame=0): # init for specified temperature
+    def __init__(self,ID,LMatrix,pos=[],S=[],D=[],bondList=[],T=1,Lx=1,Ly=1,Lz=1,ki_s=0,ki_t=0,ki_overLat=[0,0,0],orbGroupList=[],groupInSC=False,h=0.,dipoleAlpha=0,On=1,spinFrame=0): # init for specified temperature
         self.Lx, self.Ly, self.Lz=Lx, Ly, Lz
         norb=len(pos)
         totOrbs=Lx*Ly*Lz*norb
@@ -19,7 +19,7 @@ class MC:
         #******************************************************#
         # create orbs for manual temperature
         DT=[d/T for d in D]
-        lattice_array, lattice, orbGroup=lat.establishLattice(Lx=Lx,Ly=Ly,Lz=Lz,norb=norb,Lmatrix=np.array(LMatrix),bmatrix=np.array(pos),SpinList=S,DList=DT,orbGroupList=orbGroupList)
+        lattice_array, lattice, orbGroup=lat.establishLattice(Lx=Lx,Ly=Ly,Lz=Lz,norb=norb,Lmatrix=np.array(LMatrix),bmatrix=np.array(pos),SpinList=S,DList=DT,orbGroupList=orbGroupList,groupInSC=groupInSC)
         # create bond list for manual temperature
         #bondT=[]
         for bond in bondList:

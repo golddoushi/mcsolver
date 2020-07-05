@@ -145,7 +145,7 @@ class Bond:
         bond.invStrength=np.array(list(self.invStrength)) if self.On else self.invStrength
         return bond
 
-def establishLattice(Lx=1,Ly=1,Lz=1,norb=1,Lmatrix=np.array([[1,0,0],[0,1,0],[0,0,1]]),bmatrix=[np.array([0.,0.,0.])],SpinList=[1],DList=[0.,0.,0.],orbGroupList=[]):
+def establishLattice(Lx=1,Ly=1,Lz=1,norb=1,Lmatrix=np.array([[1,0,0],[0,1,0],[0,0,1]]),bmatrix=[np.array([0.,0.,0.])],SpinList=[1],DList=[0.,0.,0.],orbGroupList=[],groupInSC=False):
     '''
     create a Lx X Ly X Lz lattice, and create norb orbitals
     for each cell
@@ -195,7 +195,10 @@ def establishLattice(Lx=1,Ly=1,Lz=1,norb=1,Lmatrix=np.array([[1,0,0],[0,1,0],[0,
                         orbital.addOrbIntoCluster(lattice[(x+1)%Lx][(y+1)%Ly][(z+1)%Lz][o])
 
     # construct orb groups
-    orbGroup=[[lattice[0][0][0][id] for id in subGroup] for subGroup in orbGroupList]
+    if groupInSC:
+        orbGroup=[[lattice[x][y][z][id] for id in subGroup for x in range(Lx) for y in range(Ly) for z in range(Lz)] for subGroup in orbGroupList]
+    else:
+        orbGroup=[[lattice[0][0][0][id] for id in subGroup] for subGroup in orbGroupList]
     
     # check cluster
     '''print("checking orb cluster after building >>>>>>")
