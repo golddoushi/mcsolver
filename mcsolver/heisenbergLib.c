@@ -62,6 +62,8 @@ double dot(Vec vec1, Vec vec2){
     return vec1.x*vec2.x+vec1.y*vec2.y+vec1.z*vec2.z;
 }
 
+double (*p_diagonalDot)(Vec vec1, Vec vec2, Vec9 J);
+
 double diagonalDot(Vec vec1, Vec vec2, Vec9 J){
     return vec1.x*vec2.x*J.xx+
            vec1.y*vec2.y*J.yy+
@@ -73,6 +75,13 @@ double diagonalDot(Vec vec1, Vec vec2, Vec9 J){
            vec1.z*vec2.x*J.zx+
            vec1.z*vec2.y*J.zy;
 }
+
+double diagonalDot_simple(Vec vec1, Vec vec2, Vec9 J){
+    return vec1.x*vec2.x*J.xx+
+           vec1.y*vec2.y*J.yy+
+           vec1.z*vec2.z*J.zz;
+}
+
 Vec *generateRandomVec(void){
     Vec *direction=(Vec*)malloc(sizeof(Vec));
     direction->x=rand()/(double) RAND_MAX-0.5;
@@ -205,7 +214,7 @@ double getCorrEnergy(Orb *source){
     //printf("start calc corr. energy\n");
     double corr=0;
     for(int i=0;i<source->nlink;i++){
-        corr+=diagonalDot(source->spin,source->linkedOrb[i]->spin,source->linkStrength[i]);
+        corr+=(*p_diagonalDot)(source->spin,source->linkedOrb[i]->spin,source->linkStrength[i]);
         //printf("J=%.3f S1=%.3f S2=%.3f\n",source->linkStrength[i],source->spin,source->linkedOrb[i]->spin);
         //printf("corr=%.3f\n",corr);
     }
@@ -232,13 +241,13 @@ Vec getMajoritySpin(Orb*_orb){ // core algorithm for renormalization
     return avgSpin; // majority algorithm
 }
 
-double getCorrEnergy_rnorm(Orb *source){
+double getCorrEnergy_rnorm(Orb *source, double (*p_diagonalFunc)()){
     double corr=0;
     Vec avgSpin_source=getMajoritySpin(source);
     for(int i=0;i<source->nlink;i++){
         //printf("link to orb%d\n",source->linkedOrb_rnorm[i]->id);
         Vec avgSpin_target=getMajoritySpin(source->linkedOrb_rnorm[i]);
-        corr+=diagonalDot(avgSpin_source,avgSpin_target,source->linkStrength[i]);
+        corr+=(*p_diagonalFunc)(avgSpin_source,avgSpin_target,source->linkStrength[i]);
     }
     //printf("Ecorr=%.3f\n",corr);
     return corr;
@@ -251,12 +260,12 @@ double getOnsiteEnergy_rnorm(Orb *source){
            source->onsiteAnisotropy.z*avgSpin_source.z*avgSpin_source.z-source->h*avgSpin_source.z;
 }
 
-double getDeltaCorrEnergy(Orb *source){
+double getDeltaCorrEnergy(Orb *source){//, double (*p_diagonalFunc)()){
     double corr=0;
     //printf("centre orb%d, trial trans %.3f %.3f %.3f, len %.3f\n",source->id,source->transSpin.x,source->transSpin.y,source->transSpin.z,sqrt(dot(source->transSpin,source->transSpin)));
     for(int i=0;i<source->nlink;i++){
         //printf("corr to orb%d, J %.3f %.3f %.3f S %.3f %.3f %.3f, \n",source->linkedOrb[i]->id,source->linkStrength[i].x,source->linkStrength[i].y,source->linkStrength[i].z,source->linkedOrb[i]->spin.x,source->linkedOrb[i]->spin.y,source->linkedOrb[i]->spin.z);
-        corr+=diagonalDot(source->transSpin,source->linkedOrb[i]->spin,source->linkStrength[i]);
+        corr+=(*p_diagonalDot)(source->transSpin,source->linkedOrb[i]->spin,source->linkStrength[i]);
     }
     //printf("total corr %.6f\n",corr);
     return corr;
@@ -318,7 +327,7 @@ int expandBlock(int*beginIndex, int*endIndex, Orb *buffer[], int*blockLen, Orb *
                 plusEqual(&linkedOrb->perpenSpin, linkedOrb->transSpin);
                 linkedOrb->isProjected=1;
             }
-            double corr=2*outOrb->sDotN*linkedOrb->sDotN*diagonalDot(refDirection,refDirection,outOrb->linkStrength[i]);
+            double corr=2*outOrb->sDotN*linkedOrb->sDotN*(*p_diagonalDot)(refDirection,refDirection,outOrb->linkStrength[i]);
             
             //linkedOrb->d_onsiteEnergy=getDeltaOnsiteEnergy(linkedOrb);
             if(corr<0 && (1-exp(corr))>rand()/(double) RAND_MAX){
@@ -368,11 +377,11 @@ void blockUpdate(int totOrbs, Orb lattice[], double*p_energy, Vec *p_totSpin){
     // exchange anisotropy
     for(i=0;i<*p_blockLen;i++){
         for (j = 0; j < block[i]->nlink; j++){
-            double source_anisotropy=block[i]->sDotN*diagonalDot(*refDirection,block[i]->linkedOrb[j]->perpenSpin,block[i]->linkStrength[j]);
+            double source_anisotropy=block[i]->sDotN*(*p_diagonalDot)(*refDirection,block[i]->linkedOrb[j]->perpenSpin,block[i]->linkStrength[j]);
             tot_d_onsiteEnergy+=source_anisotropy;
             if(block[i]->linkedOrb[j]->inBlock>0){
                 // target anisotropy
-                tot_d_onsiteEnergy+=block[i]->linkedOrb[j]->sDotN*diagonalDot(block[i]->perpenSpin,*refDirection,block[i]->linkStrength[j]);
+                tot_d_onsiteEnergy+=block[i]->linkedOrb[j]->sDotN*(*p_diagonalDot)(block[i]->perpenSpin,*refDirection,block[i]->linkStrength[j]);
             }else{
                 tot_d_onsiteEnergy+=source_anisotropy;
             }
@@ -414,7 +423,7 @@ void localUpdate(int totOrbs, Orb lattice[], double *p_energy, Vec *p_totSpin){
     //printf("projection s1n: %.3f\n",s1n);
     equal(&lattice[seedID].transSpin,*refDirection);
     cTimes(&lattice[seedID].transSpin,s1n);
-    double corr=getDeltaCorrEnergy(lattice+seedID);
+    double corr=getDeltaCorrEnergy(lattice+seedID);//,p_diagonalFunc);
     corr+=getDeltaOnsiteEnergy(lattice+seedID);
     
     //printf("lead to the translation spin vector: %.3f %.3f %.3f and delta Ecorr: %.3f\n",
@@ -434,11 +443,23 @@ void localUpdate(int totOrbs, Orb lattice[], double *p_energy, Vec *p_totSpin){
     return;
 }
 
-PyObject * blockUpdateMC(int totOrbs, double initSpin[totOrbs], double initD[totOrbs][3], int nthermal, int nsweep, 
+// interface to block update and local update algorithm
+void (*p_mcUpdate)(int totOrbs, Orb lattice[], double *p_energy, Vec *p_totSpin);
+
+PyObject * MCMainFunction(int algorithm, int totOrbs, double initSpin[totOrbs], double initD[totOrbs][3], int nthermal, int nsweep, 
                    int maxNLinking, int nlink[totOrbs], double linkStrength[totOrbs][maxNLinking][9], int linkedOrb[totOrbs][maxNLinking],
                    int ninterval, int nLat, int corrOrbPair[nLat][2], int nOrbGroup, int maxOrbGroupSize, int orbGroupList[nOrbGroup][maxOrbGroupSize], double flunc, double h,
                    int totOrb_rnorm, int nOrbInCluster, int rOrb[totOrb_rnorm], int rOrbCluster[totOrb_rnorm][nOrbInCluster], int linkedOrb_rnorm[totOrb_rnorm][maxNLinking],
-                   int spinFrame){
+                   int spinFrame,
+                   int ignoreNonDiagonalJ){
+    // set algorithm
+    p_mcUpdate=localUpdate;
+    if (algorithm==1) p_mcUpdate=blockUpdate;
+
+    // set diagonal dot version
+    p_diagonalDot=diagonalDot;
+    if (ignoreNonDiagonalJ>0) p_diagonalDot=diagonalDot_simple;
+    
     // initialize lattice
     Orb lattice[totOrbs];
     //printf("hello here is C lib\n");
@@ -458,7 +479,7 @@ PyObject * blockUpdateMC(int totOrbs, double initSpin[totOrbs], double initD[tot
     Vec*p_totSpin=&totSpin;
     for(int i=0;i<totOrbs;i++) plusEqual(p_totSpin, lattice[i].spin);
 
-    for(int i=0;i<nthermal*ninterval;i++) blockUpdate(totOrbs, lattice, p_energy, p_totSpin); //thermalization
+    for(int i=0;i<nthermal*ninterval;i++) (*p_mcUpdate)(totOrbs, lattice, p_energy, p_totSpin); //thermalization
 
     // printf("start sweeping\n");
     Vec spin_i, spin_i_r;
@@ -497,7 +518,7 @@ PyObject * blockUpdateMC(int totOrbs, double initSpin[totOrbs], double initD[tot
     for(int i=0;i<nOrbGroup+1;i++) spin4Order[i]=0.0;
     
     for(int i=0;i<nsweep;i++){
-        for(int j=0;j<ninterval;j++) blockUpdate(totOrbs, lattice, p_energy, p_totSpin);
+        for(int j=0;j<ninterval;j++) (*p_mcUpdate)(totOrbs, lattice, p_energy, p_totSpin);
         // record the spin vector field distribution
         if((spinFrame>0) & (i%output_per_sweep==0)){
             PyObject *spinDistribution=PyTuple_New(totOrbs);
@@ -630,7 +651,7 @@ PyObject * blockUpdateMC(int totOrbs, double initSpin[totOrbs], double initD[tot
         // energy statistics
         double e_avg_rnorm=0;
         for(int j=0;j<totOrbs;j++){ // calc. bond energy in renormalized system
-            if(lattice[j].chosen>0) e_avg_rnorm+=getCorrEnergy_rnorm(lattice+j);
+            if(lattice[j].chosen>0) e_avg_rnorm+=getCorrEnergy_rnorm(lattice+j, p_diagonalDot);
         }
         e_avg_rnorm/=2; // double counting
         for(int j=0;j<totOrbs;j++){ // onsite part
@@ -664,299 +685,6 @@ PyObject * blockUpdateMC(int totOrbs, double initSpin[totOrbs], double initD[tot
                 double spin_i_dot_spin_j=dot(summedSpinOfGroup[iOrbGroup],summedSpinOfGroup[jOrbGroup]);
                 spinDotSpinBetweenGroup[iOrbGroup*(nOrbGroup+1)+jOrbGroup]+=spin_i_dot_spin_j;
                 //printf("i=%d, j=%d, spin_i_dot_j=%.6f\n",iOrbGroup,jOrbGroup,spin_i_dot_spin_j);
-                if(iOrbGroup==jOrbGroup) spin4Order[iOrbGroup]+=spin_i_dot_spin_j*spin_i_dot_spin_j;
-            }
-        }
-    }
-    double U4=(M2/nsweep)*(M2/nsweep)/(M4/nsweep);
-    double autoCorr=(MdotM_tmp/nsweep-M_tot/nsweep*M_tot/nsweep);
-    PyObject *spinDotSpinBetweenGroup_Tuple;
-    spinDotSpinBetweenGroup_Tuple=PyTuple_New((nOrbGroup+2)*(nOrbGroup+1));
-    for(int iOrbGroup=0;iOrbGroup<(nOrbGroup+1);iOrbGroup++){
-        for(int jOrbGroup=0;jOrbGroup<(nOrbGroup+1);jOrbGroup++){
-            int index=iOrbGroup*(nOrbGroup+1)+jOrbGroup;
-            double result=spinDotSpinBetweenGroup[index]/nsweep;
-            PyTuple_SetItem(spinDotSpinBetweenGroup_Tuple, index, PyFloat_FromDouble(result));
-        }
-    }
-    for(int iOrbGroup=0;iOrbGroup<(nOrbGroup+1);iOrbGroup++){
-        int index=(nOrbGroup+1)*(nOrbGroup+1)+iOrbGroup;
-        double result=spin4Order[iOrbGroup]/nsweep;
-        PyTuple_SetItem(spinDotSpinBetweenGroup_Tuple, index, PyFloat_FromDouble(result));
-    }
-    if(nOrbGroup==0){
-        spinDotSpinBetweenGroup_Tuple=PyFloat_FromDouble(0);
-    }
-
-    PyObject *Data;
-    Data=PyTuple_New(28);
-    PyTuple_SetItem(Data, 0, PyFloat_FromDouble(spin_i.x/nsweep));
-    PyTuple_SetItem(Data, 1, PyFloat_FromDouble(spin_i.y/nsweep));
-    PyTuple_SetItem(Data, 2, PyFloat_FromDouble(spin_i.z/nsweep));
-    PyTuple_SetItem(Data, 3, PyFloat_FromDouble(spin_j.x/nsweep));
-    PyTuple_SetItem(Data, 4, PyFloat_FromDouble(spin_j.y/nsweep));
-    PyTuple_SetItem(Data, 5, PyFloat_FromDouble(spin_j.z/nsweep));
-    PyTuple_SetItem(Data, 6, PyFloat_FromDouble(spin_ij/nsweep));
-    PyTuple_SetItem(Data, 7, PyFloat_FromDouble(autoCorr));
-    PyTuple_SetItem(Data, 8, PyFloat_FromDouble(totEnergy/nsweep));
-    PyTuple_SetItem(Data, 9, PyFloat_FromDouble(E2/nsweep));
-    PyTuple_SetItem(Data,10, PyFloat_FromDouble(U4));
-    PyTuple_SetItem(Data,11, PyFloat_FromDouble(spin_i_r.x/nsweep));
-    PyTuple_SetItem(Data,12, PyFloat_FromDouble(spin_i_r.y/nsweep));
-    PyTuple_SetItem(Data,13, PyFloat_FromDouble(spin_i_r.z/nsweep));
-    PyTuple_SetItem(Data,14, PyFloat_FromDouble(spin_j_r.x/nsweep));
-    PyTuple_SetItem(Data,15, PyFloat_FromDouble(spin_j_r.y/nsweep));
-    PyTuple_SetItem(Data,16, PyFloat_FromDouble(spin_j_r.z/nsweep));
-    PyTuple_SetItem(Data,17, PyFloat_FromDouble(spin_ij_r/nsweep));
-    PyTuple_SetItem(Data,18, PyFloat_FromDouble(totEnergy_r/nsweep));
-    PyTuple_SetItem(Data,19, PyFloat_FromDouble(E2_r/nsweep));
-    PyTuple_SetItem(Data,20, PyFloat_FromDouble(spin_i_z/nsweep));
-    PyTuple_SetItem(Data,21, PyFloat_FromDouble(spin_j_z/nsweep));
-    PyTuple_SetItem(Data,22, PyFloat_FromDouble(spin_tot_z/nsweep));
-    PyTuple_SetItem(Data,23, PyFloat_FromDouble(spin_i_h/nsweep));
-    PyTuple_SetItem(Data,24, PyFloat_FromDouble(spin_j_h/nsweep));
-    PyTuple_SetItem(Data,25, PyFloat_FromDouble(spin_tot_h/nsweep));
-    PyTuple_SetItem(Data, 26, spinFrameData);
-    PyTuple_SetItem(Data, 27, spinDotSpinBetweenGroup_Tuple);
-    return Data;
-}
-
-
-// self.totOrbs, initSpin, nthermal, nsweep, maxNLinking, nlinking, linkStrength, linkData
-PyObject * localUpdateMC(int totOrbs, double initSpin[totOrbs], double initD[totOrbs][3], int nthermal, int nsweep, 
-                   int maxNLinking, int nlink[totOrbs], double linkStrength[totOrbs][maxNLinking][9], int linkedOrb[totOrbs][maxNLinking],
-                   int ninterval, int nLat, int corrOrbPair[nLat][2], int nOrbGroup, int maxOrbGroupSize, int orbGroupList[nOrbGroup][maxOrbGroupSize], double flunc, double h,
-                   int totOrb_rnorm, int nOrbInCluster, int rOrb[totOrb_rnorm], int rOrbCluster[totOrb_rnorm][nOrbInCluster], int linkedOrb_rnorm[totOrb_rnorm][maxNLinking],
-                   int spinFrame){
-    // initialize lattice
-    Orb lattice[totOrbs];
-    //printf("hello here is C lib\n");
-    establishLattice(lattice, totOrbs, initSpin, initD, h, flunc, maxNLinking, nlink, linkStrength, totOrb_rnorm, nOrbInCluster, rOrb, rOrbCluster);
-    establishLinking(lattice, totOrbs, maxNLinking, nlink, linkedOrb, totOrb_rnorm, rOrb, linkedOrb_rnorm);
-
-    // initialize measurement
-    double energy=0;
-    double *p_energy=&energy;
-    for(int i=0;i<totOrbs;i++)*p_energy+=getCorrEnergy(lattice+i);
-    *p_energy/=2; // double counting for bond term
-    for(int i=0;i<totOrbs;i++)*p_energy+=getOnsiteEnergy(lattice+i); // onsite term
-
-    Vec totSpin;
-    totSpin.x=0;totSpin.y=0;totSpin.z=0;
-    Vec*p_totSpin=&totSpin;
-    for(int i=0;i<totOrbs;i++) {
-        //printf("%.3f %.3f %.3f\n",lattice[i].spin.x,lattice[i].spin.y,lattice[i].spin.y);
-        plusEqual(&totSpin, lattice[i].spin);
-    }
-    
-    //localUpdate(totOrbs, lattice, p_energy, p_totSpin);
-    //printf("initial total spin: %.3f %.3f %.3f energy: %.3f\n",totSpin.x,totSpin.y,totSpin.z,*p_energy);
-    for(int i=0;i<ninterval*nthermal;i++) localUpdate(totOrbs, lattice, p_energy, p_totSpin); //thermalization
-
-    Vec spin_i, spin_i_r;
-    Vec spin_j, spin_j_r;
-    spin_i.x=0;spin_i.y=0;spin_i.z=0;spin_i_r.x=0;spin_i_r.y=0;spin_i_r.z=0;
-    spin_j.x=0;spin_j.y=0;spin_j.z=0;spin_j_r.x=0;spin_j_r.y=0;spin_j_r.z=0;
-    double spin_ij, spin_ij_r;
-    spin_ij=0;spin_ij_r=0;
-
-    double totEnergy=0, totEnergy_r=0;
-    double E2=0, E2_r=0;
-    double M=0,M2=0,M4=0;
-    double M_tmp=0,MdotM_tmp=0,M_tot=0;
-
-    Vec spin_direction;
-    double spin_i_z, spin_j_z, spin_tot_z;
-    double spin_i_h, spin_j_h, spin_tot_h;
-    spin_i_z=0;spin_j_z=0;spin_tot_z=0;
-    spin_i_h=0;spin_j_h=0;spin_tot_h=0;
-
-    // prepare for output spin frame
-    int output_per_sweep=nsweep;
-    int iFrame=0;
-    PyObject *spinFrameData;
-    if(spinFrame>0){
-        output_per_sweep=nsweep/spinFrame;
-        spinFrameData=PyTuple_New(spinFrame);
-    }else{
-        spinFrameData=PyFloat_FromDouble(0.0);
-    }
-
-    // prepare for orb group statistics
-    double spinDotSpinBetweenGroup[(nOrbGroup+1)*(nOrbGroup+1)];
-    for(int i=0;i<(nOrbGroup+1)*(nOrbGroup+1);i++) spinDotSpinBetweenGroup[i]=0.0;
-    double spin4Order[nOrbGroup+1];
-    for(int i=0;i<nOrbGroup+1;i++) spin4Order[i]=0.0;
-
-    for(int i=0;i<nsweep;i++){
-        for(int j=0;j<ninterval;j++) localUpdate(totOrbs, lattice, p_energy, p_totSpin);
-        // record the spin vector field distribution
-        if((spinFrame>0) & (i%output_per_sweep==0)){
-            PyObject *spinDistribution=PyTuple_New(totOrbs);
-            for(int j=0;j<totOrbs;j++){
-                PyObject *spinJVec=PyTuple_New(3);
-                PyTuple_SetItem(spinJVec, 0, PyFloat_FromDouble(lattice[j].spin.x));
-                PyTuple_SetItem(spinJVec, 1, PyFloat_FromDouble(lattice[j].spin.y));
-                PyTuple_SetItem(spinJVec, 2, PyFloat_FromDouble(lattice[j].spin.z));
-                PyTuple_SetItem(spinDistribution, j, spinJVec);
-            }
-            PyTuple_SetItem(spinFrameData, iFrame, spinDistribution);
-            iFrame+=1;
-        }
-
-        // find the main axis
-        spin_direction.x=p_totSpin->x;
-        spin_direction.y=p_totSpin->y;
-        spin_direction.z=p_totSpin->z;
-        normalize(&spin_direction);
-        
-
-        // spin statistics over space in each frame
-        Vec spin_i_avg;
-        Vec spin_j_avg;
-        spin_i_avg.x=0;
-        spin_i_avg.y=0;
-        spin_i_avg.z=0;
-        spin_j_avg.x=0;
-        spin_j_avg.y=0;
-        spin_j_avg.z=0;
-        double spin_ij_avg=0.0;
-
-        double spin_i_z_avg, spin_j_z_avg;
-        double spin_i_h_avg, spin_j_h_avg;
-        spin_i_z_avg=0;spin_j_z_avg=0;
-        spin_i_h_avg=0;spin_j_h_avg=0;
-        for(int j=0;j<nLat;j++){
-            plusEqual(&spin_i_avg, lattice[corrOrbPair[j][0]].spin);
-            plusEqual(&spin_j_avg, lattice[corrOrbPair[j][1]].spin);
-            spin_ij_avg+=dot(lattice[corrOrbPair[j][0]].spin,lattice[corrOrbPair[j][1]].spin);
-
-            // spin along main axis
-            spin_i_z_avg+=dot(spin_direction,lattice[corrOrbPair[j][0]].spin);
-            spin_j_z_avg+=dot(spin_direction,lattice[corrOrbPair[j][1]].spin);
-
-            // spin projected to z axis
-            spin_i_h_avg+=lattice[corrOrbPair[j][0]].spin.z;
-            spin_j_h_avg+=lattice[corrOrbPair[j][1]].spin.z;
-        }
-
-        spin_i_z+=spin_i_z_avg/nLat;
-        spin_j_z+=spin_j_z_avg/nLat;
-        spin_tot_z+=(dot(spin_direction,*p_totSpin)/nLat);
-        //if(h<0.00001){// avoid faults time reversal symmetry
-        //    spin_i_h+=fabs(spin_i_h_avg)/nLat;
-        //    spin_j_h+=fabs(spin_j_h_avg)/nLat;
-        //    spin_tot_h+=fabs(p_totSpin->z)/nLat;
-        //}else{
-            spin_i_h+=spin_i_h_avg/nLat;
-            spin_j_h+=spin_j_h_avg/nLat;
-            spin_tot_h+=p_totSpin->z/nLat;
-        //}
-
-        M=sqrt(dot(spin_i_avg,spin_i_avg))/nLat;
-        M2+=M*M;
-        M4+=M*M*M*M;
-        //calc auto-correlation
-        M_tot+=M;
-        MdotM_tmp+=M_tmp*M;
-        M_tmp=M;
-
-        cDivides(&spin_i_avg, nLat);
-        cDivides(&spin_j_avg, nLat);
-        vabs(&spin_i_avg);
-        vabs(&spin_j_avg);
-        plusEqual(&spin_i,spin_i_avg);
-        plusEqual(&spin_j,spin_j_avg);
-        spin_ij+=spin_ij_avg/nLat;
-
-
-        // save energy variables
-        double e_avg=*p_energy/totOrbs;
-        totEnergy+=e_avg;
-        E2+=e_avg*e_avg;
-
-        // *************** statistics on renormalized lattice
-        // spin statistics over space in each frame
-        Vec spin_i_r_avg, spin_j_r_avg;
-        spin_i_r_avg.x=0;spin_i_r_avg.y=0;spin_i_r_avg.z=0;
-        spin_j_r_avg.x=0;spin_j_r_avg.y=0;spin_j_r_avg.z=0;
-        int chosed_spin_i=0;
-        int chosed_spin_j=0;
-        int chosed_spin_ij=0;
-        double spin_ij_r_avg=0.0;
-        for(int j=0;j<nLat;j++){
-            Orb *_orb_i=lattice+corrOrbPair[j][0];
-            Orb *_orb_j=lattice+corrOrbPair[j][1];
-            if(_orb_i->chosen>0){
-                chosed_spin_i+=1;
-                //printf("_orb_i.spin: %.3f %.3f\n",_orb_i->spin.x,_orb_i->spin.y);
-                //Vec majority=getMajoritySpin(_orb_i);
-                //printf("majority: %.3f %.3f\n",majority.x,majority.y);
-                plusEqual(&spin_i_r_avg, getMajoritySpin(_orb_i));
-            }
-            if(_orb_j->chosen>0){
-                //printf("_orb_j.spin: %.3f %.3f\n",_orb_j->spin.x,_orb_j->spin.y);
-                //Vec majority=getMajoritySpin(_orb_j);
-                //printf("majority: %.3f %.3f\n",majority.x,majority.y);
-                chosed_spin_j+=1;
-                plusEqual(&spin_j_r_avg, getMajoritySpin(_orb_j));
-            }
-            if(_orb_i->chosen*_orb_j->chosen>0){
-                chosed_spin_ij+=1;
-                //Vec mi=getMajoritySpin(_orb_i);
-                //Vec mj=getMajoritySpin(_orb_j);
-                //printf("dot product: %.3f,%.3f dot %.3f,%.3f = %.3f\n",mi.x,mi.y,mj.x,mj.y,mi.x*mj.x+mi.y*mj.y);
-                spin_ij_r_avg+=dot(getMajoritySpin(_orb_i),getMajoritySpin(_orb_j));
-            }
-            
-        }
-
-        //printf("chosen orb quantity: %d\n",chosed_spin_i);
-        //printf("accumulated spin %.3f %.3f\n",spin_i_r_avg.x,spin_i_r_avg.y);
-        cDivides(&spin_i_r_avg, chosed_spin_i);
-        cDivides(&spin_j_r_avg, chosed_spin_j);
-        vabs(&spin_i_r_avg);
-        vabs(&spin_j_r_avg);
-        plusEqual(&spin_i_r,spin_i_r_avg);
-        plusEqual(&spin_j_r,spin_j_r_avg);
-        spin_ij_r+=spin_ij_r_avg/chosed_spin_ij;
-
-        // energy statistics
-        double e_avg_rnorm=0;
-        for(int j=0;j<totOrbs;j++){ // calc. bond energy in renormalized system
-            if(lattice[j].chosen>0) e_avg_rnorm+=getCorrEnergy_rnorm(lattice+j);
-        }
-        e_avg_rnorm/=2; // double counting
-        for(int j=0;j<totOrbs;j++){ // onsite part
-            if(lattice[j].chosen>0) e_avg_rnorm+=getOnsiteEnergy(lattice+j);
-        }
-        e_avg_rnorm/=totOrb_rnorm;
-        totEnergy_r+=e_avg_rnorm;
-        E2_r+=e_avg_rnorm*e_avg_rnorm;
-
-        // orb group statistics
-        Vec summedSpinOfGroup[nOrbGroup+1];
-        int iOrbGroup, jOrbGroup;
-        for(iOrbGroup=0;iOrbGroup<nOrbGroup;iOrbGroup++){
-            Vec summedSpin;
-            summedSpin.x=0;summedSpin.y=0;summedSpin.z=0;
-            int k;
-            for(k=0;k<maxOrbGroupSize;k++){
-                if(orbGroupList[iOrbGroup][k]<0) break;
-                plusEqual(&summedSpin,lattice[orbGroupList[iOrbGroup][k]].spin);
-            }
-            summedSpinOfGroup[iOrbGroup].x=summedSpin.x;
-            summedSpinOfGroup[iOrbGroup].y=summedSpin.y;
-            summedSpinOfGroup[iOrbGroup].z=summedSpin.z;
-        }
-        summedSpinOfGroup[iOrbGroup].x=p_totSpin->x/nLat;
-        summedSpinOfGroup[iOrbGroup].y=p_totSpin->y/nLat;
-        summedSpinOfGroup[iOrbGroup].z=p_totSpin->z/nLat;
-        //printf("nOrbGroup: %d\n",nOrbGroup);
-        for(iOrbGroup=0;iOrbGroup<(nOrbGroup+1);iOrbGroup++){
-            for(jOrbGroup=0;jOrbGroup<(nOrbGroup+1);jOrbGroup++){
-                double spin_i_dot_spin_j=dot(summedSpinOfGroup[iOrbGroup],summedSpinOfGroup[jOrbGroup]);
-                spinDotSpinBetweenGroup[iOrbGroup*(nOrbGroup+1)+jOrbGroup]+=spin_i_dot_spin_j;
                 if(iOrbGroup==jOrbGroup) spin4Order[iOrbGroup]+=spin_i_dot_spin_j*spin_i_dot_spin_j;
             }
         }

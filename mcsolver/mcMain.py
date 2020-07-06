@@ -190,6 +190,7 @@ class MC:
             nlinking_list.append(len(orb.linkedOrb))
         
         # link strength
+        ignoreNonDiagonalJ=1
         maxNLinking=np.max(nlinking_list)
         #print("maxNLinking=%d"%maxNLinking)
         linkStrength=(c_double*(self.totOrbs*maxNLinking*9))() # thus the nlinking of every orbs are the same
@@ -205,8 +206,9 @@ class MC:
                     #print("link %d :"%ilinking,orb.linkStrength[ilinking])
                     for i in range(9):
                         linkStrength[cnt]=c_double(orb.linkStrength[ilinking][i])
+                        if abs(orb.linkStrength[ilinking][i]) > 1e-6 and i>=3: ignoreNonDiagonalJ=0
                         cnt+=1
-
+        ignoreNonDiagonalJ=c_int(ignoreNonDiagonalJ)
         # linking info.
         linkData=(c_int*(self.totOrbs*maxNLinking))()
 
@@ -304,16 +306,18 @@ class MC:
         
         spinFrame=c_int(int(self.spinFrame))
 
-        cMC=mylib.localUpdateMC # default On solver
-        if algo=='Wolff':
-            cMC=mylib.blockUpdateMC
-            
+        updateAlgorithm=0 # default Metropolis algorithm
+        if algo=='Wolff': updateAlgorithm=1
+        updateAlgorithm=c_int(updateAlgorithm)
+
+        cMC=mylib.MCMainFunction
         cMC.restype=py_object
-        data = cMC(self.totOrbs, initSpin, initD, nthermal, nsweep, maxNLinking_, nlinking, linkStrength, linkData, ninterval, nLat, 
+        data = cMC(updateAlgorithm,self.totOrbs, initSpin, initD, nthermal, nsweep, maxNLinking_, nlinking, linkStrength, linkData, ninterval, nLat, 
                    corrOrbitalPair, nOrbGroup, maxOrbGroupSize, orbGroupList,
                    flunc_, h,
                    totOrb_rnorm, norbInCluster, rOrb, rOrbCluster, linkData_rnorm,
-                   spinFrame)
+                   spinFrame,
+                   ignoreNonDiagonalJ)
         spin_i_x, spin_i_y, spin_i_z, spin_j_x, spin_j_y, spin_j_z, spin_ij, autoCorr, E, E2, U4, spin_i_r_x, spin_i_r_y, spin_i_r_z, spin_j_r_x, spin_j_r_y, spin_j_r_z, spin_ij_r, E_r, E2_r, spin_i_tot_z,spin_j_tot_z,spin_tot_z,spin_i_h,spin_j_h,spin_tot_h, spinDistributionList, spinDotSpinBetweenGroups=data
         E*=self.T;E2*=self.T**2;E_r*=self.T;E2_r*=self.T**2 # recover the real energies
         C=E2-E*E
