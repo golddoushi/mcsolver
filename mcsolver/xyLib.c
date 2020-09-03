@@ -67,6 +67,8 @@ double diagonalDot_simple(Vec vec1, Vec vec2, Vec4 matrix){
 }
 double (*p_diagonalDot)(Vec vec1, Vec vec2, Vec4 matrix);
 
+double gaussian_distr[RAND_MAX];
+
 Vec *generateRandomVec(void){
     Vec *direction=(Vec*)malloc(sizeof(Vec));
     direction->x=rand()/(double) RAND_MAX-0.5;

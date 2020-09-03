@@ -99,7 +99,7 @@ def saveParam():
     # write into files
     filePath=filedialog.asksaveasfilename()
     f=open(filePath,'w')
-    f.write("This is mcsolver's save file, version: 1.2\n")
+    f.write("This is mcsolver's save file, version: 2.2\n")
     f.write("Lattice:\n")
     a1, a2, a3= LMatrix
     f.write("%.9f %.9f %.9f\n"%(a1[0],a1[1],a1[2]))
@@ -133,6 +133,10 @@ def saveParam():
     f.write("alpha %.6f\n"%dipoleAlpha)
     f.write("Mesurement:\n")
     f.write("mesure the correlation function between orb%d and orb%d over [%d %d %d]\n"%(GcOrb[0][0],GcOrb[0][1],GcOrb[1][0],GcOrb[1][1],GcOrb[1][2]))
+    f.write("Supergroup\n")
+    f.write("OrbGroup:1\n")
+    f.write("Supergroup\n")
+    f.write("group0 orb0-orb0\n")
     f.write("Distribution output frame: %d\n"%spinFrame)
     f.write("Sweeps for thermalization and statistics, and relaxiation step for each sweep:\n")
     f.write("%d %d %d\n"%(nthermal, nsweep, ninterval))

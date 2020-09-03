@@ -1,4 +1,4 @@
-This is mcsolver's save file, version: 2.0
+This is mcsolver's save file, version: 2.2
 Lattice:
 1.000000000 0.000000000 0.000000000
 -0.500000000 0.866025404 0.000000000
@@ -30,6 +30,9 @@ Field scanning region:
 Hmin 0 Hmax 0.1 nH 1
 Mesurement:
 mesure the correlation function between orb0 and orb0 over [0 0 0]
+OrbGroup: 1
+Supergroup
+group0 orb0-orb0
 Sweeps for thermalization and statistics, and relaxiation step for each sweep:
 80000 640000 0
 Model type:

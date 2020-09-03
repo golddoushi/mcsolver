@@ -7,6 +7,8 @@ import numpy as np
 import re
 from matplotlib.figure import Figure
 from mpl_toolkits.mplot3d.axes3d import Axes3D
+import matplotlib.pyplot as plt
+import auxiliary as aux
 
 class TBmodel(object):
     Ham=[]
@@ -176,3 +178,201 @@ class TBmodel(object):
         ax.grid(False)
         ax.axis('off')
         return f, ax
+
+    def genReciLattice(self):
+        # generate the 3rd lattice vector if input 2D model
+        def antiSymmMatrix(a):
+            return np.array([
+                [ 0   ,-a[2], a[1]],
+                [ a[2], 0   ,-a[0]],
+                [-a[1], a[0], 0   ]
+                ])
+        
+        if(len(self.lattice)==2):
+            a1=np.concatenate((self.lattice[0],[0.]))
+            a2=np.concatenate((self.lattice[1],[0.]))
+            a3=np.array([0.,0.,1.])
+            self.lattice=np.array([a1,a2,a3])
+        a1=self.lattice[0]
+        a2=self.lattice[1]
+        a3=self.lattice[2]
+        
+        V=np.abs(np.dot(np.dot(antiSymmMatrix(a1),a2),a3))
+        
+        b1=np.dot(antiSymmMatrix(a2),a3)
+        b2=np.dot(antiSymmMatrix(a3),a1)
+        b3=np.dot(antiSymmMatrix(a1),a2)
+        
+        b1*=2*np.pi/V
+        b2*=2*np.pi/V
+        b3*=2*np.pi/V
+        self.reci_lattice=np.array([b1,b2,b3])
+
+    def fixHopping(self):
+        '''
+        throw redundant hoppings and add hoppings accordingto time-reversal-symmetry (TRS)
+        '''
+        perfect_hoppings=[]
+        def redundantless(hop_check):
+            for hop_ref in perfect_hoppings:
+                if(hop_check[0]==hop_ref[0] and hop_check[1]==hop_ref[1] and\
+                   (hop_check[2]==hop_ref[2]).all()):
+                    if(abs(hop_check[3]-hop_ref[3])>0.01):
+                        print ('WARNING: hoppings brreaks time-reversal symmetry!')
+                    return False
+            return True
+        for hopping in self.hopping:
+            if redundantless(hopping):
+                perfect_hoppings.append(hopping)
+                # TRS
+                hasTRS=False
+                if(hopping[0]!=hopping[1]):
+                    hasTRS=True
+                elif(np.dot(hopping[2],hopping[2])>0.01):
+                    hasTRS=True
+                if(hasTRS):
+                    tr_hopping=[hopping[1],hopping[0],-hopping[2],hopping[3]]
+                    if redundantless(tr_hopping):
+                        perfect_hoppings.append(tr_hopping)
+        self.hopping=perfect_hoppings
+
+    def constructHam(self):
+        '''
+        construct real-space Hamiltonian'''
+        # firstly, construct the architecture
+        self.Ham=[]
+        for origin_orbital_index in range(self.norbital):
+            hopping_tmp=[]
+            for destiny_orbital_index in range(self.norbital):
+                hopping_tmp.append([])
+            self.Ham.append(hopping_tmp)
+        
+        # then import all hoppings
+        for hopping in self.hopping:
+                    # source     # target            # overlat  # t
+            self.Ham[hopping[0]][hopping[1]].append([hopping[2],hopping[3]])
+            
+    def constructHk(self,kpt=[0.,0.,0.],debug=False):
+        "Construct Hamiltonian for a certain k-point with reduced coordinates"
+        if len(kpt)==2:
+            kpt=list(kpt) 
+            kpt.append(0)
+        kpt=np.array(kpt)
+            
+        Ham_k=[]
+        for ibloch in range(self.norbital):
+            Hk_tmp=[]
+            for jbloch in range(self.norbital):
+                matrix_element=0.
+                for hopping in self.Ham[ibloch][jbloch]:
+                    matrix_element+=hopping[1]*np.exp(-2j*np.pi*np.dot(kpt,hopping[0]),dtype=complex)
+                
+                Hk_tmp.append(matrix_element)
+            Ham_k.append(Hk_tmp)
+        #if debug:
+        #    print(Ham_k)
+            #print(self.onsite_energy)
+        Ham_k=np.array(Ham_k)+self.onsite_energy*np.eye(self.norbital,dtype=complex)
+        
+        #if debug:
+        #    print(Ham_k)
+        #    exit()
+        return Ham_k
+    
+    def solveHk(self,kpt=[0.,0.,0.],return_orb=False,debug=False):
+        '''solve the eigen-values for a k-point with reduced coordinates,
+           and return the eigen-vectors optionally
+        '''
+        #if debug:
+        #    print(kpt)
+        #    print(self.Ham)
+        #    exit()
+        Ham_k=self.constructHk(kpt=kpt,debug=debug)
+        #print(Ham_k)
+        eig, vec = np.linalg.eigh(Ham_k,'U')
+        #if debug: exit()
+        
+        if return_orb:
+            return eig, vec
+        else:
+            return eig
+
+    def genKPath(self,highSymK,nikpt):
+        '''
+        generate kpath between high-symmetry kpoints
+        '''
+        kpath=[]
+        npath=len(highSymK)-1
+        for ipath in range(npath):
+            dk=(highSymK[ipath+1]-highSymK[ipath])/nikpt[ipath]
+            for ikpt in range(nikpt[ipath]):
+                kpath.append(ikpt*dk+highSymK[ipath])
+        kpath.append(highSymK[npath])
+        return kpath
+    
+    def autoGenerateKpath2D(self,nikpt=20):
+        '''
+        generate k-path automatically,
+        only for 2D case, temporally
+        Parameter(s):
+            nikpt: represents the number of interval KPs between two high-symmetric KP
+        '''
+        b1=self.reci_lattice[0][:2]/2
+        b2=self.reci_lattice[1][:2]/2
+        b1b2=b1+b2
+        # calc. coordinates of edge
+        # in cartesian coor.
+        factor=np.array([b1,b2])
+        res=np.array([np.dot(b1,b1),np.dot(b2,b2)])
+        K_cart=np.dot(np.linalg.inv(factor),res)
+        # in reci-fractional coor.
+        K0=np.dot(np.array([K_cart[0],K_cart[1],0.]),np.linalg.inv(self.reci_lattice))
+        
+        # another possible
+        factor=np.array([b1,b1b2])
+        res=np.array([np.dot(b1,b1),np.dot(b1b2,b1b2)])
+        K_cart=np.dot(np.linalg.inv(factor),res)
+        K1=np.dot(np.array([K_cart[0],K_cart[1],0.]),np.linalg.inv(self.reci_lattice))
+        
+        # chose the short one
+        K=K0[:2] if np.dot(K0,K0)<np.dot(K1,K1) else K1[:2]
+        
+        # find the coordinates of bond
+        # four possible positions
+        M_list=[np.array([0.5,0]),np.array([-0.5,0]),np.array([0.,0.5]),np.array([0.,-0.5])]
+        sort_list=aux.quicksort([np.dot(M-K,M-K) for M in M_list])
+        # chose the nearest one
+        M=M_list[sort_list[0]]
+        G=np.array([0.,0.])
+        
+        # generate kpath
+        print(G,K,M,G)
+        self.kpath=self.genKPath([G,K,M,G],[nikpt,nikpt,nikpt])
+
+    def plotbands(self,nfermi=-1,path='./'):
+        "plot electronic band structures"
+        "if nfermi>0 then only plot bands above and underneath half-filling for nfermi"
+        "e.g., nfermi=1 then only the top valence band and lowest conducting band are plotted"
+        self.constructHam()
+        plt.figure()
+        kpath=np.linspace(0,1,len(self.kpath))
+        eig=[]
+        for kpt in self.kpath:
+            eig_list = self.solveHk(kpt=kpt,debug=True)
+            eig.append(eig_list)
+            #for eig in eig_list:
+            #    plt.scatter(ikpt,eig,color='black')
+        eig=np.array(eig)
+        if(nfermi==-1):
+            for iband in range(self.norbital):
+                plt.plot(kpath,eig[:,iband],color='black')
+        else:
+            lower=int(self.norbital/2-nfermi)
+            higher=int(self.norbital/2+nfermi)
+            for iband in range(lower,higher):
+                plt.plot(kpath,eig[:,iband],color='black')
+        plt.xlim(0,1)
+        #plt.ylim(0,1.1*np.max(eig.flatten()))
+        plt.xticks([])
+        plt.savefig(path+'spectra.png',dpi=300)
+        plt.close()
