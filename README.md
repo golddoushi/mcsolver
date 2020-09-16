@@ -29,9 +29,11 @@ A. using mcsolver via .exe, e.g., in Windows platform
 
     2. Define all basic spins in primitive cell, note that the fractional coordinates are supposed. Ani represents the single-ion anisotropies in xyz directions (It is useless in Ising model, and only former two are used in XY model). As well as, note that the units of anisotropies are in Kelvin. 
 
-    3. Define all exchange interactions (bonds). There are nine matrix elements for one J including Jxx, Jyy, Jzz, Jxy, Jxz, Jyz, Jyx, Jzx, Jzy, respectively. Each element discribes the coupling between two components of spins. For example, a basic bond term can be expressed as S1\dot J\dot S2 = S_{1x}J_{xx}S_{2x} + S_{1y}J_{yy}S_{2y} + S_{1z}J_{zz}S_{2z} + S_{1x}J_{xy}S_{2y} +...
+    3. Define all exchange interactions (bonds). There are nine matrix elements for one J including Jxx, Jyy, Jzz, Jxy, Jxz, Jyz, Jyx, Jzx, Jzy, respectively. Each element discribes the coupling between two components of spins. For example, a basic bond term can be expressed as 
+    $$S1\dot J\dot S2 = S_{1x}J_{xx}S_{2x} + S_{1y}J_{yy}S_{2y} + S_{1z}J_{zz}S_{2z} + S_{1x}J_{xy}S_{2y} + ...$$
     For Ising model, since only one component is available for each spin, only the first element Jxx is used. As well as for XY model, only Jxx, Jyy, Jxy, Jyz are used. 
     In this step, you can click one of the bonds to review the actual linking in lattice on view pannel. Activated bond is depicted with bold and yellow line while others are green. You may drag left/right mouse Btn to rotate and expand/shrink the model shown in view pannel. 
+    By the way, these parameters can be obtained via fitting experimental spin-wave spectra or DFT calculations. One of the general method for calculating anisotropic bonds and orbitals was introduced in dio: 10.1021/acs.jpclett.0c01911.
 
     4. Define other parameters, including 
     the start and end temperatures, number of temperature interpolations (for the temperature scanning)
@@ -89,10 +91,10 @@ B. using mcsolver as a python package
 
     to start simulation. Preparation of parameterfile is the same as in section A.
 
-    There are one sample file sim_XYmodel_under_Windows.py in sample folder. To use this, cd to sample folder, and type command: python sim_XYmodel_under_Linux.py
+    There are one sample file sim_XYmodel_under_Linux.py in sample folder. To use this, cd to sample folder, and type command: python sim_XYmodel_under_Linux.py
 
     Note that the parallelization of mcsolver is not perfect. Now it cannot parallelize between multiple machines but amongst mutiple cores in a single machine (that is, only SMP mode is efficient). Therefore submit the job into one node if you are working with clusters.
 
 C. using code mode (not recommend)
   
-   Download all codes, compile the .c file inito .so using c99 standard and run cmd: "python win.py" to load GUI and conduct simulations.
+   Download all codes, compile all .c files inito .so files the dynamic libraries. And run cmd: "python win.py" to load GUI and go on.

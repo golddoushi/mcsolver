@@ -31,10 +31,10 @@ def loadLatticePannel():
     LatticeFrame=LabelFrame(gui,text='Lattice')
     LatticeFrame.grid(row=0,column=0)
 
-    f=Figure(figsize=(2.2,0.4))
+    f=Figure(figsize=(3.2,0.4))
     ax=f.add_subplot(1,1,1)
     ax.axis('off')
-    ax.text(-0.15,0.4,r"$H=\sum_{mn\alpha}J_{mn}^\alpha S_m^\alpha S_n^\alpha + \sum_{m\alpha} D_m^\alpha(S_m^\alpha S_m^\alpha)$")
+    ax.text(-0.15,0.4,r"$H=\sum_{m\neq n,\alpha\beta}J_{mn}^{\alpha\beta} S_m^\alpha S_n^\beta + \sum_{m\alpha} D_m^\alpha(S_m^\alpha S_m^\alpha)$")
     Hamiltonian=FigureCanvasTkAgg(f,LatticeFrame)
     Hamiltonian.draw()
     Hamiltonian.get_tk_widget().grid(row=0,column=0,columnspan=2)
@@ -224,27 +224,31 @@ def loadBonds():
 
     addBondFrameBase=Frame(BondFrame)
     addBondFrameBase.grid(row=1,column=0)
+    
+    #note1=Label(addBondFrameBase, text='xx     yy     zz     xy     xz     yz     yx     zx    zy')
+    #note1.grid(row=0,column=0,columnspan=5,sticky=(E))
 
     id_base=Frame(addBondFrameBase)
-    id_base.grid(row=0,column=0,columnspan=5,sticky=(W,E))
+    id_base.grid(row=1,column=0,columnspan=5,sticky=(W,E))
+
     IDandTypeOfBondNote=toolbox.NoteFrm(id_base, init_notes=['ID:','J:','','','','','','','',''],init_data=[1,-1,-1,-1,0,0,0,0,0,0],row=True,entryWidth=3)
     IDandTypeOfBondNote.entry_list[0].config(state='disabled')
 
     detail_base=Frame(addBondFrameBase)
-    detail_base.grid(row=1,column=0,sticky=(W,E))
+    detail_base.grid(row=2,column=0,sticky=(W,E))
     BondDetailNote=toolbox.NoteFrm(detail_base, init_notes=['s','t','over lat.','',''],init_data=[0,0,1,0,0],row=True,entryWidth=3)
 
     unitLabel=Label(BondFrame,text='Note all energy units are in Kelvin (1meV=11.58875K)')
-    unitLabel.grid(row=2,column=0,sticky=(W,E))
+    unitLabel.grid(row=3,column=0,sticky=(W,E))
 
     #reviewBtn=Button(addBondFrameBase,text='review',command=reviewBond)
     #reviewBtn.grid(row=1,column=1,sticky='E')
     addBtn=Button(addBondFrameBase,text='add',command=addBond)
-    addBtn.grid(row=1,column=2,rowspan=1,sticky='E')
+    addBtn.grid(row=2,column=2,rowspan=1,sticky='E')
     resetBtn=Button(addBondFrameBase,text='reset',command=resetBond)
-    resetBtn.grid(row=1,column=3,rowspan=1,sticky='E')
+    resetBtn.grid(row=2,column=3,rowspan=1,sticky='E')
     delBtn=Button(addBondFrameBase,text='delet',command=deletBond)
-    delBtn.grid(row=1,column=4,rowspan=1,sticky='E')
+    delBtn.grid(row=2,column=4,rowspan=1,sticky='E')
 
 ###############
 # MC settings #
@@ -259,9 +263,9 @@ def loadMCSettings():
     temp_base.grid(row=0,column=0)
     TListGui=toolbox.NoteFrm(temp_base, init_notes=['T start:','T end','total points:'], init_data=[0.9,1.2,8],row=True,entryWidth=6)
 
-    field_base=Frame(SettingFrame)
-    field_base.grid(row=1,column=0)
-    HListGui=toolbox.NoteFrm(field_base, init_notes=['H start:','H end','total points:'], init_data=[0,0.1,1],row=True,entryWidth=6)
+    #field_base=Frame(SettingFrame)
+    #field_base.grid(row=1,column=0)
+    #HListGui=toolbox.NoteFrm(field_base, init_notes=['H start:','H end','total points:'], init_data=[0,0.1,1],row=True,entryWidth=6)
 
     MCparam_base=Frame(SettingFrame)
     MCparam_base.grid(row=2,column=0,sticky='W')
@@ -432,8 +436,8 @@ def loadStartBtn(submitFunc):
     note2=Label(submit_base, text='Please cite: Magnetic switches via electric field in BN nanoribbons. Appl. Surf. Sci. 480(2019)', width=80)
     note2.grid(row=1,column=3)
 
-    note3=Label(submit_base, text='Thank you very much!', width=80)
-    note3.grid(row=2,column=3)
+    #note3=Label(submit_base, text='Thank you very much!', width=80)
+    #note3.grid(row=2,column=3)
 
 def loadEverything(root,submitFunc):
     global gui

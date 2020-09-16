@@ -34,13 +34,10 @@ global Jekn, onsite, Jkaa, JBkaa_db
 global x0
 global Tc, Tc_MF
 
-
 def mainLoop(rpath):
     global tb,eig0_set,Tc,Tc_MF,magList_HF,magList_MF,S
     # create mc main directory
     print('start renormalized spin-wave theoretical calculations')
-    #mainDir=rpath+'swt/'
-    #aux.createDir(mainDir)
     io.loadParam(updateGUI=False,rpath=rpath)
     # initialize tight-binding model
     tb=WannierKit.TBmodel()
@@ -76,7 +73,7 @@ def mainLoop(rpath):
 def __tbInit():
     global tb, hBZ, dhBZ, S, norb
     # parameters for Hatree-Fock calc.
-    global eig0_set, jka, bka, twojka, JBkaa, JB0ab, fourA, twoA, A, B0
+    global eig0_set, fourA, twoA, A
 
     global eig0_HF, Jekn, onsite, Jkaa, JBkaa_db, x0
     
