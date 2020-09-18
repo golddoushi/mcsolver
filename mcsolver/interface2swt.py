@@ -326,4 +326,4 @@ def __MTCurv(path='./',draw=False,algo='HF_longWave'):
         plt.close()
     return T, magList
 
-mainLoop('./samples/Fe110')
+mainLoop('./samples/spg156FeTeI.txt')
