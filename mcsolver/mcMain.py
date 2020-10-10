@@ -1,4 +1,4 @@
-from ctypes import c_double, c_int, CDLL, py_object, c_double
+from ctypes import c_double, c_int, CDLL, py_object, c_double, cdll
 from random import random, randint
 import numpy.fft as fft
 import Lattice as lat
@@ -6,6 +6,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import time
 import win
+import sys,os
 
 class MC:
     def __init__(self,ID,LMatrix,pos=[],S=[],D=[],bondList=[],T=1,Lx=1,Ly=1,Lz=1,ki_s=0,ki_t=0,ki_overLat=[0,0,0],orbGroupList=[],groupInSC=False,h=0.,dipoleAlpha=0,On=1,spinFrame=0): # init for specified temperature
@@ -146,7 +147,15 @@ class MC:
         # num. of returned spin frame
         spinFrame=c_int(int(self.spinFrame))
 
-        mylib=CDLL(win.path+"isinglib.so")
+        dll_name="isinglib.so"
+        if getattr(sys, 'frozen', False):
+            application_path = os.path.dirname(sys.executable)
+        elif __file__:
+            application_path = os.path.dirname(__file__)
+        dll_path = os.path.join(application_path, dll_name)
+        print('loading dynamic library in %s'%(dll_path))
+
+        mylib=CDLL(dll_path)
         cMC=mylib.localUpdateMC # default Ising solver
         if algo=='Wolff': # Other choices
             if abs(self.h)>1e-5:
@@ -296,13 +305,25 @@ class MC:
         maxOrbGroupSize=c_int(maxOrbGroupSize)
 
         flunc_=c_double(flunc)
-        if On==2:
-            mylib=CDLL(win.path+"xylib.so")
-        elif On==3:
-            mylib=CDLL(win.path+"heisenberglib.so")
-        else:
-            print("Error: undefined O(n)")
-            return
+
+        dll_name="xylib.so" if On==2 else "heisenberglib.so"
+        if getattr(sys, 'frozen', False):
+            application_path = os.path.dirname(sys.executable)
+        elif __file__:
+            application_path = os.path.dirname(__file__)
+        dll_path = os.path.join(application_path, dll_name)
+        print('loading dynamic library in %s'%(dll_path))
+        #print(os.listdir(application_path))
+        #exit()
+
+        #if On==2:
+        #    mylib=CDLL(win.path+"xylib.so")
+        #elif On==3:
+        #    mylib=CDLL(win.path+"heisenberglib.so")
+        #else:
+        #    print("Error: undefined O(n)")
+        #    return
+        mylib=CDLL(dll_path)
         
         spinFrame=c_int(int(self.spinFrame))
 
