@@ -19,7 +19,7 @@ A. using mcsolver via .exe, e.g., in Windows platform
 
   NOTE: the mcsolver.exe maybe reported to be virus and removed by some anti-virus software. I still have no ideal about this and maybe you need add it into white list. Otherwise you can use mcsolver as a python package (see Section B below).
 
-  Download .exe file from upper link, then open exe (maybe wait 10+ sec.), fill out all parameters, click startMC Btn, then wait for the results.
+  Download and extract file from upper link (or download the .zip from https://github.com/golddoushi/mcsolver/raw/master/mcsolver.20.10.10update.zip), then open .exe (maybe wait 10+ sec.), fill out all parameters, click startMC Btn, then wait for the results.
 
   How to define parameters?
 
