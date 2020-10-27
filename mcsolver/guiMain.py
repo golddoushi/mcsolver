@@ -295,7 +295,7 @@ def loadMCSettings():
 
     corr_base=Frame(SettingFrame)
     corr_base.grid(row=4,column=0,sticky='W')
-    corrGui=toolbox.NoteFrm(corr_base, init_notes=['Mesure corr. si','sj','overLat:','',''], init_data=[0,0,0,0,0],entryWidth=3,row=True)
+    corrGui=toolbox.NoteFrm(corr_base, init_notes=['Measure corr. si','sj','overLat:','',''], init_data=[0,0,0,0,0],entryWidth=3,row=True)
 
     lastline=Frame(SettingFrame)
     lastline.grid(row=5,column=0,sticky='W')
