@@ -2,13 +2,20 @@ from tkinter import Tk
 from multiprocessing import Pool, freeze_support
 import numpy as np
 import time
-import guiMain as gui
-import Lattice as lat
-import mcMain as mc
-import fileio as io
+
+try:
+    from . import guiMain as gui
+    from . import Lattice as lat
+    from . import mcMain as mc
+    from . import fileio as io
+except:
+    import guiMain as gui
+    import Lattice as lat
+    import mcMain as mc
+    import fileio as io
 
 global path, settingFileVersion
-path='./'
+libPool=[None,None,None]
 settingFileVersion=2.2
 
 def startMC(param): # start MC for Ising model

@@ -8,7 +8,10 @@ import re
 from matplotlib.figure import Figure
 from mpl_toolkits.mplot3d.axes3d import Axes3D
 import matplotlib.pyplot as plt
-import auxiliary as aux
+try:
+    from . import auxiliary as aux
+except:
+    import auxiliary as aux
 
 class TBmodel(object):
     Ham=[]

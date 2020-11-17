@@ -5,9 +5,14 @@ from matplotlib.figure import Figure
 from mpl_toolkits.mplot3d.axes3d import Axes3D
 from re import findall, match
 import numpy as np
-import toolbox as toolbox
-import WannierKit as wan
-import fileio as io
+try:
+    from . import toolbox as toolbox
+    from . import WannierKit as wan
+    from . import fileio as io
+except:
+    import toolbox as toolbox
+    import WannierKit as wan
+    import fileio as io
 
 global gui  # root gui
 global latticeGui, supercellGui, latticeData # read lattice matrix

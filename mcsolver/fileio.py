@@ -1,7 +1,11 @@
 from tkinter import filedialog
 from re import findall
-import guiMain as gui
-import win
+try:
+    from . import guiMain as gui
+    from . import win
+except:
+    import guiMain as gui
+    import win
 
 global LMatrix, LPack, pos, S, DList, h, H0, H1, nH, dipoleAlpha, bondList, T0, T1, nT, nthermal, nsweep, ninterval, xAxisType, modelType, algorithm, GcOrb, ncores, spinFrame
 global orbGroupList, groupInSC
