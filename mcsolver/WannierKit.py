@@ -349,6 +349,7 @@ class TBmodel(object):
         G=np.array([0.,0.])
         
         # generate kpath
+        print('auto. generated high symmetric point in k-space')
         print(G,K,M,G)
         self.kpath=self.genKPath([G,K,M,G],[nikpt,nikpt,nikpt])
 
@@ -379,3 +380,30 @@ class TBmodel(object):
         plt.xticks([])
         plt.savefig(path+'spectra.png',dpi=300)
         plt.close()
+
+    def plot2DStructure(self,vec,Lx=1,Ly=1,kpt=np.array([0,0,0]),S=1.5):
+        #print(self.orbital_coor)
+        #print(self.lattice)
+        #plt.figure()
+        fout=open('./spinWave.txt','w')
+        fout.write('#X     Y     Z     dX    dY    dZ\n')
+        for x in range(Lx):
+            for y in range(Ly):
+                R=np.array([x,y,0])
+                blochPhase=2*np.pi*kpt.dot(R)
+                #print(x,y)
+                for iorb, orb in enumerate(self.orbital_coor):
+                    subOrbPos=(orb[0]+R).dot(self.lattice)
+
+                    subOrbPhase=np.log(vec[iorb]/abs(vec[iorb])).imag if abs(vec[iorb])>1e-5 else 0
+                    phi=(subOrbPhase+blochPhase)*np.pi*2
+                    theta=abs(vec[iorb])*0.5/S*np.pi*0.5
+                    nS=np.array([np.sin(theta)*np.cos(phi),np.sin(theta)*np.sin(phi),np.cos(theta)])
+                    #print('theta %.3f phi %.3f'%(theta,phi))
+                    #print(vec)
+                    fout.write('%.6f %.6f %.6f %.6f %.6f %.6f\n'%(*subOrbPos,*nS))
+                    #plt.scatter(subOrbPos[0],subOrbPos[1],c='black')
+                    #plt.annotate('%.3f'%(totalPhase/np.pi/2),(subOrbPos[0],subOrbPos[1]))
+                #exit()
+        #plt.show()
+        fout.close()

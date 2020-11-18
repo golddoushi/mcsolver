@@ -7,17 +7,9 @@ Created on 2019 7 22
 #matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import numpy as np 
-#import re
 import auxiliary as aux
-#import paramReader as param
-#import posReader as pR
-#import dftMain as dft
-#import subprocess
 import WannierKit
 import scipy.optimize as opt
-#import matplotlib
-#matplotlib.use('TkAgg')
-#import matplotlib.pyplot as plt
 import fileio as io
 
 global tb       # tight-binding model (for spin-wave calc.)
@@ -70,6 +62,19 @@ def mainLoop(rpath):
         print('Spin-wave theory find no Tc!\n')
         return 0
 
+def drawSpinWave(rpath,kpt,ibnd,Lx=5,Ly=5):
+    global tb,eig0_set,Tc,Tc_MF,magList_HF,magList_MF,S
+    # create mc main directory
+    print('output spin waves on band%d at kpt %.3f %.3f %.3f'%(ibnd,*kpt))
+    io.loadParam(updateGUI=False,rpath=rpath)
+    # initialize tight-binding model
+    tb=WannierKit.TBmodel()
+    __tbInit()
+
+    eig,vec=tb.solveHk(kpt=kpt,return_orb=True)
+    #print(vec[:,ibnd])
+    tb.plot2DStructure(vec[:,ibnd],kpt=np.array(kpt),Lx=Lx,Ly=Ly,S=io.S[0])
+
 def __tbInit():
     global tb, hBZ, dhBZ, S, norb
     # parameters for Hatree-Fock calc.
@@ -82,18 +87,13 @@ def __tbInit():
     tb.lattice=np.array(io.LMatrix)
     # set kpath for test
     tb.genReciLattice()
+    #print('high')
     tb.autoGenerateKpath2D(20)
     # get coupling constants
-    #Jz, Jxy, A = __genXXYParam()
-    #J=Jxy
-    #B=Jz-Jxy
     S=io.S[0]
     A=io.DList[0][0]-(io.DList[0][1]+io.DList[0][2])/2
-    #print('spin-wave model parameters:')
-    #print('J:', J*1000)
-    #print('B:', B*1000)
-    #print('A', A*1000)
     # set tb hoppings and diagonal terms according to eq. (S9)
+    tb.orbital_coor=[[np.array(pos),50,'red'] for pos in io.pos]
     tb.norbital=len(io.S)
     #print(io.S)
     norb=tb.norbital
@@ -326,4 +326,5 @@ def __MTCurv(path='./',draw=False,algo='HF_longWave'):
         plt.close()
     return T, magList
 
-mainLoop('./samples/spg156FeTeI.txt')
+#mainLoop('./samples/CrI3With2NNCoupling')
+drawSpinWave('./samples/CrI3With2NNCoupling',[1./15,1./15,0.],0,Lx=15,Ly=15)
