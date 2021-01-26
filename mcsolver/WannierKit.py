@@ -390,18 +390,21 @@ class TBmodel(object):
         for x in range(Lx):
             for y in range(Ly):
                 R=np.array([x,y,0])
-                blochPhase=2*np.pi*kpt.dot(R)
-                #print(x,y)
+                blochPhase=2*np.pi*((kpt.dot(R))%1)
+                #print('%d %d %.3f'%(x,y,blochPhase))
                 for iorb, orb in enumerate(self.orbital_coor):
                     subOrbPos=(orb[0]+R).dot(self.lattice)
 
                     subOrbPhase=np.log(vec[iorb]/abs(vec[iorb])).imag if abs(vec[iorb])>1e-5 else 0
-                    phi=(subOrbPhase+blochPhase)*np.pi*2
+                    #phi=(subOrbPhase+blochPhase)#*np.pi*2
+                    wycoffPhase=orb[0].dot(kpt)*2*np.pi
+                    phi=subOrbPhase+blochPhase+wycoffPhase
                     theta=abs(vec[iorb])*0.5/S*np.pi*0.5
-                    nS=np.array([np.sin(theta)*np.cos(phi),np.sin(theta)*np.sin(phi),np.cos(theta)])
+                    nS=(np.sin(theta)*np.cos(phi),np.sin(theta)*np.sin(phi),np.cos(theta))
                     #print('theta %.3f phi %.3f'%(theta,phi))
                     #print(vec)
                     fout.write('%.6f %.6f %.6f %.6f %.6f %.6f\n'%(*subOrbPos,*nS))
+                    #fout.write('%.6f %.6f %.6f %.6f\n'%(*subOrbPos,phi))
                     #plt.scatter(subOrbPos[0],subOrbPos[1],c='black')
                     #plt.annotate('%.3f'%(totalPhase/np.pi/2),(subOrbPos[0],subOrbPos[1]))
                 #exit()

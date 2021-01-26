@@ -43,19 +43,20 @@ def mainLoop(rpath):
             Sigma+=1./eig
         Tc_=(S+1)*len(eig0_set)/3./Sigma
         print('mean field estimation for Tc: %.3f'%Tc_)
-        exit()
+        #exit()
 
         print('start scf procedure for each temperature, to get M-T curv')
         # calc M-T curv
         Tc, magList_HF = __MTCurv(path='./',draw=True,algo='HF_longWave')
         print('Hatree-Fock and long wave approximation give Tc:',Tc,'(Kelvin)')
         print
+        #exit()
         Tc_MF,magList_MF=__MTCurv(path='./',draw=True,algo='meanfield')
         print('Mean-field approximation give Tc:',Tc_MF,'(Kelvin)')
         print('Spin-wave theory Tc (Hatree-Fock long wave limit): {:.1f}\n'.format(Tc))
         print('Spin-wave theory Tc (Mean-field approximation): {:.1f}\n'.format(Tc_MF))
-        __spinWave_T_vs_Occ('./',algo='HF_longWave')
-        __spinWave_T_vs_Occ('./',algo='Mean_Field')
+        #__spinWave_T_vs_Occ('./',algo='HF_longWave')
+        #__spinWave_T_vs_Occ('./',algo='Mean_Field')
         return Tc
     else:
         print('find zero or negative spin-wave gap!')
@@ -116,6 +117,9 @@ def __tbInit():
         Jrab.append([sourceID,targetID,np.array(overLat),J])
         Brab.append([sourceID,targetID,np.array(overLat),B])
 
+    #for j, b in zip(Jrab,Brab):
+    #    print(j)
+    #    print(b)
     # set half Brillouin zone
     hBZ=[]
     dk=1./io.LPack[0]
@@ -160,6 +164,8 @@ def __tbInit():
     #print(onsite)
     #exit()
     tb.onsite_energy=-S*onsite/11.58875
+    #print(tb.onsite_energy)
+    #exit()
     tb.hopping=hopping
     for hop in tb.hopping:
         hop[3]*=S/11.58875
@@ -172,11 +178,13 @@ def __getEigen0():
     global tb, hBZ, eig0_set, eig0_HF
     #eig0_HF=np.array([tb.solveHk(kpt=kpt) for kpt in hBZ])
     eig0_set=np.array(list(eig0_HF)).flatten()
+    #print(eig0_set)
 
-def __spinWaveSCF(T=1.):
+def __spinWaveSCF(T=1.,getGap=False):
     '''mean field approximation'''
     global S, eig0_set
     beta=1./T
+    global eig_ren
     def bzSum(eigList,beta):
         ntot=0.
         for eig in eigList:
@@ -184,24 +192,30 @@ def __spinWaveSCF(T=1.):
         return ntot
     
     N=len(eig0_set)
-    n_avg=0
+    #n_avg=0
     
     def scf_meanfield(n_avg):
+        global eig_ren
         eigList=(1-n_avg/2/S)*eig0_set
         ntot=bzSum(eigList,beta)
+        eig_ren=np.min(eigList)
         return (ntot/N-n_avg)**2
     
     out=opt.minimize_scalar(scf_meanfield,bounds=(0,S))
+    if getGap:
+        return out['fun'], out['x'], eig_ren
     return out['fun'], out['x']
 
-def __spinWaveSCF_HF(T=1.):
+def __spinWaveSCF_HF(T=1.,getGap=False):
     '''Hatree-Fock level discussed in H1 expression'''
     global S, eig0_HF, Jkaa, JBkaa_db, Jekn, onsite, norb, A, twoA, fourA
     global x0
+    global eig_ren
     beta=1./T
     N=len(eig0_HF)
 
     def scf_Hatree_Fock(nk_avg):
+        global eig_ren
         ntot=np.sum(nk_avg)
         # independent contribution
         contr_ind=A+ntot/N*(-Jekn+onsite+twoA)  # 
@@ -218,15 +232,18 @@ def __spinWaveSCF_HF(T=1.):
     out=opt.minimize(scf_Hatree_Fock,x0,bounds=[(0,None) for i in range(N)])
     # update x0
     x0=out['x']
+    if getGap:
+        return out['fun'], np.sum(out['x'])*norb/N, np.min(eig_ren)
     return out['fun'], np.sum(out['x'])*norb/N
 
-def __spinWaveSCF_HF_longWave(T=1.):
+def __spinWaveSCF_HF_longWave(T=1., getGap=False):
     '''Hatree-Fock level using long-wave approximation'''
     global S, eig0_HF, Jkaa, JBkaa_db, Jekn, onsite, norb, A, twoA, fourA
     beta=1./T
     N=len(eig0_HF)
-
+    global eig_ren, nk_renorm, contr_ind, contr_dep
     def scf_HF_longwave(nk_avg):
+        global eig_ren, nk_renorm, contr_ind, contr_dep
         # independent contribution
         contr_ind=A+nk_avg*(-Jekn+onsite+twoA)  # modified ignore the A term
         # dependent contribution
@@ -240,6 +257,14 @@ def __spinWaveSCF_HF_longWave(T=1.):
         return diff_nk*diff_nk
 
     out=opt.minimize_scalar(scf_HF_longwave,bounds=(0,S/norb),method='Bounded')
+    #print(nk_renorm)
+    #print(np.min(eig_ren),np.max(eig_ren))
+    #print(contr_dep)
+    #print(contr_ind.T+contr_dep)
+    #print(twoA)
+    #exit()
+    if getGap:
+        return out['fun'], out['x']*norb, np.min(eig_ren)
     return out['fun'], out['x']*norb
 
 def __spinWave_T_vs_Occ(path,algo='HF_longWave'):
@@ -303,13 +328,13 @@ def __MTCurv(path='./',draw=False,algo='HF_longWave'):
     mag0=-5
     while(True):
         if(algo=='HF_longWave'):
-            fun, n_avg = __spinWaveSCF_HF_longWave(T)
+            fun, n_avg, gap = __spinWaveSCF_HF_longWave(T,getGap=True)
         elif(algo=='HF'):
-            fun, n_avg = __spinWaveSCF_HF(T)
+            fun, n_avg, gap = __spinWaveSCF_HF(T,getGap=True)
         else:
-            fun, n_avg = __spinWaveSCF(T)
+            fun, n_avg, gap = __spinWaveSCF(T,getGap=True)
         mag=2*(S-n_avg)
-        print(T, fun, mag, mag-mag0)
+        print(T, fun, mag, mag-mag0, gap)
         mag0=mag
         if(fun>1e-8):
             break
@@ -326,5 +351,5 @@ def __MTCurv(path='./',draw=False,algo='HF_longWave'):
         plt.close()
     return T, magList
 
-#mainLoop('./samples/CrI3With2NNCoupling')
-drawSpinWave('./samples/CrI3With2NNCoupling',[1./15,1./15,0.],0,Lx=15,Ly=15)
+mainLoop('./samples/FeCl2')
+#drawSpinWave('./samples/CrI3With2NNCoupling',[1./5,1./5,0.],0,Lx=6,Ly=6)

@@ -83,21 +83,20 @@ double diagonalDot_simple(Vec vec1, Vec vec2, Vec9 J){
 }
 
 Vec *generateRandomVec(void){
-    Vec *direction=(Vec*)malloc(sizeof(Vec));
-    direction->x=rand()/(double) RAND_MAX-0.5;
-    direction->y=rand()/(double) RAND_MAX-0.5;
-    direction->z=rand()/(double) RAND_MAX-0.5;
-    double len2=dot(*direction, *direction);
-    if (len2>0.5)
+    double x=rand()/(double) RAND_MAX-0.5;
+    double y=rand()/(double) RAND_MAX-0.5;
+    double z=rand()/(double) RAND_MAX-0.5;
+    double len2=(x*x+y*y+z*z);
+    if (len2>0.25)
     {
-        free(direction);
         return generateRandomVec();
     }else
     {
         double len=sqrt(len2);
-        direction->x/=len;
-        direction->y/=len;
-        direction->z/=len;
+        Vec *direction=(Vec*)malloc(sizeof(Vec));
+        direction->x=x/len;
+        direction->y=y/len;
+        direction->z=z/len;
         return direction;
     }
 }

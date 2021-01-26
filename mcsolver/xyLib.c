@@ -70,19 +70,18 @@ double (*p_diagonalDot)(Vec vec1, Vec vec2, Vec4 matrix);
 double gaussian_distr[RAND_MAX];
 
 Vec *generateRandomVec(void){
-    Vec *direction=(Vec*)malloc(sizeof(Vec));
-    direction->x=rand()/(double) RAND_MAX-0.5;
-    direction->y=rand()/(double) RAND_MAX-0.5;
-    double len2=dot(*direction, *direction);
-    if (len2>0.5)
+    double x=rand()/(double) RAND_MAX-0.5;
+    double y=rand()/(double) RAND_MAX-0.5;
+    double len2=(x*x+y*y);
+    if (len2>0.25)
     {
-        free(direction);
         return generateRandomVec();
     }else
     {
         double len=sqrt(len2);
-        direction->x/=len;
-        direction->y/=len;
+        Vec *direction=(Vec*)malloc(sizeof(Vec));
+        direction->x=x/len;
+        direction->y=y/len;
         return direction;
     }
 }
