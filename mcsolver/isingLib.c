@@ -321,6 +321,7 @@ PyObject * blockUpdateMC(int totOrbs, double initSpin[totOrbs], int nthermal, in
             spin_i+=(spin_i_avg)/nLat;//fabs(spin_i_avg)/nLat;
             spin_j+=(spin_j_avg)/nLat;//fabs(spin_j_avg)/nLat;
         }
+        spin_ij+=corrAvg/nLat;
 
         // energy stored in each frame
         //printf("for full lattice with %d orbs, energy is %.3f\n",totOrbs,*p_energy);

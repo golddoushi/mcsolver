@@ -144,7 +144,8 @@ class MC:
         for ipair,pair in enumerate(self.correlatedOrbitalPair):
             corrOrbitalPair[ipair*2]=pair[0]
             corrOrbitalPair[ipair*2+1]=pair[1]
-
+        #print(self.correlatedOrbitalPair)
+        #exit()
         # renormalization calc. switch
         renormOn = c_int(0) if self.dipoleCorrection else c_int(1)
 
