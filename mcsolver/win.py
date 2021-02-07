@@ -16,7 +16,7 @@ except:
 
 global path, settingFileVersion
 libPool=[None,None,None]
-settingFileVersion=2.2
+settingFileVersion=2.3
 
 def startMC(param): # start MC for Ising model
     # unzip all global parameters for every processing

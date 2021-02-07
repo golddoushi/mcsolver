@@ -103,7 +103,7 @@ def saveParam():
     # write into files
     filePath=filedialog.asksaveasfilename()
     f=open(filePath,'w')
-    f.write("This is mcsolver's save file, version: 2.2\n")
+    f.write("This is mcsolver's save file, version: 2.3\n")
     f.write("Lattice:\n")
     a1, a2, a3= LMatrix
     f.write("%.9f %.9f %.9f\n"%(a1[0],a1[1],a1[2]))
@@ -114,7 +114,7 @@ def saveParam():
     f.write("%d %d %d\n"%(Lx,Ly,Lz))
     f.write("Orbitals in cell:\n")
     f.write("%d\n"%len(pos))
-    f.write("Postions, initial spin states and onsite-anisotropy of every orbitals:\n")
+    f.write("Positions, initial spin states and onsite-anisotropy of every orbital:\n")
     for ele in gui.OrbListBox.infoData:
         f.write("orb %d: type %d spin %.9f pos [%.9f %.9f %.9f] Dx %.9f Dy %.9f Dz %.9f h %.9f\n"%(ele[0],ele[1],ele[2],\
                                                                                             ele[3][0],ele[3][1],ele[3][2],\
@@ -135,8 +135,8 @@ def saveParam():
     f.write("Hmin %.9f Hmax %.9f nH %d\n"%(H0, H1, nH))
     f.write("Dipole long-range coupling:\n")
     f.write("alpha %.6f\n"%dipoleAlpha)
-    f.write("Mesurement:\n")
-    f.write("mesure the correlation function between orb%d and orb%d over [%d %d %d]\n"%(GcOrb[0][0],GcOrb[0][1],GcOrb[1][0],GcOrb[1][1],GcOrb[1][2]))
+    f.write("Measurement:\n")
+    f.write("measure the correlation function between orb%d and orb%d over [%d %d %d]\n"%(GcOrb[0][0],GcOrb[0][1],GcOrb[1][0],GcOrb[1][1],GcOrb[1][2]))
     f.write("Supergroup\n")
     f.write("OrbGroup:1\n")
     f.write("Supergroup\n")
@@ -193,7 +193,7 @@ def loadParam(updateGUI=True,rpath='./mcInput'):
             tagModel=iline
         if keyword[0]=='Algorithm':
             tagAlgorithm=iline
-        if keyword[0]=='Mesurement':
+        if keyword[0]=='Measurement':
             tagMesurement=iline
         if keyword[0]=='OrbGroup':
             tagOrbGroup=iline
