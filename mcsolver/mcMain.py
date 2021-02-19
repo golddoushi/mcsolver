@@ -171,8 +171,8 @@ class MC:
             cMC=mylib.blockUpdateMC
         # uncode returned Data
         cMC.restype=py_object
-        data=cMC(self.totOrbs, initSpin, nthermal, nsweep, maxNLinking, nlinking, linkStrength, linkData, ninterval, nLat, corrOrbitalPair, h,
-                 renormOn, totOrb_rnorm, norbInCluster, rOrb, rOrbCluster, linkData_rnorm,
+        data=cMC(c_int(self.totOrbs), initSpin, c_int(nthermal), c_int(nsweep), maxNLinking, nlinking, linkStrength, linkData, c_int(ninterval), c_int(nLat), corrOrbitalPair, h,
+                 renormOn, c_int(totOrb_rnorm), c_int(norbInCluster), rOrb, rOrbCluster, linkData_rnorm,
                  spinFrame)
         #print('data has been returned successfully, dim=%d'%len(data))
         spin_i, spin_j, spin_ij, autoCorr, E, E2, E_rnorm, E2_rnorm, U4, spin_tot, spinDistributionList = data
@@ -338,10 +338,10 @@ class MC:
 
         cMC=mylib.MCMainFunction
         cMC.restype=py_object
-        data = cMC(updateAlgorithm,self.totOrbs, initSpin, initD, nthermal, nsweep, maxNLinking_, nlinking, linkStrength, linkData, ninterval, nLat, 
+        data = cMC(updateAlgorithm,c_int(self.totOrbs), initSpin, initD, c_int(nthermal), c_int(nsweep), maxNLinking_, nlinking, linkStrength, linkData, c_int(ninterval), c_int(nLat), 
                    corrOrbitalPair, nOrbGroup, maxOrbGroupSize, orbGroupList,
                    flunc_, h,
-                   totOrb_rnorm, norbInCluster, rOrb, rOrbCluster, linkData_rnorm,
+                   c_int(totOrb_rnorm), norbInCluster, rOrb, rOrbCluster, linkData_rnorm,
                    spinFrame,
                    ignoreNonDiagonalJ)
         spin_i_x, spin_i_y, spin_i_z, spin_j_x, spin_j_y, spin_j_z, spin_ij, autoCorr, E, E2, U4, spin_i_r_x, spin_i_r_y, spin_i_r_z, spin_j_r_x, spin_j_r_y, spin_j_r_z, spin_ij_r, E_r, E2_r, spin_i_tot_z,spin_j_tot_z,spin_tot_z,spin_i_h,spin_j_h,spin_tot_h, spinDistributionList, spinDotSpinBetweenGroups=data
