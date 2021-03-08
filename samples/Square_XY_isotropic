@@ -1,4 +1,4 @@
-This is mcsolver's save file, version: 2.2
+This is mcsolver's save file, version: 2.3
 Lattice:
 1.000000000 0.000000000 0.000000000
 0.000000000 1.000000000 0.000000000
@@ -7,7 +7,7 @@ Supercell used in MC simulations:
 16 16 1
 Orbitals in cell:
 1
-Postions, initial spin states and onsite-anisotropy of every orbitals:
+Positions, initial spin states and onsite-anisotropy of every orbital:
 orb 0: type 0 spin 1.000000000 pos [0.000000000 0.000000000 0.000000000] Dx 0.000000000 Dy 0.000000000 Dz 0.000000000 h 0.000000000
 Bonds:
 2
@@ -20,8 +20,8 @@ Field scanning region:
 Hmin 0.000000000 Hmax 0.100000000 nH 1
 Dipole long-range coupling:
 alpha 0.000000
-Mesurement:
-mesure the correlation function between orb0 and orb0 over [0 0 0]
+Measurement:
+measure the correlation function between orb0 and orb0 over [0 0 0]
 Supergroup
 OrbGroup:1
 Supergroup
