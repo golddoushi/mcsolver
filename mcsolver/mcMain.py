@@ -137,7 +137,7 @@ class MC:
         maxNLinking=c_int(maxNLinking)
         
         # field info.
-        h=c_double(self.h)
+        h=c_double(self.h/self.T) # renormalize field by temperature
         # correlated info.
         nLat=len(self.correlatedOrbitalPair)
         corrOrbitalPair=(c_int*(nLat*2))()
@@ -271,7 +271,7 @@ class MC:
 
 
         # field
-        h=c_double(self.h)
+        h=c_double(self.h/self.T)
 
         cnt=0
         for iorb, orb in enumerate(self.lattice):
