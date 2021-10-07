@@ -1,1 +1,1 @@
-include *.py *.c *.so LICENSE README.md
+include ./mcsolver/*.py ./mcsolver/*.c ./mcsolver/*.so LICENSE README.md

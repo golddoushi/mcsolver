@@ -97,7 +97,7 @@ def startSimulation(updateGUI=True, rpath=''):
                 susResult.append((spin_ij-spin_i*spin_j)/T)
                 autoCorrResult.append(autoCorr)
                 energyResult.append(E)
-                capaResult.append((E2-E*E)/T**2)
+                capaResult.append((E2-E*E)/T**2*N)
                 u4Result.append(U4)
             pool.close()
         if updateGUI: gui.updateResultViewer(TList=TResult if io.xAxisType=='T' else HResult, magList=[(si+sj)/2 for si,sj in zip(SpinIResult,SpinJResult)], susList=capaResult)
@@ -137,7 +137,7 @@ def startSimulation(updateGUI=True, rpath=''):
                 susResult.append((spin_ij-np.dot(spin_i,spin_j))/T)
                 autoCorrResult.append(autoCorr)
                 energyResult.append(E)
-                capaResult.append((E2-E*E)/T**2)
+                capaResult.append((E2-E*E)/T**2*N)
                 u4Result.append(U4)
             pool.close()
         if updateGUI: gui.updateResultViewer(TList=TResult if io.xAxisType=='T' else HResult, magList=SpinIResult, susList=capaResult)
@@ -148,7 +148,7 @@ def startSimulation(updateGUI=True, rpath=''):
 
     # writting result file
     f=open('./result.txt','w')
-    f.write('#Temp #<Si>    #<Sj>    #Susc    #energy   #capacity #Binder cumulante #auto-corr.\n')
+    f.write('#Temp #<Si>    #<Sj>    #Susc    #Energy_per_orb(K)  #capacity_per_orb(K/K) #Binder_cumulate #auto-corr.\n')
     for T, si, sj, sus, energy, capa, u4, autoCorr in zip(TResult, SpinIResult, SpinJResult, susResult, energyResult, capaResult, u4Result, autoCorrResult):
         f.write('%.3f %.6f %.6f %.6f %.6f %.6f %.6f %.6f\n'%(T, si, sj, sus, energy, capa, u4, autoCorr))
     f.close()
