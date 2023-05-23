@@ -1,5 +1,6 @@
 import numpy as np
 from matplotlib.figure import Figure
+from auxiliary import improveTheMatrixRankToThree
 
 class Orbital:
     '''
@@ -9,6 +10,8 @@ class Orbital:
         self.id=id
         self.linkedOrb=[]
         self.linkStrength=[]
+        self.linkDistance=[]
+        self.invFactorMat=np.eye(3,dtype=float) # use to compute local spin vorticity
         self.spin=spin
         self.D=D
         self.inBlock=False
@@ -26,7 +29,7 @@ class Orbital:
         self.linkedOrb_rnorm=[]
         self.linkStrength_rnorm=[]
     
-    def addLinking(self,targetOrb,strength,quiet=False,forceAdd=False):
+    def addLinking(self,targetOrb,strength,distance,quiet=False,forceAdd=False):
         # check redundancy
         for iorb, orb in enumerate(self.linkedOrb):
             if forceAdd:
@@ -47,8 +50,10 @@ class Orbital:
                 return
         self.linkedOrb.append(targetOrb)
         self.linkStrength.append(strength)
+        self.linkDistance.append(distance)
         #print(strength)
         #exit()
+
     
     def addLinking_rnorm(self,targetOrb,strength):
         for orb in self.linkedOrb_rnorm:
@@ -145,7 +150,9 @@ class Bond:
         bond.invStrength=np.array(list(self.invStrength)) if self.On else self.invStrength
         return bond
 
-def establishLattice(Lx=1,Ly=1,Lz=1,norb=1,Lmatrix=np.array([[1,0,0],[0,1,0],[0,0,1]]),bmatrix=[np.array([0.,0.,0.])],SpinList=[1],DList=[0.,0.,0.],orbGroupList=[],groupInSC=False):
+def establishLattice(Lx=1,Ly=1,Lz=1,norb=1,
+                     Lmatrix=np.array([[1,0,0],[0,1,0],[0,0,1]]),bmatrix=[np.array([0.,0.,0.])],
+                     SpinList=[1],DList=[0.,0.,0.],orbGroupList=[],groupInSC=False):
     '''
     create a Lx X Ly X Lz lattice, and create norb orbitals
     for each cell
@@ -210,7 +217,9 @@ def establishLattice(Lx=1,Ly=1,Lz=1,norb=1,Lmatrix=np.array([[1,0,0],[0,1,0],[0,
     print("<<<<<<")'''       
     return lattice, lattice_flatten, orbGroup
 
-def establishLinking(lattice,bondList,ki_s=0,ki_t=0,ki_overLat=[0,0,0],dipoleAlpha=0):
+def establishLinking(lattice,bondList,ki_s=0,ki_t=0,ki_overLat=[0,0,0],
+                     Lmatrix=np.array([[1,0,0],[0,1,0],[0,0,1]]),bmatrix=[np.array([0.,0.,0.])],
+                     dipoleAlpha=0,periodic=True):
     Lx=len(lattice)
     Ly=len(lattice[0])
     Lz=len(lattice[0][0])
@@ -226,10 +235,14 @@ def establishLinking(lattice,bondList,ki_s=0,ki_t=0,ki_overLat=[0,0,0],dipoleAlp
                     sourceOrb=lattice[x][y][z][o]
                     for bond in bondList:
                         if o==bond.source:
+                            if not periodic:
+                                if (x+bond.overLat[0])%Lx!=x+bond.overLat[0] or (y+bond.overLat[1])%Ly!=y+bond.overLat[1] or (z+bond.overLat[2])%Lz!=z+bond.overLat[2]:
+                                    continue
                             targetOrb=lattice[(x+bond.overLat[0])%Lx][(y+bond.overLat[1])%Ly][(z+bond.overLat[2])%Lz][bond.target]
-                            sourceOrb.addLinking(targetOrb,bond.strength)
+                            distance=(bond.overLat+bmatrix[bond.target]-bmatrix[o])@Lmatrix
+                            sourceOrb.addLinking(targetOrb,bond.strength,distance)
                             if sourceOrb.id!=targetOrb.id:
-                                targetOrb.addLinking(sourceOrb,bond.invStrength)
+                                targetOrb.addLinking(sourceOrb,bond.invStrength,-distance)
                     # type2: bond in renormalized system
                     
                     if sourceOrb.chosen:
@@ -252,6 +265,16 @@ def establishLinking(lattice,bondList,ki_s=0,ki_t=0,ki_overLat=[0,0,0],dipoleAlp
                     lattice[x][y][z][o].classifyTheLinking(On=On)
     '''
     return correlatedOrbitalPair
+
+def constructLocalFrame(lattice_flatten):
+    for orb in lattice_flatten:
+        factorMatrix=np.zeros((3,3))
+        for irow in range(3):
+            for icol in range(3):
+                for dis in orb.linkDistance:
+                    factorMatrix[irow,icol]+=dis[irow]*dis[icol]
+        orb.invFactorMat=np.linalg.inv(improveTheMatrixRankToThree(factorMatrix))
+
 
 def generateDipoleBondings(lattice,dipoleAlpha,On=1):
     # long-range dipole coupling

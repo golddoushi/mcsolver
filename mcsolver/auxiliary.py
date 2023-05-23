@@ -104,6 +104,26 @@ def findTheFirstSameNumberAmongTwoList(list1,list2): # if no same element presen
                 return n1
     return -1
 
+def improveTheMatrixRankToThree(mat:np.ndarray):
+    if np.linalg.matrix_rank(mat)==3: return mat
+
+    if np.linalg.matrix_rank(mat)==2:
+        # try to fill one of the dimension
+        for idim in range(3):
+            mat_trial=np.array(list(mat))
+            mat_trial[idim,idim]=1
+            if np.linalg.matrix_rank(mat_trial)==3: return mat_trial
+        raise('Fail to improve the matrix rank')
+    
+    if np.linalg.matrix_rank(mat)==1:
+        for idim in range(2):
+            for jdim in range(idim+1,3):
+                mat_trial=np.array(list(mat))
+                mat_trial[idim,idim]=1
+                mat_trial[jdim,jdim]=1
+                if np.linalg.matrix_rank(mat_trial)==3: return mat_trial
+        raise('Fail to improve the matrix rank')
+
 class Node:
     def __init__(self,value=0,maxValue=9,leftNode=False):
         self.value=value

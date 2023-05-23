@@ -148,9 +148,9 @@ def startSimulation(updateGUI=True, rpath=''):
 
     # writting result file
     f=open('./result.txt','w')
-    f.write('#Temp #<Si>    #<Sj>    #Susc    #Energy_per_orb(K)  #capacity_per_orb(K/K) #Binder_cumulate #auto-corr.\n')
-    for T, si, sj, sus, energy, capa, u4, autoCorr in zip(TResult, SpinIResult, SpinJResult, susResult, energyResult, capaResult, u4Result, autoCorrResult):
-        f.write('%.3f %.6f %.6f %.6f %.6f %.6f %.6f %.6f\n'%(T, si, sj, sus, energy, capa, u4, autoCorr))
+    f.write('#Temp #Field #<Si>    #<Sj>    #Susc    #Energy_per_orb(K)  #capacity_per_orb(K/K) #Binder_cumulate #auto-corr.\n')
+    for T, H, si, sj, sus, energy, capa, u4, autoCorr in zip(TResult, HResult, SpinIResult, SpinJResult, susResult, energyResult, capaResult, u4Result, autoCorrResult):
+        f.write('%.3f %.3f %.6f %.6f %.6f %.6f %.6f %.6f %.6f\n'%(T, H, si, sj, sus, energy, capa, u4, autoCorr))
     f.close()
     if updateGUI: gui.submitBtn.config(state='normal')
     print("time elapsed %.3f s"%(time.time()-time0))

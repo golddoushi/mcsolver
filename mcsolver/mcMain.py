@@ -35,7 +35,8 @@ class MC:
             raise("Input Error!")
             ki_s=norb-1 if ki_s >= norb else ki_s
             ki_t=norb-1 if ki_t >= norb else ki_t
-        self.correlatedOrbitalPair=lat.establishLinking(lattice_array,bondList,ki_s=ki_s,ki_t=ki_t,ki_overLat=ki_overLat,dipoleAlpha=dipoleAlpha)
+        self.correlatedOrbitalPair=lat.establishLinking(lattice_array,bondList,ki_s=ki_s,ki_t=ki_t,ki_overLat=ki_overLat,Lmatrix=np.array(LMatrix),bmatrix=np.array(pos),dipoleAlpha=dipoleAlpha)
+        lat.constructLocalFrame(lattice)
         self.dipoleCorrection = False 
         if abs(dipoleAlpha)>1e-5:
             self.dipoleCorrection=True
@@ -194,14 +195,18 @@ class MC:
         # initial spin, single ion anisotropy and number of linking
         initSpin=(c_double*self.totOrbs)()
         initD=(c_double*(3*self.totOrbs))()
+        invFactorMat=(c_double*(9*self.totOrbs))()
         nlinking=(c_int*self.totOrbs)()
         nlinking_list=[]
         for iorb, orb in enumerate(self.lattice):
             #print(orb.spin)
             initSpin[iorb]=c_double(orb.spin)
-            initD[iorb*3]=c_double(orb.D[0])
-            initD[iorb*3+1]=c_double(orb.D[1])
-            initD[iorb*3+2]=c_double(orb.D[2])
+            for i in range(3):  # set single ion anisotropy
+                initD[iorb*3+i]=c_double(orb.D[i])
+            
+            for i in range(3):  # set factor matrix inversion which is to use in the comput of local spin vorticity
+                for j in range(3):
+                    invFactorMat[iorb*9+i*3+j]=c_double(orb.invFactorMat[i,j])
 
             nlinking[iorb]=c_int(len(orb.linkedOrb))
             nlinking_list.append(len(orb.linkedOrb))
@@ -211,24 +216,31 @@ class MC:
         maxNLinking=np.max(nlinking_list)
         #print("maxNLinking=%d"%maxNLinking)
         linkStrength=(c_double*(self.totOrbs*maxNLinking*9))() # thus the nlinking of every orbs are the same
-        cnt=0
+        linkDistance=(c_double*(self.totOrbs*maxNLinking*3))() # the bond vector in real-space
+        cnt, cnt_distance=0, 0
         for iorb, orb in enumerate(self.lattice):
             #print("orb%d"%orb.id)
             for ilinking in range(maxNLinking):
                 if ilinking>=nlinking_list[iorb]:
-                    for i in range(9):
+                    for i in range(9):  # set the redundant bond strength to zero
                         linkStrength[cnt]=c_double(0.)
                         cnt+=1
+                    for i in range(3):  # set the redundant bond vector to zero
+                        linkDistance[cnt_distance]=c_double(0.)
+                        cnt_distance+=1
                 else:
                     #print("link %d :"%ilinking,orb.linkStrength[ilinking])
-                    for i in range(9):
+                    for i in range(9):  # set the bond strength
                         linkStrength[cnt]=c_double(orb.linkStrength[ilinking][i])
                         if abs(orb.linkStrength[ilinking][i]) > 1e-6 and i>=3: ignoreNonDiagonalJ=0
                         cnt+=1
+                    for i in range(3):  # set the bond vector
+                        linkDistance[cnt_distance]=c_double(orb.linkDistance[ilinking][i])
+                        cnt_distance+=1
         ignoreNonDiagonalJ=c_int(ignoreNonDiagonalJ)
         # linking info.
         linkData=(c_int*(self.totOrbs*maxNLinking))()
-
+        
         #-------------------------------------------------------------------------------#
         # linking info. for renormalized lattice
         # count total sites in shrinked lat.
@@ -326,7 +338,6 @@ class MC:
         print('loading dynamic library in %s'%(dll_path))
         #print(os.listdir(application_path))
         #exit()
-
         
         mylib=CDLL(dll_path)
         
@@ -338,13 +349,15 @@ class MC:
 
         cMC=mylib.MCMainFunction
         cMC.restype=py_object
-        data = cMC(updateAlgorithm,c_int(self.totOrbs), initSpin, initD, c_int(nthermal), c_int(nsweep), maxNLinking_, nlinking, linkStrength, linkData, c_int(ninterval), c_int(nLat), 
+        data = cMC(updateAlgorithm,c_int(self.totOrbs), initSpin, initD, c_int(nthermal), c_int(nsweep), 
+                   maxNLinking_, nlinking, linkStrength, linkData, invFactorMat, linkDistance,
+                   c_int(ninterval), c_int(nLat), 
                    corrOrbitalPair, nOrbGroup, maxOrbGroupSize, orbGroupList,
                    flunc_, h,
                    c_int(totOrb_rnorm), norbInCluster, rOrb, rOrbCluster, linkData_rnorm,
                    spinFrame,
                    ignoreNonDiagonalJ)
-        spin_i_x, spin_i_y, spin_i_z, spin_j_x, spin_j_y, spin_j_z, spin_ij, autoCorr, E, E2, U4, spin_i_r_x, spin_i_r_y, spin_i_r_z, spin_j_r_x, spin_j_r_y, spin_j_r_z, spin_ij_r, E_r, E2_r, spin_i_tot_z,spin_j_tot_z,spin_tot_z,spin_i_h,spin_j_h,spin_tot_h, spinDistributionList, spinDotSpinBetweenGroups=data
+        spin_i_x, spin_i_y, spin_i_z, spin_j_x, spin_j_y, spin_j_z, spin_ij, autoCorr, E, E2, U4, spin_i_r_x, spin_i_r_y, spin_i_r_z, spin_j_r_x, spin_j_r_y, spin_j_r_z, spin_ij_r, E_r, E2_r, spin_i_tot_z,spin_j_tot_z,spin_tot_z,spin_i_h,spin_j_h,spin_tot_h, topologicalQ, spinDistributionList, spinDotSpinBetweenGroups=data
         E*=self.T;E2*=self.T**2;E_r*=self.T;E2_r*=self.T**2 # recover the real energies
         C=E2-E*E
         C_r=E2_r-E_r*E_r
@@ -355,12 +368,13 @@ class MC:
         spin_i_r=np.array([spin_i_r_x, spin_i_r_y, spin_i_r_z])
         spin_j_r=np.array([spin_j_r_x, spin_j_r_y, spin_j_r_z])
         #      T       <i><j>     <ij>      <autoCorr>      <E>      <E2>      <U4>      <E_r>      <E2_r>  C  C_v
-        print('%.3f %.3f %.3f %.3f %.3f %.3f %.3f %.3f %.3f %.3f %.3f %.6f %.3f %.3f %.3f %.3f %.3f %.3f %.3f'%(
-               self.T,self.h,spin_i_tot_z,spin_j_tot_z,spin_tot_z,spin_i_h,spin_j_h,spin_tot_h,spin_i_len,spin_j_len,spin_ij,np.dot(spin_i,spin_j),E,E2,       U4,spin_ij_r,np.dot(spin_i_r,spin_j_r),       E_r,      E2_r))
+        print('%.3f %.3f %.3f %.3f %.3f %.3f %.3f %.3f %.3f %.3f %.3f %.6f %.3f %.3f %.3f %.3f %.3f %.3f %.3f %.3f'%(
+               self.T,self.h,spin_i_tot_z,spin_j_tot_z,spin_tot_z,spin_i_h,spin_j_h,spin_tot_h,spin_i_len,spin_j_len,spin_ij,np.dot(spin_i,spin_j),E,E2,       U4,spin_ij_r,np.dot(spin_i_r,spin_j_r),       E_r,      E2_r, topologicalQ))
         with open('./out','a') as fout:
-            fout.write('%.3f %.3f %.3f %.3f %.3f %.3f %.3f %.3f %.3f %.3f %.3f %.6f %.3f %.3f %.3f %.3f %.3f %.3f %.3f\n'%(
-                   self.T,self.h,spin_i_tot_z,spin_j_tot_z,spin_tot_z,spin_i_h,spin_j_h,spin_tot_h,spin_i_len,spin_j_len,spin_ij,np.dot(spin_i,spin_j),E,E2,       U4,spin_ij_r,np.dot(spin_i_r,spin_j_r),       E_r,      E2_r))
-        if self.spinFrame==nsweep:self.outputSpinWaveSpetra(spinDistributionList)
+            fout.write('%.3f %.3f %.3f %.3f %.3f %.3f %.3f %.3f %.3f %.3f %.3f %.6f %.3f %.3f %.3f %.3f %.3f %.3f %.3f %.3f\n'%(
+                   self.T,self.h,spin_i_tot_z,spin_j_tot_z,spin_tot_z,spin_i_h,spin_j_h,spin_tot_h,spin_i_len,spin_j_len,spin_ij,np.dot(spin_i,spin_j),E,E2,       U4,spin_ij_r,np.dot(spin_i_r,spin_j_r),       E_r,      E2_r, topologicalQ))
+        # FFT on the MC random data makes no sense
+        #if self.spinFrame==nsweep:self.outputSpinWaveSpetra(spinDistributionList) 
         
         if self.spinFrame>0:self.outputSpinDistributionForOn(spinDistributionList)
         

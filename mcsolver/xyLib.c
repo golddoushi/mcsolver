@@ -410,7 +410,7 @@ void localUpdate(int totOrbs, Orb lattice[], double *p_energy, Vec *p_totSpin){
 void (*p_mcUpdate)(int totOrbs, Orb lattice[], double*p_energy, Vec *p_totSpin);
 
 PyObject * MCMainFunction(int algorithm, int totOrbs, double initSpin[totOrbs], double initD[totOrbs][3], int nthermal, int nsweep, 
-                   int maxNLinking, int nlink[totOrbs], double linkStrength[totOrbs][maxNLinking][9], int linkedOrb[totOrbs][maxNLinking],
+                   int maxNLinking, int nlink[totOrbs], double linkStrength[totOrbs][maxNLinking][9], int linkedOrb[totOrbs][maxNLinking], double invFactorMat[totOrbs][3][3], double linkDistance[totOrbs][maxNLinking][3],
                    int ninterval, int nLat, int corrOrbPair[nLat][2], int nOrbGroup, int maxOrbGroupSize, int orbGroupList[nOrbGroup][maxOrbGroupSize], double flunc, double h,
                    int totOrb_rnorm, int nOrbInCluster, int rOrb[totOrb_rnorm], int rOrbCluster[totOrb_rnorm][nOrbInCluster], int linkedOrb_rnorm[totOrb_rnorm][maxNLinking],
                    int spinFrame,
@@ -454,6 +454,8 @@ PyObject * MCMainFunction(int algorithm, int totOrbs, double initSpin[totOrbs], 
     double E2=0, E2_r=0;
     double M=0,M2=0,M4=0;
     double M_tmp=0,MdotM_tmp=0,M_tot=0;
+
+    double topological_q=0; // total vortice number
 
     Vec spin_direction;
     double spin_i_z, spin_j_z, spin_tot_z;
@@ -526,6 +528,29 @@ PyObject * MCMainFunction(int algorithm, int totOrbs, double initSpin[totOrbs], 
             spin_j_h_avg+=lattice[corrOrbPair[j][1]].spin.x;
             
         }
+
+        double topological_q_local=0;
+        /* xy model possess no topological charge
+        for(int iorb=0;iorb<totOrbs;iorb++){
+            double dsx_dx_avg=0;
+            double dsy_dx_avg=0;
+            double dsx_dy_avg=0;
+            double dsy_dy_avg=0;
+            for(int ilink=0;ilink<lattice[iorb].nlink;ilink++){
+                //Vec dspin;
+                dsx_dx_avg+=linkDistance[iorb][ilink][0]*(lattice[iorb].linkedOrb[ilink]->spin.x - lattice[iorb].spin.x);
+                dsy_dx_avg+=linkDistance[iorb][ilink][0]*(lattice[iorb].linkedOrb[ilink]->spin.y - lattice[iorb].spin.y);
+                dsx_dy_avg+=linkDistance[iorb][ilink][1]*(lattice[iorb].linkedOrb[ilink]->spin.x - lattice[iorb].spin.x);
+                dsy_dy_avg+=linkDistance[iorb][ilink][1]*(lattice[iorb].linkedOrb[ilink]->spin.y - lattice[iorb].spin.y);
+                
+            }
+            double dsx_dx = invFactorMat[iorb][0][0]*dsx_dx_avg + invFactorMat[iorb][0][1] *dsx_dy_avg;
+            double dsx_dy = invFactorMat[iorb][1][0]*dsx_dx_avg + invFactorMat[iorb][1][1] *dsx_dy_avg;
+            double dsy_dx = invFactorMat[iorb][0][0]*dsy_dx_avg + invFactorMat[iorb][0][1] *dsy_dy_avg;
+            double dsy_dy = invFactorMat[iorb][1][0]*dsy_dx_avg + invFactorMat[iorb][1][1] *dsy_dy_avg;
+            topological_q_local += dsx_dx * dsy_dy - dsx_dy * dsy_dx;
+        }*/
+        topological_q+=topological_q_local;
 
         spin_i_z+=spin_i_z_avg/nLat;
         spin_j_z+=spin_j_z_avg/nLat;
@@ -665,7 +690,7 @@ PyObject * MCMainFunction(int algorithm, int totOrbs, double initSpin[totOrbs], 
     }
     if(nOrbGroup==0) spinDotSpinBetweenGroup_Tuple=PyFloat_FromDouble(0);
     PyObject *Data;
-    Data=PyTuple_New(28);
+    Data=PyTuple_New(29);
     PyTuple_SetItem(Data, 0, PyFloat_FromDouble(spin_i.x/nsweep));
     PyTuple_SetItem(Data, 1, PyFloat_FromDouble(spin_i.y/nsweep));
     PyTuple_SetItem(Data, 2, PyFloat_FromDouble(0));
@@ -692,7 +717,8 @@ PyObject * MCMainFunction(int algorithm, int totOrbs, double initSpin[totOrbs], 
     PyTuple_SetItem(Data,23, PyFloat_FromDouble(spin_i_h/nsweep));
     PyTuple_SetItem(Data,24, PyFloat_FromDouble(spin_j_h/nsweep));
     PyTuple_SetItem(Data,25, PyFloat_FromDouble(spin_tot_h/nsweep));
-    PyTuple_SetItem(Data, 26, spinFrameData);
-    PyTuple_SetItem(Data, 27, spinDotSpinBetweenGroup_Tuple);
+    PyTuple_SetItem(Data,26, PyFloat_FromDouble(topological_q/nsweep));
+    PyTuple_SetItem(Data, 27, spinFrameData);
+    PyTuple_SetItem(Data, 28, spinDotSpinBetweenGroup_Tuple);
     return Data;
 }

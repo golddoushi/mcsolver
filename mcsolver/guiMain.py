@@ -269,7 +269,7 @@ def loadMCSettings():
     TListGui=toolbox.NoteFrm(temp_base, init_notes=['T start:','T end','total points:'], init_data=[0.9,1.2,8],row=True,entryWidth=6)
 
     field_base=Frame(SettingFrame)
-    #field_base.grid(row=1,column=0)
+    field_base.grid(row=1,column=0)
     HListGui=toolbox.NoteFrm(field_base, init_notes=['H start:','H end','total points:'], init_data=[0,0.1,1],row=True,entryWidth=6)
 
     MCparam_base=Frame(SettingFrame)

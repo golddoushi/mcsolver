@@ -277,6 +277,7 @@ def loadParam(updateGUI=True,rpath='./mcInput'):
     gui.OrbListBox.updateInfo(orbInfo)
     gui.BondBox.updateInfo(bondInfo)
     gui.TListGui.setValue(Tpack)
+    gui.HListGui.setValue(Hpack)
     gui.corrGui.setValue(GcPack)
     gui.MCparamGui.setValue(nTermSweep)
     gui.xaxisStr.set(xAxisType)
