@@ -57,7 +57,9 @@ A. using mcsolver via .exe, e.g., in Windows platform
   
     1. click load Btn to load settings, and here I prepared the setting for CrI3 with exchanges up to 2nd nearest neiboring. You can modify the sample file for your own purposes, with any txt editor. 
 
-    2. Click startMC Btn to start.
+    2. You can define the Topological section to compute the (thermally averaged) topological charges. Every circuits are made by three orbitals enclosing the triangle anti-clockwisely. And all the circuits should cover the zone with exactly the same area of unit cell. 
+
+    3. Click startMC Btn to start.
 
 B. using mcsolver as a python package
 
