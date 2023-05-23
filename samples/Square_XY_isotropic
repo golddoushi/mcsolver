@@ -16,7 +16,7 @@ bond 0: Jx -1.000000000 Jy -1.000000000 Jz -1.000000000 Jxy 0.000000000 Jxz 0.00
 bond 1: Jx -1.000000000 Jy -1.000000000 Jz -1.000000000 Jxy 0.000000000 Jxz 0.000000000 Jyz 0.000000000 Jyx 0.000000000 Jzx 0.000000000 Jzy 0.000000000 orb 0 to orb 0 over [0 1 0]
 Temperature scanning region:
 Tmin 0.900000000 Tmax 1.200000000 nT 8
-Field scanning region:
+Field scanning region (in unit 1.48872 T, only if Kelvin and uB is used for energy and spin):
 Hmin 0.000000000 Hmax 0.100000000 nH 1
 Dipole long-range coupling:
 alpha 0.000000

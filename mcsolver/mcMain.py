@@ -384,7 +384,7 @@ class MC:
         if self.spinFrame>0:self.outputSpinDistributionForOn(spinDistributionList)
         
         if len(self.orbGroup)>0:self.outputSpinGroup(spinDotSpinBetweenGroups)
-        return spin_i, spin_j, spin_ij, autoCorr, E, E2, U4
+        return spin_i, spin_j, spin_ij, autoCorr, E, E2, U4, topologicalQ
         
     def outputSpinGroup(self,spinDotSpinData):
         with open('./spinDotSpin.txt','a') as fout:

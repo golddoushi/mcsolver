@@ -32,10 +32,10 @@ def startMCForOn(param): # start MC for O(n) model
     # unzip all global parameters for every processing
     ID, T, bondList,LMatrix,pos,S,DList,h,nsweep,nthermal,ninterval,Lx,Ly,Lz,algorithm,On,GcOrb,orbGroupList,groupInSC,dipoleAlpha,spinFrame,localCircuit=param
     mcslave=mc.MC(ID,LMatrix,pos=pos,S=S,D=DList,bondList=bondList,T=T,Lx=Lx,Ly=Ly,Lz=Lz,ki_s=GcOrb[0][0],ki_t=GcOrb[0][1],ki_overLat=GcOrb[1],orbGroupList=orbGroupList,groupInSC=groupInSC,h=h,dipoleAlpha=dipoleAlpha,On=On,spinFrame=spinFrame,localCircuitList=localCircuit)
-    spin_i, spin_j, spin_ij, autoCorr, E, E2, U4=mcslave.mainLoopViaCLib_On(nsweep=nsweep,nthermal=nthermal,ninterval=ninterval,algo=algorithm,On=On)
+    spin_i, spin_j, spin_ij, autoCorr, E, E2, U4, topologicalQ = mcslave.mainLoopViaCLib_On(nsweep=nsweep,nthermal=nthermal,ninterval=ninterval,algo=algorithm,On=On)
     #mData=abs(mData)/Lx/Ly/Lz
     #eData/=(Lx*Ly*Lz)
-    return ID, T, h, spin_i, spin_j, spin_ij, autoCorr, E, E2, U4, mcslave.totOrbs
+    return ID, T, h, spin_i, spin_j, spin_ij, autoCorr, E, E2, U4, topologicalQ, mcslave.totOrbs
 
 def startSimulation(updateGUI=True, rpath=''):
     time0=time.time()
@@ -77,7 +77,7 @@ def startSimulation(updateGUI=True, rpath=''):
                 paramPack.append([iH*len(TList)+iT,T,bondList,LMatrix,pos,io.S,io.DList,H,io.nsweep,io.nthermal,io.ninterval,io.LPack[0],io.LPack[1],io.LPack[2],io.algorithm,
                                  io.GcOrb,io.orbGroupList,io.groupInSC,io.dipoleAlpha,io.spinFrame])
         
-        TResult=[];HResult=[];SpinIResult=[];SpinJResult=[];susResult=[];energyResult=[];capaResult=[];u4Result=[];autoCorrResult=[]
+        TResult=[];HResult=[];SpinIResult=[];SpinJResult=[];susResult=[];energyResult=[];capaResult=[];u4Result=[];QResult=[];autoCorrResult=[]
         while(True): # using pump strategy to reduce the costs of RAM
             if len(paramPack)==0:
                 break
@@ -95,6 +95,7 @@ def startSimulation(updateGUI=True, rpath=''):
                 SpinIResult.append(spin_i)
                 SpinJResult.append(spin_j)
                 susResult.append((spin_ij-spin_i*spin_j)/T)
+                QResult.append(0.)
                 autoCorrResult.append(autoCorr)
                 energyResult.append(E)
                 capaResult.append((E2-E*E)/T**2*N)
@@ -117,7 +118,7 @@ def startSimulation(updateGUI=True, rpath=''):
                 paramPack.append([iH*len(TList)+iT,T,bondList,LMatrix,pos,io.S,io.DList,H,io.nsweep,io.nthermal,io.ninterval,io.LPack[0],io.LPack[1],io.LPack[2],io.algorithm,On,
                                   io.GcOrb,io.orbGroupList,io.groupInSC,io.dipoleAlpha,io.spinFrame,io.localCircuitList])
 
-        TResult=[];HResult=[];SpinIResult=[];SpinJResult=[];susResult=[];energyResult=[];capaResult=[];u4Result=[];autoCorrResult=[]
+        TResult=[];HResult=[];SpinIResult=[];SpinJResult=[];susResult=[];energyResult=[];capaResult=[];u4Result=[];QResult=[];autoCorrResult=[]
         while(True): # using pump strategy to reduce the costs of RAM
             if len(paramPack)==0:
                 break
@@ -129,12 +130,13 @@ def startSimulation(updateGUI=True, rpath=''):
                     break
             pool=Pool(processes=io.ncores)
             for result in pool.imap_unordered(startMCForOn,paramPack_tmp):
-                ID, T, h, spin_i, spin_j, spin_ij, autoCorr, E, E2, U4, N =result
+                ID, T, h, spin_i, spin_j, spin_ij, autoCorr, E, E2, U4, topologicalQ, N =result
                 TResult.append(T)
                 HResult.append(h)
                 SpinIResult.append(np.sqrt(sum(spin_i*spin_i)))
                 SpinJResult.append(np.sqrt(sum(spin_j*spin_j)))
                 susResult.append((spin_ij-np.dot(spin_i,spin_j))/T)
+                QResult.append(topologicalQ)
                 autoCorrResult.append(autoCorr)
                 energyResult.append(E)
                 capaResult.append((E2-E*E)/T**2*N)
@@ -148,9 +150,9 @@ def startSimulation(updateGUI=True, rpath=''):
 
     # writting result file
     f=open('./result.txt','w')
-    f.write('#Temp #Field #<Si>    #<Sj>    #Susc    #Energy_per_orb(K)  #capacity_per_orb(K/K) #Binder_cumulate #auto-corr.\n')
-    for T, H, si, sj, sus, energy, capa, u4, autoCorr in zip(TResult, HResult, SpinIResult, SpinJResult, susResult, energyResult, capaResult, u4Result, autoCorrResult):
-        f.write('%.3f %.3f %.6f %.6f %.6f %.6f %.6f %.6f %.6f\n'%(T, H, si, sj, sus, energy, capa, u4, autoCorr))
+    f.write('#Temp          #Field         #<Si>          #<Sj>          #Susc          #Energy(K)     #Capacity(K/K) #Topo.Q        #U4            #Auto-corr.    \n')
+    for T, H, si, sj, sus, energy, capa, topo_q, u4, autoCorr in zip(TResult, HResult, SpinIResult, SpinJResult, susResult, energyResult, capaResult, QResult, u4Result, autoCorrResult):
+        f.write('%15.6E%15.6E%15.6E%15.6E%15.6E%15.6E%15.6E%15.6E%15.6E%15.6E\n'%(T, H, si, sj, sus, energy, capa, topo_q, u4, autoCorr))
     f.close()
     if updateGUI: gui.submitBtn.config(state='normal')
     print("time elapsed %.3f s"%(time.time()-time0))
@@ -158,6 +160,6 @@ def startSimulation(updateGUI=True, rpath=''):
             
 if __name__ == '__main__': # crucial for multiprocessing in Windows
     freeze_support()
-    app=Tk(className='mc solver v1.0')
+    app=Tk(className='mc solver v3.0')
     gui.loadEverything(app,startSimulation)
     app.mainloop()

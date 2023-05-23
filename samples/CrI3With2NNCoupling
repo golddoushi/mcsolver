@@ -29,7 +29,7 @@ Dipole long range correction:
 alpha 0.0
 Temperature scanning region:
 Tmin 30.000000000 Tmax 50.000000000 nT 21
-Field scanning region:
+Field scanning region (in unit 1.48872 T, only if Kelvin and uB is used for energy and spin):
 Hmin 0 Hmax 0.1 nH 1
 Measurement:
 measure the correlation function between orb0 and orb0 over [0 0 0]

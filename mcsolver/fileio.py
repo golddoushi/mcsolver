@@ -138,7 +138,7 @@ def saveParam():
 
     f.write("Temperature scanning region:\n")
     f.write("Tmin %.9f Tmax %.9f nT %d\n"%(T0, T1, nT))
-    f.write("Field scanning region:\n")
+    f.write("Field scanning region (in unit 1.48872 T, only if Kelvin and uB is used for energy and spin):\n")
     f.write("Hmin %.9f Hmax %.9f nH %d\n"%(H0, H1, nH))
     f.write("Dipole long-range coupling:\n")
     f.write("alpha %.6f\n"%dipoleAlpha)
