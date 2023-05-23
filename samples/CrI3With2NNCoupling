@@ -39,8 +39,6 @@ group0 orb0-orb0
 group1 orb1-orb1
 >>>       Topological section      <<<
 LocalCircuit per cell: 0 (set to 0 to skip the calc. for topo. Q)
-Circuit 0 enclosed by orb 0 [0 0 0], orb 0 [1 0 0], and orb 0 [1 1 0]
-Circuit 1 enclosed by orb 0 [0 0 0], orb 0 [1 0 0], and orb 0 [1 1 0]
 >>>   End of Topological section   <<<
 Sweeps for thermalization and statistics, and relaxiation step for each sweep:
 80000 640000 0
