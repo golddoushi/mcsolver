@@ -1,4 +1,4 @@
-This is mcsolver's save file, version: 2.3
+This is mcsolver's save file, version: 3.0
 Lattice:
 1.000000000 0.000000000 0.000000000
 0.000000000 1.000000000 0.000000000
@@ -26,6 +26,11 @@ Supergroup
 OrbGroup:1
 Supergroup
 group0 orb0-orb0
+>>>       Topological section      <<<
+LocalCircuit per cell: 0 (set to 0 to skip the calc. for topo. Q)
+Circuit 0 enclosed by orb 0 [0 0 0], orb 0 [1 0 0], and orb 0 [1 1 0]
+Circuit 1 enclosed by orb 0 [0 0 0], orb 0 [1 0 0], and orb 0 [1 1 0]
+>>>   End of Topological section   <<<
 Distribution output frame: 0
 Sweeps for thermalization and statistics, and relaxiation step for each sweep:
 40000 80000 1

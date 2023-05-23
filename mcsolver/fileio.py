@@ -9,6 +9,7 @@ except:
 
 global LMatrix, LPack, pos, S, DList, h, H0, H1, nH, dipoleAlpha, bondList, T0, T1, nT, nthermal, nsweep, ninterval, xAxisType, modelType, algorithm, GcOrb, ncores, spinFrame
 global orbGroupList, groupInSC
+global localCircuitList # local circuit used to calculate the local topological charge
 # initial value
 xAxisType='T'
 orbGroupList=[]
@@ -18,9 +19,10 @@ h=0
 H0,H1,nH=0,0,1
 dipoleAlpha=0
 spinFrame=0
+localCircuitList=[]
 
 def collectParam():
-    global LMatrix, LPack, pos, S, DList, h, H0, H1, nH, dipoleAlpha, bondList, T0, T1, nT, nthermal, nsweep, ninterval, xAxisType, modelType, algorithm, GcOrb, ncores, spinFrame
+    global LMatrix, LPack, pos, S, DList, h, H0, H1, nH, dipoleAlpha, bondList, T0, T1, nT, nthermal, nsweep, ninterval, xAxisType, modelType, algorithm, GcOrb, ncores, spinFrame, localCircuitList
     # get lattice
     a1=gui.latticeGui[0].report()
     a2=gui.latticeGui[1].report()
@@ -70,6 +72,11 @@ def collectParam():
     nH=int(nH)
     print('Magnetic field range: %.2f ~ %.2f with %d sampling points'%(H0, H1, nH))
 
+    # topological info.
+    print('Local circuits per cell: %d'%len(localCircuitList))
+    for icircuit, circuit in enumerate(localCircuitList):
+        print("ID %d, enclosed by orb %d [%d %d %d], orb %d [%d %d %d], and orb %d [%d %d %d]"%(icircuit,circuit[0][0],*circuit[0][1],circuit[1][0],*circuit[1][1],circuit[2][0],*circuit[2][1]))
+
     # get thermalizations and sweeps
     nthermal, nsweep, ninterval= [int(x) for x in gui.MCparamGui.report()]
     print('thermalizations, sweeps and tau:')
@@ -103,7 +110,7 @@ def saveParam():
     # write into files
     filePath=filedialog.asksaveasfilename()
     f=open(filePath,'w')
-    f.write("This is mcsolver's save file, version: 2.3\n")
+    f.write("This is mcsolver's save file, version: 3.0\n")
     f.write("Lattice:\n")
     a1, a2, a3= LMatrix
     f.write("%.9f %.9f %.9f\n"%(a1[0],a1[1],a1[2]))
@@ -141,6 +148,11 @@ def saveParam():
     f.write("OrbGroup:1\n")
     f.write("Supergroup\n")
     f.write("group0 orb0-orb0\n")
+    f.write(">>>       Topological section      <<<\n")
+    f.write("LocalCircuit per cell: %d (set to 0 to skip the calc. for topo. Q)\n"%len(localCircuitList))
+    for icircuit, circuit in enumerate(localCircuitList):
+        f.write("Circuit %d enclosed by orb %d [%d %d %d], orb %d [%d %d %d], and orb %d [%d %d %d]\n"%(icircuit,circuit[0][0],*circuit[0][1],circuit[1][0],*circuit[1][1],circuit[2][0],*circuit[2][1]))
+    f.write(">>>   End of Topological section   <<<\n")
     f.write("Distribution output frame: %d\n"%spinFrame)
     f.write("Sweeps for thermalization and statistics, and relaxiation step for each sweep:\n")
     f.write("%d %d %d\n"%(nthermal, nsweep, ninterval))
@@ -156,7 +168,7 @@ def saveParam():
 
 def loadParam(updateGUI=True,rpath='./mcInput'):
     global LMatrix, LPack, pos, S, DList, h, bondList, T0, T1, nT, H0, H1, nH, dipoleAlpha, nthermal, nsweep, ninterval, xAxisType, modelType, algorithm, GcOrb, ncores, spinFrame
-    global orbGroupList, groupInSC
+    global orbGroupList, groupInSC, localCircuitList
     filePath=filedialog.askopenfilename() if updateGUI else rpath
     f=open(filePath,'r')
     data=[line for line in f.read().split('\n') if line]
@@ -168,7 +180,7 @@ def loadParam(updateGUI=True,rpath='./mcInput'):
         return False
     
     # decide position of each tag
-    tagLattice=tagSupercell=tagOrbitals=tagBonds=tagTemperature=tagSweeps=tagModel=tagAlgorithm=tagNcores=tagDipole=tagField=0
+    tagLattice=tagSupercell=tagOrbitals=tagBonds=tagTemperature=tagSweeps=tagModel=tagAlgorithm=tagNcores=tagDipole=tagField=tagTopo=0
     for iline, line in enumerate(data):
         keyword=findall(r"[a-zA-Z]+",line)
         if len(keyword)==0:
@@ -203,8 +215,10 @@ def loadParam(updateGUI=True,rpath='./mcInput'):
             tagDistribution=iline
         if keyword[0]=='XAxis':
             tagXAxis=iline
+        if keyword[0]=='LocalCircuit':
+            tagTopo=iline
 
-    if tagLattice*tagSupercell*tagOrbitals*tagBonds*tagTemperature*tagSweeps*tagModel*tagAlgorithm*tagNcores*tagField*tagDipole*tagDistribution*tagXAxis*tagOrbGroup==0:
+    if tagLattice*tagSupercell*tagOrbitals*tagBonds*tagTemperature*tagSweeps*tagModel*tagAlgorithm*tagNcores*tagField*tagDipole*tagDistribution*tagXAxis*tagOrbGroup*tagTopo==0:
         print("cannot find some tags")
         return False
     
@@ -251,6 +265,16 @@ def loadParam(updateGUI=True,rpath='./mcInput'):
     for i in range(nOrbGroup):
         _, orbID0, orbID1 = findall(r"[0-9]+",data[tagOrbGroup+i+2])
         orbGroupList.append([j for j in range(int(orbID0),int(orbID1)+1)])
+
+    # load topological circuits
+    # load bonds
+    nCircuits=int(findall(r"[0-9]+",data[tagTopo])[0])
+    localCircuitList=[]
+    for icircuit in range(nCircuits):
+        ele=[int(x) for x in findall(r"[0-9\-]+",data[tagTopo+1+i])]
+                             # S1 id  S1 overLat                S2 id  S2 overLat                S3 id  S3 overLat
+        circuit_data_packed=[(ele[1],(ele[2],ele[3],ele[4],)),(ele[5],(ele[6],ele[7],ele[8],)),(ele[9],(ele[10],ele[11],ele[12],)),]
+        localCircuitList.append(circuit_data_packed)
 
     # load other parameters
     Tpack=findall(r"[0-9\.]+",data[tagTemperature+1])

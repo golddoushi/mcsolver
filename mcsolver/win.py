@@ -16,7 +16,7 @@ except:
 
 global path, settingFileVersion
 libPool=[None,None,None]
-settingFileVersion=2.3
+settingFileVersion=3.0
 
 def startMC(param): # start MC for Ising model
     # unzip all global parameters for every processing
@@ -30,8 +30,8 @@ def startMC(param): # start MC for Ising model
 
 def startMCForOn(param): # start MC for O(n) model
     # unzip all global parameters for every processing
-    ID, T, bondList,LMatrix,pos,S,DList,h,nsweep,nthermal,ninterval,Lx,Ly,Lz,algorithm,On,GcOrb,orbGroupList,groupInSC,dipoleAlpha,spinFrame=param
-    mcslave=mc.MC(ID,LMatrix,pos=pos,S=S,D=DList,bondList=bondList,T=T,Lx=Lx,Ly=Ly,Lz=Lz,ki_s=GcOrb[0][0],ki_t=GcOrb[0][1],ki_overLat=GcOrb[1],orbGroupList=orbGroupList,groupInSC=groupInSC,h=h,dipoleAlpha=dipoleAlpha,On=On,spinFrame=spinFrame)
+    ID, T, bondList,LMatrix,pos,S,DList,h,nsweep,nthermal,ninterval,Lx,Ly,Lz,algorithm,On,GcOrb,orbGroupList,groupInSC,dipoleAlpha,spinFrame,localCircuit=param
+    mcslave=mc.MC(ID,LMatrix,pos=pos,S=S,D=DList,bondList=bondList,T=T,Lx=Lx,Ly=Ly,Lz=Lz,ki_s=GcOrb[0][0],ki_t=GcOrb[0][1],ki_overLat=GcOrb[1],orbGroupList=orbGroupList,groupInSC=groupInSC,h=h,dipoleAlpha=dipoleAlpha,On=On,spinFrame=spinFrame,localCircuitList=localCircuit)
     spin_i, spin_j, spin_ij, autoCorr, E, E2, U4=mcslave.mainLoopViaCLib_On(nsweep=nsweep,nthermal=nthermal,ninterval=ninterval,algo=algorithm,On=On)
     #mData=abs(mData)/Lx/Ly/Lz
     #eData/=(Lx*Ly*Lz)
@@ -115,7 +115,7 @@ def startSimulation(updateGUI=True, rpath=''):
         for iH, H in enumerate(HList):
             for iT, T in enumerate(TList):
                 paramPack.append([iH*len(TList)+iT,T,bondList,LMatrix,pos,io.S,io.DList,H,io.nsweep,io.nthermal,io.ninterval,io.LPack[0],io.LPack[1],io.LPack[2],io.algorithm,On,
-                                  io.GcOrb,io.orbGroupList,io.groupInSC,io.dipoleAlpha,io.spinFrame])
+                                  io.GcOrb,io.orbGroupList,io.groupInSC,io.dipoleAlpha,io.spinFrame,io.localCircuitList])
 
         TResult=[];HResult=[];SpinIResult=[];SpinJResult=[];susResult=[];energyResult=[];capaResult=[];u4Result=[];autoCorrResult=[]
         while(True): # using pump strategy to reduce the costs of RAM

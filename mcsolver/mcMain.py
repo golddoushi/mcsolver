@@ -13,10 +13,10 @@ except:
     import Lattice as lat
 
 class MC:
-    def __init__(self,ID,LMatrix,pos=[],S=[],D=[],bondList=[],T=1,Lx=1,Ly=1,Lz=1,ki_s=0,ki_t=0,ki_overLat=[0,0,0],orbGroupList=[],groupInSC=False,h=0.,dipoleAlpha=0,On=1,spinFrame=0): # init for specified temperature
+    def __init__(self,ID,LMatrix,pos=[],S=[],D=[],bondList=[],T=1,Lx=1,Ly=1,Lz=1,ki_s=0,ki_t=0,ki_overLat=[0,0,0],orbGroupList=[],groupInSC=False,h=0.,dipoleAlpha=0,On=1,spinFrame=0,localCircuitList=[]): # init for specified temperature
         self.Lx, self.Ly, self.Lz=Lx, Ly, Lz
         norb=len(pos)
-        totOrbs=Lx*Ly*Lz*norb
+        self.totOrbs=Lx*Ly*Lz*norb
         # to aviod 0K
         T=0.1 if T<0.1 else T
         # *****************************************************#
@@ -24,7 +24,7 @@ class MC:
         #******************************************************#
         # create orbs for manual temperature
         DT=[d/T for d in D]
-        lattice_array, lattice, orbGroup=lat.establishLattice(Lx=Lx,Ly=Ly,Lz=Lz,norb=norb,Lmatrix=np.array(LMatrix),bmatrix=np.array(pos),SpinList=S,DList=DT,orbGroupList=orbGroupList,groupInSC=groupInSC)
+        self.lattice_array, self.lattice, self.orbGroup, self.localCircuit=lat.establishLattice(Lx=Lx,Ly=Ly,Lz=Lz,norb=norb,Lmatrix=np.array(LMatrix),bmatrix=np.array(pos),SpinList=S,DList=DT,orbGroupList=orbGroupList,groupInSC=groupInSC,localCircuitList=localCircuitList)
         # create bond list for manual temperature
         #bondT=[]
         for bond in bondList:
@@ -35,20 +35,16 @@ class MC:
             raise("Input Error!")
             ki_s=norb-1 if ki_s >= norb else ki_s
             ki_t=norb-1 if ki_t >= norb else ki_t
-        self.correlatedOrbitalPair=lat.establishLinking(lattice_array,bondList,ki_s=ki_s,ki_t=ki_t,ki_overLat=ki_overLat,Lmatrix=np.array(LMatrix),bmatrix=np.array(pos),dipoleAlpha=dipoleAlpha)
-        lat.constructLocalFrame(lattice)
+        self.correlatedOrbitalPair=lat.establishLinking(self.lattice_array,bondList,ki_s=ki_s,ki_t=ki_t,ki_overLat=ki_overLat,Lmatrix=np.array(LMatrix),bmatrix=np.array(pos),dipoleAlpha=dipoleAlpha)
+        lat.constructLocalFrame(self.lattice)
         self.dipoleCorrection = False 
         if abs(dipoleAlpha)>1e-5:
             self.dipoleCorrection=True
-            lat.generateDipoleBondings(lattice,dipoleAlpha/T,On=On)
+            lat.generateDipoleBondings(self.lattice,dipoleAlpha/T,On=On)
         self.ID=ID
         self.T=T
         self.Sz=Lx*Ly*Lz*sum(S)
         self.Energy=0.
-        self.lattice=lattice
-        self.lattice_array=lattice_array
-        self.orbGroup=orbGroup
-        self.totOrbs=totOrbs
         self.blockLen=0
         self.ki_s=ki_s
         self.ki_t=ki_t
@@ -195,7 +191,7 @@ class MC:
         # initial spin, single ion anisotropy and number of linking
         initSpin=(c_double*self.totOrbs)()
         initD=(c_double*(3*self.totOrbs))()
-        invFactorMat=(c_double*(9*self.totOrbs))()
+        # invFactorMat=(c_double*(9*self.totOrbs))()   # not used since we are to implement the lattice formula for topo. calc.
         nlinking=(c_int*self.totOrbs)()
         nlinking_list=[]
         for iorb, orb in enumerate(self.lattice):
@@ -204,19 +200,28 @@ class MC:
             for i in range(3):  # set single ion anisotropy
                 initD[iorb*3+i]=c_double(orb.D[i])
             
-            for i in range(3):  # set factor matrix inversion which is to use in the comput of local spin vorticity
-                for j in range(3):
-                    invFactorMat[iorb*9+i*3+j]=c_double(orb.invFactorMat[i,j])
+            #for i in range(3):  # set factor matrix inversion which is to use in the comput of local spin vorticity
+            #    for j in range(3):
+            #        invFactorMat[iorb*9+i*3+j]=c_double(orb.invFactorMat[i,j])
 
             nlinking[iorb]=c_int(len(orb.linkedOrb))
             nlinking_list.append(len(orb.linkedOrb))
         
+        # local circuits for the calc. of topo. charge
+        nLocalCircuits=len(self.localCircuit)
+        localCircuits=(c_int*(3*nLocalCircuits))()
+        cnt=0
+        for circuit in self.localCircuit:
+            for orb in circuit:
+                localCircuits[cnt]=c_int(orb.id)
+                cnt+=1
+
         # link strength
         ignoreNonDiagonalJ=1
         maxNLinking=np.max(nlinking_list)
         #print("maxNLinking=%d"%maxNLinking)
         linkStrength=(c_double*(self.totOrbs*maxNLinking*9))() # thus the nlinking of every orbs are the same
-        linkDistance=(c_double*(self.totOrbs*maxNLinking*3))() # the bond vector in real-space
+        # linkDistance=(c_double*(self.totOrbs*maxNLinking*3))() # the bond vector in real-space, not used since we are to implement lattice formula for topo. calc.
         cnt, cnt_distance=0, 0
         for iorb, orb in enumerate(self.lattice):
             #print("orb%d"%orb.id)
@@ -225,18 +230,18 @@ class MC:
                     for i in range(9):  # set the redundant bond strength to zero
                         linkStrength[cnt]=c_double(0.)
                         cnt+=1
-                    for i in range(3):  # set the redundant bond vector to zero
-                        linkDistance[cnt_distance]=c_double(0.)
-                        cnt_distance+=1
+                    #for i in range(3):  # set the redundant bond vector to zero
+                    #    linkDistance[cnt_distance]=c_double(0.)
+                    #    cnt_distance+=1
                 else:
                     #print("link %d :"%ilinking,orb.linkStrength[ilinking])
                     for i in range(9):  # set the bond strength
                         linkStrength[cnt]=c_double(orb.linkStrength[ilinking][i])
                         if abs(orb.linkStrength[ilinking][i]) > 1e-6 and i>=3: ignoreNonDiagonalJ=0
                         cnt+=1
-                    for i in range(3):  # set the bond vector
-                        linkDistance[cnt_distance]=c_double(orb.linkDistance[ilinking][i])
-                        cnt_distance+=1
+                    #for i in range(3):  # set the bond vector
+                    #    linkDistance[cnt_distance]=c_double(orb.linkDistance[ilinking][i])
+                    #    cnt_distance+=1
         ignoreNonDiagonalJ=c_int(ignoreNonDiagonalJ)
         # linking info.
         linkData=(c_int*(self.totOrbs*maxNLinking))()
@@ -350,7 +355,7 @@ class MC:
         cMC=mylib.MCMainFunction
         cMC.restype=py_object
         data = cMC(updateAlgorithm,c_int(self.totOrbs), initSpin, initD, c_int(nthermal), c_int(nsweep), 
-                   maxNLinking_, nlinking, linkStrength, linkData, invFactorMat, linkDistance,
+                   maxNLinking_, nlinking, linkStrength, linkData, c_int(nLocalCircuits), localCircuits,
                    c_int(ninterval), c_int(nLat), 
                    corrOrbitalPair, nOrbGroup, maxOrbGroupSize, orbGroupList,
                    flunc_, h,

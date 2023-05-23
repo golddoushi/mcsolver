@@ -410,7 +410,7 @@ void localUpdate(int totOrbs, Orb lattice[], double *p_energy, Vec *p_totSpin){
 void (*p_mcUpdate)(int totOrbs, Orb lattice[], double*p_energy, Vec *p_totSpin);
 
 PyObject * MCMainFunction(int algorithm, int totOrbs, double initSpin[totOrbs], double initD[totOrbs][3], int nthermal, int nsweep, 
-                   int maxNLinking, int nlink[totOrbs], double linkStrength[totOrbs][maxNLinking][9], int linkedOrb[totOrbs][maxNLinking], double invFactorMat[totOrbs][3][3], double linkDistance[totOrbs][maxNLinking][3],
+                   int maxNLinking, int nlink[totOrbs], double linkStrength[totOrbs][maxNLinking][9], int linkedOrb[totOrbs][maxNLinking], int nLocalCircuits, int localCircuits[nLocalCircuits][3],
                    int ninterval, int nLat, int corrOrbPair[nLat][2], int nOrbGroup, int maxOrbGroupSize, int orbGroupList[nOrbGroup][maxOrbGroupSize], double flunc, double h,
                    int totOrb_rnorm, int nOrbInCluster, int rOrb[totOrb_rnorm], int rOrbCluster[totOrb_rnorm][nOrbInCluster], int linkedOrb_rnorm[totOrb_rnorm][maxNLinking],
                    int spinFrame,
@@ -529,27 +529,7 @@ PyObject * MCMainFunction(int algorithm, int totOrbs, double initSpin[totOrbs], 
             
         }
 
-        double topological_q_local=0;
-        /* xy model possess no topological charge
-        for(int iorb=0;iorb<totOrbs;iorb++){
-            double dsx_dx_avg=0;
-            double dsy_dx_avg=0;
-            double dsx_dy_avg=0;
-            double dsy_dy_avg=0;
-            for(int ilink=0;ilink<lattice[iorb].nlink;ilink++){
-                //Vec dspin;
-                dsx_dx_avg+=linkDistance[iorb][ilink][0]*(lattice[iorb].linkedOrb[ilink]->spin.x - lattice[iorb].spin.x);
-                dsy_dx_avg+=linkDistance[iorb][ilink][0]*(lattice[iorb].linkedOrb[ilink]->spin.y - lattice[iorb].spin.y);
-                dsx_dy_avg+=linkDistance[iorb][ilink][1]*(lattice[iorb].linkedOrb[ilink]->spin.x - lattice[iorb].spin.x);
-                dsy_dy_avg+=linkDistance[iorb][ilink][1]*(lattice[iorb].linkedOrb[ilink]->spin.y - lattice[iorb].spin.y);
-                
-            }
-            double dsx_dx = invFactorMat[iorb][0][0]*dsx_dx_avg + invFactorMat[iorb][0][1] *dsx_dy_avg;
-            double dsx_dy = invFactorMat[iorb][1][0]*dsx_dx_avg + invFactorMat[iorb][1][1] *dsx_dy_avg;
-            double dsy_dx = invFactorMat[iorb][0][0]*dsy_dx_avg + invFactorMat[iorb][0][1] *dsy_dy_avg;
-            double dsy_dy = invFactorMat[iorb][1][0]*dsy_dx_avg + invFactorMat[iorb][1][1] *dsy_dy_avg;
-            topological_q_local += dsx_dx * dsy_dy - dsx_dy * dsy_dx;
-        }*/
+        double topological_q_local=0; // xy-model posess no topological charge
         topological_q+=topological_q_local;
 
         spin_i_z+=spin_i_z_avg/nLat;

@@ -152,7 +152,8 @@ class Bond:
 
 def establishLattice(Lx=1,Ly=1,Lz=1,norb=1,
                      Lmatrix=np.array([[1,0,0],[0,1,0],[0,0,1]]),bmatrix=[np.array([0.,0.,0.])],
-                     SpinList=[1],DList=[0.,0.,0.],orbGroupList=[],groupInSC=False):
+                     SpinList=[1],DList=[0.,0.,0.],orbGroupList=[],groupInSC=False,
+                     localCircuitList=[]):
     '''
     create a Lx X Ly X Lz lattice, and create norb orbitals
     for each cell
@@ -214,8 +215,22 @@ def establishLattice(Lx=1,Ly=1,Lz=1,norb=1,
             print("orb%d is chosen, involving:"%orb.id)
             for sub_orb in orb.orb_cluster:
                 print("    orb%d"%sub_orb.id)        
-    print("<<<<<<")'''       
-    return lattice, lattice_flatten, orbGroup
+    print("<<<<<<")'''
+
+    # construct circuits
+    circuitList=[]
+    for x in range(Lx):
+        for y in range(Ly):
+            for z in range(Lz):
+                for circuit in localCircuitList:
+                    s1Info, s2Info, s3Info= circuit
+                    orb1, lat1= s1Info
+                    orb2, lat2= s2Info
+                    orb3, lat3= s3Info
+                    circuitList.append((lattice[(x+lat1[0])%Lx][(y+lat1[1])%Ly][(z+lat1[2])%Lz][orb1],
+                                        lattice[(x+lat2[0])%Lx][(y+lat2[1])%Ly][(z+lat2[2])%Lz][orb2],
+                                        lattice[(x+lat3[0])%Lx][(y+lat3[1])%Ly][(z+lat3[2])%Lz][orb3]))
+    return lattice, lattice_flatten, orbGroup, circuitList
 
 def establishLinking(lattice,bondList,ki_s=0,ki_t=0,ki_overLat=[0,0,0],
                      Lmatrix=np.array([[1,0,0],[0,1,0],[0,0,1]]),bmatrix=[np.array([0.,0.,0.])],
