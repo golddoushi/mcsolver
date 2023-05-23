@@ -4,9 +4,9 @@ from distutils.core import setup, Extension
 with open("README.md", "r") as fh:
     long_description = fh.read()
 
-isingLib=Extension('_isinglib',sources=['./mcsolver/isingLib.c'],language='c',extra_compile_args=['-std=c99','-fPIC'])
-xyLib=Extension('_xylib',sources=['./mcsolver/xyLib.c'],language='c',extra_compile_args=['-std=c99','-fPIC'])
-heisenbergLib=Extension('_heisenberglib',sources=['./mcsolver/heisenbergLib.c'],language='c',extra_compile_args=['-std=c99','-fPIC'])
+isingLib=Extension('_isinglib',sources=['./mcsolver/isingLib.c'],language='c',extra_compile_args=['-std=c99','-fPIC','-O3'])
+xyLib=Extension('_xylib',sources=['./mcsolver/xyLib.c'],language='c',extra_compile_args=['-std=c99','-fPIC','-O3'])
+heisenbergLib=Extension('_heisenberglib',sources=['./mcsolver/heisenbergLib.c'],language='c',extra_compile_args=['-std=c99','-fPIC','-O3'])
 
 setup(
     name="mcsolver",

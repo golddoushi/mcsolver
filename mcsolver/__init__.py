@@ -1,4 +1,4 @@
-__version__="1.2.2"
+__version__="3.0.0"
 from . import win
 import os
 

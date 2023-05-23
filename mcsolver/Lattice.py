@@ -1,6 +1,9 @@
 import numpy as np
 from matplotlib.figure import Figure
-from auxiliary import improveTheMatrixRankToThree
+try:
+    from .auxiliary import improveTheMatrixRankToThree
+except:
+    from auxiliary import improveTheMatrixRankToThree
 
 class Orbital:
     '''
