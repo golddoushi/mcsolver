@@ -3,6 +3,8 @@ A user friendly and efficient tool implementing Monte Carlo simulations to estim
 
 Support multiple ocassions, e.g. standard ferromangetic/anti-ferromagnetic systems, DMI, Kiteav non-diagonal exchange interactions, dipole-dipole long-range couplings, with external fields.
 
+The newest version is 3, which supports the calculations on topological charges (the number of (anti-)Skyrmions and (anti-)Merons).
+
 Original version contributor: Dr. Liang Liu* 1.Shenzheng University 2.Shandong University
 Email: liangliu@mail.sdu.edu.cn
 
