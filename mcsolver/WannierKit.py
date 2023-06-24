@@ -4,9 +4,8 @@ Created on 2018 12 8
 @author: Andrew
 '''
 import numpy as np
-import re
+from time import time
 from matplotlib.figure import Figure
-from mpl_toolkits.mplot3d.axes3d import Axes3D
 import matplotlib.pyplot as plt
 try:
     from . import auxiliary as aux
@@ -20,6 +19,7 @@ class TBmodel(object):
     reci_lattice=[]
     norbital=0
     orbital_coor=[]
+    spin_list=[]
     onsite_energy=[]
     
     nhoppings=0
@@ -77,7 +77,7 @@ class TBmodel(object):
             for iorb0, orb0 in enumerate(self.orbital_coor):
                 # add coordinates
                 orb_sc=np.dot(orb0[0]+interior_cell,invTmatrix)
-                sc_orbital_coor.append([orb_sc,orb0[1],orb0[2]])
+                sc_orbital_coor.append([orb_sc,orb0[1],orb0[2],orb0[3]])
                 norbital+=1
                 # add hopping
                 for hopping_ele in self.hopping:
@@ -181,6 +181,42 @@ class TBmodel(object):
         ax.grid(False)
         ax.axis('off')
         return f, ax
+
+    def viewStructure_maya(self,ax):
+        '''visualize the orbital and bonding's spatial configuration'''
+        
+        def dragLineWithTwoPoints(pt0, pt1, c=(0,0,0), linewidth=None):
+            ax.plot3d([pt0[0],pt1[0]],[pt0[1],pt1[1]],[pt0[2],pt1[2]], color=c, tube_radius=linewidth)
+         
+        # draw the boder of unit cell   
+        pt0=np.zeros(3)
+        a1,a2,a3=self.lattice[0],self.lattice[1],self.lattice[2]
+
+        ax.quiver3d(*pt0,*a1,color=(0,0,0),line_width=20,mode='2darrow')
+        ax.quiver3d(*pt0,*a2,color=(0,0,0),line_width=20,mode='2darrow')
+        ax.quiver3d(*pt0,*a3,color=(0,0,0),line_width=20,mode='2darrow')
+        time0=time()
+        for iorb, orb in enumerate(self.orbital_coor):
+            #if iorb>=50:
+            #    print('num. of orb >=50, some orbs will not be illustrated')
+            #    break
+            orb_xyz=orb[0]@self.lattice
+            ax.points3d(orb_xyz[0],orb_xyz[1],orb_xyz[2],color=orb[2],scale_factor=orb[1],mode='sphere')#,s=orb[1])
+            ax.quiver3d(*orb_xyz,*orb[3],color=(0,0,1),mode='arrow')
+            #ax.text(orb_xyz[0],orb_xyz[1],orb_xyz[2],str(iorb))
+        print("Draw orbitals and mag.moms.: %.3fs"%(time()-time0))
+        time0=time()
+        for ihopping, hopping in enumerate(self.hopping):
+            #if ihopping>=200:
+            #    print('num. of hopping >=200, some hoppings will not be illustrated')
+            #    break
+            iorb0, iorb1, Rextra, amp, color, linewidth=hopping[0], hopping[1], hopping[2], hopping[3], hopping[4], hopping[5]
+            if np.dot(Rextra,Rextra)>0:
+                continue
+            orb0_xyz=np.dot(self.orbital_coor[iorb0][0],self.lattice)
+            orb1_xyz=np.dot((self.orbital_coor[iorb1][0]+Rextra),self.lattice)
+            dragLineWithTwoPoints(orb0_xyz,orb1_xyz,c=color,linewidth=linewidth)
+        print("Draw couplings: %.3fs"%(time()-time0))
 
     def genReciLattice(self):
         # generate the 3rd lattice vector if input 2D model

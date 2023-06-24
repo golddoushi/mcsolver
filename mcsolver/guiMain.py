@@ -243,7 +243,7 @@ def loadBonds():
     detail_base.grid(row=2,column=0,sticky=(W,E))
     BondDetailNote=toolbox.NoteFrm(detail_base, init_notes=['s','t','over lat.','',''],init_data=[0,0,1,0,0],row=True,entryWidth=3)
 
-    unitLabel=Label(BondFrame,text='Note all energy units are in Kelvin (1meV=11.58875K)')
+    unitLabel=Label(BondFrame,text='Note all energy units are in Kelvin (1meV=11.604609K)')
     unitLabel.grid(row=3,column=0,sticky=(W,E))
 
     #reviewBtn=Button(addBondFrameBase,text='review',command=reviewBond)
@@ -327,7 +327,7 @@ def loadStructureViewer():
     a2=latticeGui[1].report()
     a3=latticeGui[2].report()
     tb.lattice=np.array([a1,a2,a3])
-    tb.orbital_coor=[[np.array(ele[3]),50,'red'] for ele in OrbListBox.infoData]
+    tb.orbital_coor=[[np.array(ele[3]),50,'red',(0,0,ele[2])] for ele in OrbListBox.infoData]
     tb.norbital=len(tb.orbital_coor)
     tb.hopping=[[bond_data[2][0],bond_data[2][1],np.array(bond_data[2][2]),bond_data[1][0],'green', 2] for bond_data in BondBox.infoData]
     tb.nhoppings=len(tb.hopping)
@@ -365,7 +365,7 @@ def updateStructureViewer(lightID=-1,lightOrb=-1):
     a2=latticeGui[1].report()
     a3=latticeGui[2].report()
     tb.lattice=np.array([a1,a2,a3])
-    tb.orbital_coor=[[np.array(ele[3]),100 if ele[0]==lightOrb else 50,'yellow' if ele[0]==lightOrb else 'red' ] for ele in OrbListBox.infoData]
+    tb.orbital_coor=[[np.array(ele[3]),100 if ele[0]==lightOrb else 50,'yellow' if ele[0]==lightOrb else 'red',(0,0,ele[2]) ] for ele in OrbListBox.infoData]
     tb.norbital=len(tb.orbital_coor)
     tb.hopping=[[bond_data[2][0],bond_data[2][1],np.array(bond_data[2][2]),bond_data[1][0],'yellow' if bond_data[0]==lightID else 'green', 6 if bond_data[0]==lightID else 2] for bond_data in BondBox.infoData]
     tb.nhoppings=len(tb.hopping)
