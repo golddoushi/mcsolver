@@ -1,3 +1,4 @@
+#define PY_SSIZE_T_CLEAN
 #include "Python.h"
 #include <stdio.h>
 #include <stdlib.h>
@@ -477,4 +478,118 @@ PyObject * localUpdateMC(int totOrbs, double initSpin[totOrbs], int nthermal, in
     PyTuple_SetItem(Data, 10, spinFrameData);
     //printf("before clib return data\n");
     return Data;
+}
+
+PyObject * MCMainFunction(PyObject* self, PyObject* args){
+    // read in all parameters
+    PyObject* py_algorithm;
+    PyObject* py_initSpin;
+    PyObject* py_nthermal;
+    PyObject* py_nsweep;
+    PyObject* py_maxNLinking;
+    PyObject* py_ninterval;
+    PyObject* py_nlink;
+    PyObject* py_linkStrength;
+    PyObject* py_linkedOrb;
+    PyObject* py_corrOrbPair;
+    PyObject* py_h;
+    PyObject* py_rOrb;
+    PyObject* py_rOrbCluster;
+    PyObject* py_linkedOrb_rnorm;
+    PyObject* py_spinFrame;
+    PyObject* callback;  // callback function
+    PyArg_ParseTuple(args,"OOOOOOOOOOOOOOOO",
+                    &py_algorithm,&py_initSpin,&py_nthermal,&py_nsweep,&py_ninterval,
+                    &py_maxNLinking,&py_nlink,&py_linkStrength,&py_linkedOrb,
+                    &py_corrOrbPair,
+                    &py_h,
+                    &py_rOrb,&py_rOrbCluster,&py_linkedOrb_rnorm,
+                    &py_spinFrame,
+                    &callback);
+    
+    int algorithm=(int)PyLong_AsLong(py_algorithm); 
+    //printf("%d\n",algorithm);
+    int nthermal=(int)PyLong_AsLong(py_nthermal);
+    int nsweep=(int)PyLong_AsLong(py_nsweep);
+    int maxNLinking=(int)PyLong_AsLong(py_maxNLinking);
+    int ninterval=(int)PyLong_AsLong(py_ninterval);
+    int spinFrame=(int)PyLong_AsLong(py_spinFrame);
+
+    int totOrbs=(int)PyTuple_Size(py_initSpin);
+    double initSpin[totOrbs];
+    for(int iorb=0;iorb<totOrbs;iorb++)initSpin[iorb]=PyFloat_AsDouble(PyTuple_GetItem(py_initSpin,iorb));
+    
+    int nlink[totOrbs];
+    double linkStrength[totOrbs][maxNLinking];
+    int linkedOrb[totOrbs][maxNLinking];
+    for(int iorb=0;iorb<totOrbs;iorb++){
+        nlink[iorb]=(int)PyLong_AsLong(PyTuple_GetItem(py_nlink,iorb));
+        for(int ilink=0;ilink<maxNLinking;ilink++){
+            linkedOrb[iorb][ilink]=(int)PyLong_AsLong(PyTuple_GetItem(py_linkedOrb,iorb*maxNLinking+ilink));
+            linkStrength[iorb][ilink]=PyFloat_AsDouble(PyTuple_GetItem(py_linkStrength,iorb*maxNLinking+ilink));
+        }
+    }
+    //printf("totOrbs=%d s0=%f nther=%d nst=%d tau=%d maxLink=%d link0=%d J=%f\n",totOrbs,initSpin[0],nthermal,nsweep,ninterval,maxNLinking,nlink[0],linkStrength[0][0]);
+    //printf("spinFrame: %d\n",spinFrame);
+    //for(int iorb=0;iorb<nlink[0];iorb++)printf("orb0-orb%d\n",linkedOrb[0][iorb]);
+
+    int nLat=(int)PyTuple_Size(py_corrOrbPair)/2;
+    int corrOrbPair[nLat][2];
+    for(int ilat=0;ilat<nLat;ilat++){
+        for(int icomp=0;icomp<2;icomp++)
+        corrOrbPair[ilat][icomp]=(int)PyLong_AsLong(PyTuple_GetItem(py_corrOrbPair,ilat*2+icomp));
+        //printf("pair%d orb%d-orb%d\n",ilat,corrOrbPair[ilat][0],corrOrbPair[ilat][1]);
+    }
+    
+    double h = PyFloat_AsDouble(py_h);
+    //printf("flunc=%f h=%f\n",flunc,h);
+
+    int totOrb_rnorm=(int)PyTuple_Size(py_rOrb);
+    int nOrbInCluster=(int)PyTuple_Size(py_rOrbCluster)/totOrb_rnorm;
+    //printf("totOrb renorm=%d grain size=%d\n",totOrb_rnorm,nOrbInCluster);
+    int rOrb[totOrb_rnorm];
+    int rOrbCluster[totOrb_rnorm][nOrbInCluster];
+    int linkedOrb_rnorm[totOrb_rnorm][maxNLinking];
+    for(int iorb=0;iorb<totOrb_rnorm;iorb++){
+        rOrb[iorb]=(int)PyLong_AsLong(PyTuple_GetItem(py_rOrb,iorb));
+        for(int iorb_cluster=0;iorb_cluster<nOrbInCluster;iorb_cluster++)
+            rOrbCluster[iorb][iorb_cluster]=(int)PyLong_AsLong(PyTuple_GetItem(py_rOrbCluster,iorb*nOrbInCluster+iorb_cluster));
+        for(int ilink=0;ilink<maxNLinking;ilink++)
+            linkedOrb_rnorm[iorb][ilink]=(int)PyLong_AsLong(PyTuple_GetItem(py_linkedOrb_rnorm,iorb*maxNLinking+ilink));
+    }
+
+    if(algorithm==0){
+        return localUpdateMC(totOrbs, initSpin, nthermal, nsweep, 
+                   maxNLinking, nlink, linkStrength, linkedOrb,
+                   ninterval, nLat, corrOrbPair, h,
+                   1, totOrb_rnorm, nOrbInCluster, rOrb, rOrbCluster, linkedOrb_rnorm,
+                   spinFrame);
+    }else if (algorithm==1){
+        return blockUpdateMC(totOrbs, initSpin, nthermal, nsweep, 
+                   maxNLinking, nlink, linkStrength, linkedOrb,
+                   ninterval, nLat, corrOrbPair, h,
+                   1, totOrb_rnorm, nOrbInCluster, rOrb, rOrbCluster, linkedOrb_rnorm,
+                   spinFrame);
+    }
+    
+}
+
+static PyMethodDef module_methods[] = {
+    {"MCMainFunction", MCMainFunction, METH_VARARGS, "execute Monte Carlo sims. on Ising model"},
+    {NULL, NULL, 0, NULL} // neccessary to tell python compiler stop here
+};
+
+static PyModuleDef moduledef = {
+    PyModuleDef_HEAD_INIT,
+    "isinglib",
+    "Used to execute the Monte Carlo simulations of Ising model, that is, the O(1) spin model.",
+    -1,
+    module_methods
+};
+
+PyMODINIT_FUNC PyInit_isinglib(void) {
+    printf("Initializing isinglib...\n");
+    PyObject* m;
+    m= PyModule_Create(&moduledef);
+    return m;
 }

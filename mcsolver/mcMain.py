@@ -1,10 +1,10 @@
-from ctypes import c_double, c_int, CDLL, py_object, c_double, cdll
+#from ctypes import c_double, c_int, CDLL, py_object, c_double, cdll
 from random import random, randint
 import numpy.fft as fft
 import numpy as np
 import matplotlib.pyplot as plt
 import time
-import sys,os
+#import sys,os
 try:
     from . import win
     from . import Lattice as lat
@@ -50,8 +50,8 @@ class MC:
         self.ki_t=ki_t
         self.h=h
         self.spinFrame=spinFrame
-
-    def mainLoopViaCLib(self,nsweep=1000,nthermal=500,ninterval=-1,algo='Wolff'):
+    '''
+    def __mainLoopViaCLib(self,nsweep=1000,nthermal=500,ninterval=-1,algo='Wolff'):
         self.nsweep=nsweep
         self.nthermal=nthermal
         ninterval=self.totOrbs if ninterval<=0 else ninterval
@@ -385,7 +385,94 @@ class MC:
         
         if len(self.orbGroup)>0:self.outputSpinGroup(spinDotSpinBetweenGroups)
         return spin_i, spin_j, spin_ij, autoCorr, E, E2, U4, topologicalQ
+    '''     
+    
+    def mainLoopViaCLib(self,nsweep=1000,nthermal=500,ninterval=-1,algo='Wolff'):
+        self.nsweep=nsweep
+        self.nthermal=nthermal
+        ninterval=self.totOrbs if ninterval<=0 else ninterval
+
+        # initial spin
+        initSpin=[]
+        nlinking=[]
+        nlinking_list=[]
+        for iorb, orb in enumerate(self.lattice):
+            initSpin.append(orb.spin)
+            nlinking.append(len(orb.linkedOrb))
+            nlinking_list.append(len(orb.linkedOrb))
         
+        # link strength
+        maxNLinking=max(nlinking_list)
+        #nlinking=len(orb.linkedOrb)
+        linkStrength,linkData=[],[]
+        #linkStrength_rnorm=(c_double*(self.totOrbs*maxNLinking))() # linking for renormalization
+        for iorb, orb in enumerate(self.lattice):
+            for ilinking in range(maxNLinking):
+                if ilinking>=nlinking_list[iorb]:
+                    linkData.append(-1)
+                    linkStrength.append(0.)
+                    #linkStrength_rnorm[cnt]=c_double(0.)
+                else:
+                    linkData.append(orb.linkedOrb[ilinking].id)
+                    linkStrength.append(orb.linkStrength[ilinking])
+
+        #-------------------------------------------------------------------------------#
+        # linking info. for renormalized lattice
+        # count total sites in shrinked lat.
+        
+        #print("total %d orbs in renormalized lattice"%totOrb_rnorm)
+        rOrb,rOrbCluster,linkData_rnorm=[],[],[] # store id of renormalized orbs in cluster
+        for orb in self.lattice:
+            if orb.chosen:
+                rOrb.append(orb.id)
+                #print("orb%d is chosen"%orb.id)
+                for orbInCluster in orb.orb_cluster:
+                    rOrbCluster.append(orbInCluster.id)
+
+                for iorb in range(maxNLinking):
+                    if iorb<len(orb.linkedOrb_rnorm):
+                        linkData_rnorm.append(orb.linkedOrb_rnorm[iorb].id) 
+                    else:
+                        linkData_rnorm.append(-1)
+                    #print("orb%d ~ orb%d, linkeData_rnorm[%d]= %d"%(orb.id,orb.linkedOrb_rnorm[iorb].id,cnt,linkData_rnorm[cnt]))
+        #for cnt in range(totOrb_rnorm*maxNLinking):
+        #    print(linkData_rnorm[cnt])
+        #-------------------------------------------------------------------------------#
+        
+        # correlated info.
+        corrOrbitalPair=[]
+        for pair in self.correlatedOrbitalPair: corrOrbitalPair+=pair
+
+        updateAlgorithm=0 # default Metropolis algorithm
+        if algo=='Wolff': updateAlgorithm=1
+
+        try:
+            from isinglib import MCMainFunction
+        except:
+            from mcsolver.lib.isinglib import MCMainFunction
+
+        def callback(k):
+            print("callbak function of python is reporting, recived parameter is:")
+            print(k)
+            return
+        data=MCMainFunction(updateAlgorithm, tuple(initSpin), nthermal, nsweep, ninterval, 
+                            maxNLinking, tuple(nlinking), tuple(linkStrength), tuple(linkData), 
+                            tuple(corrOrbitalPair), self.h/self.T,
+                            tuple(rOrb), tuple(rOrbCluster), tuple(linkData_rnorm),
+                            self.spinFrame,
+                            callback)
+        #print('data has been returned successfully, dim=%d'%len(data))
+        spin_i, spin_j, spin_ij, autoCorr, E, E2, E_rnorm, E2_rnorm, U4, spin_tot, spinDistributionList = data
+        E*=self.T;E2*=self.T**2;E_rnorm*=self.T;E2_rnorm*=self.T**2 # recover the real energies
+        print("%.3f %.3f %.3f %.3f %.3f %.3f %.6f %.3f %.3f %.3f %.3f %.6f %.6f %.6f"%(
+               self.T, self.h,   spin_i,    spin_j,  spin_tot,   spin_ij,        autoCorr,    E,        E2,   E_rnorm,    E2_rnorm, E2-E**2, E2_rnorm-E_rnorm**2, U4))
+        with open('./out','a') as fout:
+            fout.write("%.3f %.3f %.3f %.3f %.3f %.3f %.3f %.3f %.3f %.3f %.6f\n"%(
+                self.T, self.h,   spin_i,    spin_j,  spin_tot,   spin_ij,        E,        E2,   E_rnorm,    E2_rnorm, U4))
+        if self.spinFrame>0:
+            self.outputSpinDistributionForIsing(spinDistributionList)
+        return spin_i, spin_j, spin_ij, autoCorr, E, E2, U4
+
     def mainLoopViaCLib_On(self,nsweep=1000,nthermal=5000,ninterval=-1,algo='Metroplis',On=3,flunc=0.0,h=0.,binGraph=False):
         def callback(k):
             print("callbak function of python is reporting, recived parameter is:")
