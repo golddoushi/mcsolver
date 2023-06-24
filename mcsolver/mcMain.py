@@ -183,7 +183,7 @@ class MC:
             self.outputSpinDistributionForIsing(spinDistributionList)
         return spin_i, spin_j, spin_ij, autoCorr, E, E2, U4
 
-    def mainLoopViaCLib_On(self,nsweep=1000,nthermal=5000,ninterval=-1,algo='Metroplis',On=3,flunc=0.0,h=0.,binGraph=False):
+    def __mainLoopViaCLib_On(self,nsweep=1000,nthermal=5000,ninterval=-1,algo='Metroplis',On=3,flunc=0.0,h=0.,binGraph=False):
         self.nsweep=nsweep
         self.nthermal=nthermal
         ninterval=self.totOrbs if ninterval<=0 else ninterval
@@ -386,6 +386,143 @@ class MC:
         if len(self.orbGroup)>0:self.outputSpinGroup(spinDotSpinBetweenGroups)
         return spin_i, spin_j, spin_ij, autoCorr, E, E2, U4, topologicalQ
         
+    def mainLoopViaCLib_On(self,nsweep=1000,nthermal=5000,ninterval=-1,algo='Metroplis',On=3,flunc=0.0,h=0.,binGraph=False):
+        def callback(k):
+            print("callbak function of python is reporting, recived parameter is:")
+            print(k)
+            return
+        
+        self.nsweep=nsweep
+        self.nthermal=nthermal
+        ninterval=self.totOrbs if ninterval<=0 else ninterval
+
+        updateAlgorithm=0 # default Metropolis algorithm
+        if algo=='Wolff': updateAlgorithm=1
+
+        initSpin,initD,nlinking=[],[],[]
+        for orb in self.lattice:
+            initSpin.append(orb.spin)
+            for i in range(3):
+                initD.append(orb.D[i])
+            nlinking.append(len(orb.linkedOrb))
+        
+        # link strength
+        ignoreNonDiagonalJ=1
+        maxNLinking=max(nlinking)
+        linkStrength,linkData=[],[] # thus the nlinking of every orbs are the same
+        
+        for iorb, orb in enumerate(self.lattice):
+            #print("orb%d"%orb.id)
+            for ilinking in range(maxNLinking):
+                if ilinking>=nlinking[iorb]:
+                    linkData.append(-1)
+                    for i in range(9):  # set the redundant bond strength to zero
+                        linkStrength.append(0.)
+                else:
+                    linkData.append(orb.linkedOrb[ilinking].id)
+                    #print("link %d :"%ilinking,orb.linkStrength[ilinking])
+                    for i in range(9):  # set the bond strength
+                        linkStrength.append(orb.linkStrength[ilinking][i])
+                        if abs(orb.linkStrength[ilinking][i]) > 1e-6 and i>=3: ignoreNonDiagonalJ=0
+
+        # topological circuits
+        localCircuits=[]
+        for circuit in self.localCircuit:
+            for orb in circuit: localCircuits+=[orb.id]
+        
+        # correlated info.
+        corrOrbitalPair=[]
+        for pair in self.correlatedOrbitalPair:corrOrbitalPair+=pair
+
+        # orb group
+        nOrbGroup=len(self.orbGroup)
+        maxOrbGroupSize=1
+        if nOrbGroup>0:
+            maxOrbGroupSize=len(self.orbGroup[0])
+        if nOrbGroup>1:
+            maxOrbGroupSize=np.max([len(subGroup) for subGroup in self.orbGroup])
+        orbGroupList=[]
+        for subGroup in self.orbGroup:
+            for iorb in range(maxOrbGroupSize):
+                if iorb<len(subGroup):
+                    orbGroupList.append(subGroup[iorb].id)
+                else:
+                    orbGroupList.append(-1)
+        #print(nOrbGroup,maxOrbGroupSize)
+        #exit()
+
+        #-------------------------------------------------------------------------------#
+        # linking info. for renormalized lattice
+        # count total sites in shrinked lat.
+        
+        #print("total %d orbs in renormalized lattice"%totOrb_rnorm)
+        rOrb,rOrbCluster,linkData_rnorm=[],[],[] # store id of renormalized orbs
+        #print("checking while preparing info.>>>>")
+        for orb in self.lattice:
+            if orb.chosen:
+                #print("orb%d is chosen"%orb.id)
+                rOrb.append(orb.id)
+                for orbInCluster in orb.orb_cluster:
+                    rOrbCluster.append(orbInCluster.id)
+                    #print("    orb%d"%orbInCluster.id)
+            
+                for iorb in range(maxNLinking):
+                    if iorb<len(orb.linkedOrb_rnorm):
+                        linkData_rnorm.append(orb.linkedOrb_rnorm[iorb].id)  
+                    else:
+                        linkData_rnorm.append(-1)
+                    #print("orb%d ~ orb%d, linkeData_rnorm[%d]= %d"%(orb.id,orb.linkedOrb_rnorm[iorb].id,cnt,linkData_rnorm[cnt]))
+        #print("<<<<")
+                
+        #for cnt in range(totOrb_rnorm*maxNLinking):
+        #    print(linkData_rnorm[cnt])
+        #-------------------------------------------------------------------------------#
+        if On==2:
+            try:
+                from xylib import MCMainFunction
+            except:
+                from mcsolver.lib.xylib import MCMainFunction
+        elif On==3:
+            try:
+                from heisenberglib import MCMainFunction
+            except:
+                from mcsolver.lib.heisenberglib import MCMainFunction
+        
+        data = MCMainFunction(updateAlgorithm,tuple(initSpin),tuple(initD),nthermal,nsweep,ninterval,
+                             maxNLinking,tuple(nlinking),tuple(linkStrength),tuple(linkData),
+                             tuple(localCircuits),
+                             tuple(corrOrbitalPair),
+                             nOrbGroup, maxOrbGroupSize, tuple(orbGroupList),
+                             flunc, self.h/self.T,
+                             tuple(rOrb), tuple(rOrbCluster), tuple(linkData_rnorm),
+                             self.spinFrame,
+                             ignoreNonDiagonalJ,
+                             callback)
+        
+        spin_i_x, spin_i_y, spin_i_z, spin_j_x, spin_j_y, spin_j_z, spin_ij, autoCorr, E, E2, U4, spin_i_r_x, spin_i_r_y, spin_i_r_z, spin_j_r_x, spin_j_r_y, spin_j_r_z, spin_ij_r, E_r, E2_r, spin_i_tot_z,spin_j_tot_z,spin_tot_z,spin_i_h,spin_j_h,spin_tot_h, topologicalQ, spinDistributionList, spinDotSpinBetweenGroups=data
+        E*=self.T;E2*=self.T**2;E_r*=self.T;E2_r*=self.T**2 # recover the real energies
+        C=E2-E*E
+        C_r=E2_r-E_r*E_r
+        spin_i=np.array([spin_i_x, spin_i_y, spin_i_z])
+        spin_j=np.array([spin_j_x, spin_j_y, spin_j_z])
+        spin_i_len=np.sqrt(np.dot(spin_i,spin_i))
+        spin_j_len=np.sqrt(np.dot(spin_j,spin_j))
+        spin_i_r=np.array([spin_i_r_x, spin_i_r_y, spin_i_r_z])
+        spin_j_r=np.array([spin_j_r_x, spin_j_r_y, spin_j_r_z])
+        #      T       <i><j>     <ij>      <autoCorr>      <E>      <E2>      <U4>      <E_r>      <E2_r>  C  C_v
+        print('%.3f %.3f %.3f %.3f %.3f %.3f %.3f %.3f %.3f %.3f %.3f %.6f %.3f %.3f %.3f %.3f %.3f %.3f %.3f %.3f'%(
+               self.T,self.h,spin_i_tot_z,spin_j_tot_z,spin_tot_z,spin_i_h,spin_j_h,spin_tot_h,spin_i_len,spin_j_len,spin_ij,np.dot(spin_i,spin_j),E,E2,       U4,spin_ij_r,np.dot(spin_i_r,spin_j_r),       E_r,      E2_r, topologicalQ))
+        with open('./out','a') as fout:
+            fout.write('%.3f %.3f %.3f %.3f %.3f %.3f %.3f %.3f %.3f %.3f %.3f %.6f %.3f %.3f %.3f %.3f %.3f %.3f %.3f %.3f\n'%(
+                   self.T,self.h,spin_i_tot_z,spin_j_tot_z,spin_tot_z,spin_i_h,spin_j_h,spin_tot_h,spin_i_len,spin_j_len,spin_ij,np.dot(spin_i,spin_j),E,E2,       U4,spin_ij_r,np.dot(spin_i_r,spin_j_r),       E_r,      E2_r, topologicalQ))
+        # FFT on the MC random data makes no sense
+        #if self.spinFrame==nsweep:self.outputSpinWaveSpetra(spinDistributionList) 
+        
+        if self.spinFrame>0:self.outputSpinDistributionForOn(spinDistributionList)
+        
+        if len(self.orbGroup)>0:self.outputSpinGroup(spinDotSpinBetweenGroups)
+        return spin_i, spin_j, spin_ij, autoCorr, E, E2, U4, topologicalQ
+
     def outputSpinGroup(self,spinDotSpinData):
         with open('./spinDotSpin.txt','a') as fout:
             # title

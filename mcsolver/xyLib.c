@@ -1,3 +1,4 @@
+#define PY_SSIZE_T_CLEAN
 #include "Python.h"
 #include <stdio.h>
 #include <stdlib.h>
@@ -409,12 +410,120 @@ void localUpdate(int totOrbs, Orb lattice[], double *p_energy, Vec *p_totSpin){
 
 void (*p_mcUpdate)(int totOrbs, Orb lattice[], double*p_energy, Vec *p_totSpin);
 
-PyObject * MCMainFunction(int algorithm, int totOrbs, double initSpin[totOrbs], double initD[totOrbs][3], int nthermal, int nsweep, 
-                   int maxNLinking, int nlink[totOrbs], double linkStrength[totOrbs][maxNLinking][9], int linkedOrb[totOrbs][maxNLinking], int nLocalCircuits, int localCircuits[nLocalCircuits][3],
-                   int ninterval, int nLat, int corrOrbPair[nLat][2], int nOrbGroup, int maxOrbGroupSize, int orbGroupList[nOrbGroup][maxOrbGroupSize], double flunc, double h,
-                   int totOrb_rnorm, int nOrbInCluster, int rOrb[totOrb_rnorm], int rOrbCluster[totOrb_rnorm][nOrbInCluster], int linkedOrb_rnorm[totOrb_rnorm][maxNLinking],
-                   int spinFrame,
-                   int ignoreNonDiagonalJ){
+//PyObject * MCMainFunction(int algorithm, int totOrbs, double initSpin[totOrbs], double initD[totOrbs][3], int nthermal, int nsweep, 
+//                   int maxNLinking, int nlink[totOrbs], double linkStrength[totOrbs][maxNLinking][9], int linkedOrb[totOrbs][maxNLinking], int nLocalCircuits, int localCircuits[nLocalCircuits][3],
+//                   int ninterval, int nLat, int corrOrbPair[nLat][2], int nOrbGroup, int maxOrbGroupSize, int orbGroupList[nOrbGroup][maxOrbGroupSize], double flunc, double h,
+//                   int totOrb_rnorm, int nOrbInCluster, int rOrb[totOrb_rnorm], int rOrbCluster[totOrb_rnorm][nOrbInCluster], int linkedOrb_rnorm[totOrb_rnorm][maxNLinking],
+//                   int spinFrame,
+//                   int ignoreNonDiagonalJ){
+PyObject * MCMainFunction(PyObject* self, PyObject* args){
+    // read in all parameters
+    PyObject* py_algorithm;
+    PyObject* py_initSpin;
+    PyObject* py_initD;
+    PyObject* py_nthermal;
+    PyObject* py_nsweep;
+    PyObject* py_maxNLinking;
+    PyObject* py_ninterval;
+    PyObject* py_nlink;
+    PyObject* py_linkStrength;
+    PyObject* py_linkedOrb;
+    PyObject* py_localCircuits;
+    PyObject* py_corrOrbPair;
+    PyObject* py_nOrbGroup;
+    PyObject* py_maxOrbGroupSize;
+    PyObject* py_orbGroupList;
+    PyObject* py_flunc; 
+    PyObject* py_h;
+    PyObject* py_rOrb;
+    PyObject* py_rOrbCluster;
+    PyObject* py_linkedOrb_rnorm;
+    PyObject* py_spinFrame;
+    PyObject* py_ignoreNonDiagonalJ;
+    PyObject* callback;  // callback function
+    PyArg_ParseTuple(args,"OOOOOOOOOOOOOOOOOOOOOOO",
+                    &py_algorithm,&py_initSpin,&py_initD,&py_nthermal,&py_nsweep,&py_ninterval,
+                    &py_maxNLinking,&py_nlink,&py_linkStrength,&py_linkedOrb,&py_localCircuits,
+                    &py_corrOrbPair,
+                    &py_nOrbGroup,&py_maxOrbGroupSize,&py_orbGroupList,
+                    &py_flunc,&py_h,
+                    &py_rOrb,&py_rOrbCluster,&py_linkedOrb_rnorm,
+                    &py_spinFrame,&py_ignoreNonDiagonalJ,
+                    &callback);
+
+    int algorithm=(int)PyLong_AsLong(py_algorithm); 
+    //printf("%d\n",algorithm);
+    int nthermal=(int)PyLong_AsLong(py_nthermal);
+    int nsweep=(int)PyLong_AsLong(py_nsweep);
+    int maxNLinking=(int)PyLong_AsLong(py_maxNLinking);
+    int ninterval=(int)PyLong_AsLong(py_ninterval);
+    int spinFrame=(int)PyLong_AsLong(py_spinFrame);
+    int ignoreNonDiagonalJ=(int)PyLong_AsLong(py_ignoreNonDiagonalJ);
+
+    int totOrbs=(int)PyTuple_Size(py_initSpin);
+    double initSpin[totOrbs];
+    for(int iorb=0;iorb<totOrbs;iorb++)initSpin[iorb]=PyFloat_AsDouble(PyTuple_GetItem(py_initSpin,iorb));
+
+    double initD[totOrbs][3];
+    for(int iorb=0;iorb<totOrbs;iorb++)for(int idir=0;idir<3;idir++)
+        initD[iorb][idir]=PyFloat_AsDouble(PyTuple_GetItem(py_initD,iorb*3+idir));
+    
+    
+    int nlink[totOrbs];
+    double linkStrength[totOrbs][maxNLinking][9];
+    int linkedOrb[totOrbs][maxNLinking];
+    for(int iorb=0;iorb<totOrbs;iorb++){
+        nlink[iorb]=(int)PyLong_AsLong(PyTuple_GetItem(py_nlink,iorb));
+        for(int ilink=0;ilink<maxNLinking;ilink++){
+            linkedOrb[iorb][ilink]=(int)PyLong_AsLong(PyTuple_GetItem(py_linkedOrb,iorb*maxNLinking+ilink));
+            for(int icomp=0;icomp<9;icomp++)
+            linkStrength[iorb][ilink][icomp]=PyFloat_AsDouble(PyTuple_GetItem(py_linkStrength,iorb*maxNLinking*9+ilink*9+icomp));
+        }
+    }
+    //printf("totOrbs=%d s0=%f D0x=%f nther=%d nst=%d tau=%d maxLink=%d link0=%d J0x=%f\n",totOrbs,initSpin[0],initD[0][0],nthermal,nsweep,ninterval,maxNLinking,nlink[0],linkStrength[0][0][0]);
+    //printf("spinFrame: %d only diagonal: %d\n",spinFrame,ignoreNonDiagonalJ);
+    //for(int iorb=0;iorb<nlink[0];iorb++)printf("orb0-orb%d\n",linkedOrb[0][iorb]);
+    
+    int nLocalCircuits=(int)PyTuple_Size(py_localCircuits)/3;
+    int minimalLocalCircuits=1;if(nLocalCircuits>minimalLocalCircuits)minimalLocalCircuits=nLocalCircuits;
+    int localCircuits[minimalLocalCircuits][3];
+    for(int icircuit=0;icircuit<nLocalCircuits;icircuit++)for(int icomp=0;icomp<3;icomp++)
+        localCircuits[icircuit][icomp]=(int)PyLong_AsLong(PyTuple_GetItem(py_localCircuits,icircuit*3+icomp));
+    //printf("num. of local circuit for topo: %d\n",nLocalCircuits);
+
+    int nLat=(int)PyTuple_Size(py_corrOrbPair)/2;
+    int corrOrbPair[nLat][2];
+    for(int ilat=0;ilat<nLat;ilat++){
+        for(int icomp=0;icomp<2;icomp++)
+        corrOrbPair[ilat][icomp]=(int)PyLong_AsLong(PyTuple_GetItem(py_corrOrbPair,ilat*2+icomp));
+        //printf("pair%d orb%d-orb%d\n",ilat,corrOrbPair[ilat][0],corrOrbPair[ilat][1]);
+    }
+    
+    int nOrbGroup=(int)PyLong_AsLong(py_nOrbGroup);
+    int maxOrbGroupSize=(int)PyLong_AsLong(py_maxOrbGroupSize);
+    //printf("nOrbGroup=%d maxOrbGroupSize=%d\n",nOrbGroup,maxOrbGroupSize);
+    int orbGroupList[nOrbGroup][maxOrbGroupSize];
+    for(int iorbGroup=0;iorbGroup<nOrbGroup;iorbGroup++)for(int iorb=0;iorb<maxOrbGroupSize;iorb++)
+        orbGroupList[iorbGroup][iorb]=(int)PyLong_AsLong(PyTuple_GetItem(py_orbGroupList,iorbGroup*maxOrbGroupSize+iorb));
+    
+    double flunc = PyFloat_AsDouble(py_flunc);
+    double h = PyFloat_AsDouble(py_h);
+    //printf("flunc=%f h=%f\n",flunc,h);
+
+    int totOrb_rnorm=(int)PyTuple_Size(py_rOrb);
+    int nOrbInCluster=(int)PyTuple_Size(py_rOrbCluster)/totOrb_rnorm;
+    //printf("totOrb renorm=%d grain size=%d\n",totOrb_rnorm,nOrbInCluster);
+    int rOrb[totOrb_rnorm];
+    int rOrbCluster[totOrb_rnorm][nOrbInCluster];
+    int linkedOrb_rnorm[totOrb_rnorm][maxNLinking];
+    for(int iorb=0;iorb<totOrb_rnorm;iorb++){
+        rOrb[iorb]=(int)PyLong_AsLong(PyTuple_GetItem(py_rOrb,iorb));
+        for(int iorb_cluster=0;iorb_cluster<nOrbInCluster;iorb_cluster++)
+            rOrbCluster[iorb][iorb_cluster]=(int)PyLong_AsLong(PyTuple_GetItem(py_rOrbCluster,iorb*nOrbInCluster+iorb_cluster));
+        for(int ilink=0;ilink<maxNLinking;ilink++)
+            linkedOrb_rnorm[iorb][ilink]=(int)PyLong_AsLong(PyTuple_GetItem(py_linkedOrb_rnorm,iorb*maxNLinking+ilink));
+    }
+
     // set algorithm
     p_mcUpdate=localUpdate;
     if(algorithm==1) p_mcUpdate=blockUpdate;
@@ -701,4 +810,24 @@ PyObject * MCMainFunction(int algorithm, int totOrbs, double initSpin[totOrbs], 
     PyTuple_SetItem(Data, 27, spinFrameData);
     PyTuple_SetItem(Data, 28, spinDotSpinBetweenGroup_Tuple);
     return Data;
+}
+
+static PyMethodDef module_methods[] = {
+    {"MCMainFunction", MCMainFunction, METH_VARARGS, "the only function in our c lib"},
+    {NULL, NULL, 0, NULL} // neccessary to tell python compiler stop here
+};
+
+static PyModuleDef moduledef = {
+    PyModuleDef_HEAD_INIT,
+    "xylib",
+    "Used to execute the Monte Carlo simulations of xy-model, that is, the O(2) spin model.",
+    -1,
+    module_methods
+};
+
+PyMODINIT_FUNC PyInit_xylib(void) {
+    printf("Initializing xylib...\n");
+    PyObject* m;
+    m= PyModule_Create(&moduledef);
+    return m;
 }

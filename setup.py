@@ -4,13 +4,13 @@ from distutils.core import setup, Extension
 with open("README.md", "r") as fh:
     long_description = fh.read()
 
-isingLib=Extension('_isinglib',sources=['./mcsolver/isingLib.c'],language='c',extra_compile_args=['-std=c99','-fPIC','-O3'])
-xyLib=Extension('_xylib',sources=['./mcsolver/xyLib.c'],language='c',extra_compile_args=['-std=c99','-fPIC','-O3'])
-heisenbergLib=Extension('_heisenberglib',sources=['./mcsolver/heisenbergLib.c'],language='c',extra_compile_args=['-std=c99','-fPIC','-O3'])
+isingLib=Extension('isinglib',sources=['./mcsolver/isingLib.c'],language='c',extra_compile_args=['-std=c99','-fPIC','-O3'])
+xyLib=Extension('xylib',sources=['./mcsolver/xyLib.c'],language='c',extra_compile_args=['-std=c99','-fPIC','-O3'])
+heisenbergLib=Extension('heisenberglib',sources=['./mcsolver/heisenbergLib.c'],language='c',extra_compile_args=['-std=c99','-fPIC','-O3'])
 
 setup(
     name="mcsolver",
-    version="3.0.2",
+    version="3.0.3",
     author="Liang Liu",
     author_email="liangliu@main.sdu.edu.cn",
     description="A user friendly program to do Monte Carlo sims for magnetic systems",
