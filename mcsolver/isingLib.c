@@ -19,13 +19,13 @@ typedef struct Orb
     struct Orb **orb_cluster;
 }Orb;
 
-void establishLattice(Orb *lattice, int totOrbs, double initSpin[totOrbs], int maxNLinking, int nlink[maxNLinking], double linkStrength[totOrbs][maxNLinking],
-                   int totOrb_rnorm, int nOrbInCluster, int rOrb[totOrb_rnorm], int rOrbCluster[totOrb_rnorm][nOrbInCluster]){
+void establishLattice(Orb *lattice, int totOrbs, double initSpin[totOrbs], int maxNLinking, int nlink[maxNLinking], double linkStrength[totOrbs*maxNLinking],
+                   int totOrb_rnorm, int nOrbInCluster, int rOrb[totOrb_rnorm], int rOrbCluster[totOrb_rnorm*nOrbInCluster]){
     for(int i=0;i<totOrbs;i++){
         lattice[i].id=i;
         lattice[i].spin=initSpin[i];
         lattice[i].nlink=nlink[i];
-        lattice[i].linkStrength=linkStrength[i];
+        lattice[i].linkStrength=linkStrength+i;
         lattice[i].chosen=0;
     }
     //printf("verify lattice\n");
@@ -41,18 +41,18 @@ void establishLattice(Orb *lattice, int totOrbs, double initSpin[totOrbs], int m
         lattice[id].orb_cluster=(Orb**)malloc(nOrbInCluster*sizeof(Orb*));
         //printf("orb%d is chosen to be the center of cluster, involving %d orbs in total:\n",lattice[id].id,lattice[id].nOrbInCluster);
         for(int iorb=0;iorb<nOrbInCluster;iorb++){
-            lattice[id].orb_cluster[iorb]=lattice+rOrbCluster[i][iorb];
+            lattice[id].orb_cluster[iorb]=lattice+rOrbCluster[i*nOrbInCluster+iorb];
             //printf("    from input id=%d orb%d\n",rOrbCluster[id][iorb],lattice[id].orb_cluster[iorb]->id);
         }
     }
 }
 
-void establishLinking(Orb *lattice, int totOrbs, int maxNLinking, int nlink[maxNLinking], int linkedOrb[totOrbs][maxNLinking],
-                   int totOrb_rnorm, int rOrb[totOrb_rnorm], int linkedOrb_rnorm[totOrb_rnorm][maxNLinking]){
+void establishLinking(Orb *lattice, int totOrbs, int maxNLinking, int nlink[maxNLinking], int linkedOrb[totOrbs*maxNLinking],
+                   int totOrb_rnorm, int rOrb[totOrb_rnorm], int linkedOrb_rnorm[totOrb_rnorm*maxNLinking]){
     for(int iorb=0;iorb<totOrbs;iorb++){
         lattice[iorb].linkedOrb=(Orb**)malloc(nlink[iorb]*sizeof(Orb*));
         for(int ilink=0;ilink<nlink[iorb];ilink++){
-            lattice[iorb].linkedOrb[ilink]=lattice+linkedOrb[iorb][ilink];
+            lattice[iorb].linkedOrb[ilink]=lattice+linkedOrb[iorb*maxNLinking+ilink];
         }
     }
     //printf("verify linking\n");
@@ -66,19 +66,19 @@ void establishLinking(Orb *lattice, int totOrbs, int maxNLinking, int nlink[maxN
         int iorb=rOrb[i];
         lattice[iorb].linkedOrb_rnorm=(Orb**)malloc(nlink[iorb]*sizeof(Orb*));
         for(int ilink=0;ilink<nlink[iorb];ilink++){
-            lattice[iorb].linkedOrb_rnorm[ilink]=lattice+linkedOrb_rnorm[i][ilink];
+            lattice[iorb].linkedOrb_rnorm[ilink]=lattice+linkedOrb_rnorm[i*maxNLinking+ilink];
         }
     }
 }
 
-void establishLatticeWithGhost(Orb *lattice, int totOrbs, double initSpin[totOrbs], int maxNLinking, int nlink[maxNLinking], double linkStrength[totOrbs][maxNLinking], double h,
+void establishLatticeWithGhost(Orb *lattice, int totOrbs, double initSpin[totOrbs], int maxNLinking, int nlink[maxNLinking], double linkStrength[totOrbs*maxNLinking], double h,
                    int totOrb_rnorm, int rOrb[totOrb_rnorm]){
     for(int i=0;i<totOrbs-1;i++){
         lattice[i].id=i;
         lattice[i].spin=initSpin[i];
         lattice[i].nlink=nlink[i]+1;
         lattice[i].linkStrength=(double*)malloc(lattice[i].nlink*sizeof(double));
-        for(int j=0;j<lattice[i].nlink-1;j++)lattice[i].linkStrength[j]=linkStrength[i][j];
+        for(int j=0;j<lattice[i].nlink-1;j++)lattice[i].linkStrength[j]=linkStrength[i*maxNLinking+j];
         lattice[i].linkStrength[lattice[i].nlink-1]=1;
         lattice[i].chosen=0;
     }
@@ -92,12 +92,12 @@ void establishLatticeWithGhost(Orb *lattice, int totOrbs, double initSpin[totOrb
     for(int i=0;i<totOrbs-1;i++) lattice[totOrbs-1].linkStrength[i]=1;
 }
 
-void establishLinkingWithGhost(Orb *lattice, int totOrbs, int maxNLinking, int nlink[maxNLinking], int linkedOrb[totOrbs][maxNLinking],
-                   int totOrb_rnorm, int rOrb[totOrb_rnorm], int linkedOrb_rnorm[totOrb_rnorm][maxNLinking]){
+void establishLinkingWithGhost(Orb *lattice, int totOrbs, int maxNLinking, int nlink[maxNLinking], int linkedOrb[totOrbs*maxNLinking],
+                   int totOrb_rnorm, int rOrb[totOrb_rnorm], int linkedOrb_rnorm[totOrb_rnorm*maxNLinking]){
     for(int iorb=0;iorb<totOrbs-1;iorb++){
         lattice[iorb].linkedOrb=(Orb**)malloc(lattice[iorb].nlink*sizeof(Orb*));
         for(int ilink=0;ilink<lattice[iorb].nlink-1;ilink++){
-            lattice[iorb].linkedOrb[ilink]=lattice+linkedOrb[iorb][ilink];
+            lattice[iorb].linkedOrb[ilink]=lattice+linkedOrb[iorb*maxNLinking+ilink];
         }
         lattice[iorb].linkedOrb[lattice[iorb].nlink-1]=lattice+totOrbs-1;
     }
@@ -106,7 +106,7 @@ void establishLinkingWithGhost(Orb *lattice, int totOrbs, int maxNLinking, int n
         //printf("step %d, In renormalized lattice, orb%d is involved by %d bonds\n",i,lattice[iorb].id, nlink[iorb]);
         lattice[iorb].linkedOrb_rnorm=(Orb**)malloc(nlink[iorb]*sizeof(Orb*));
         for(int ilink=0;ilink<nlink[iorb];ilink++){
-            lattice[iorb].linkedOrb_rnorm[ilink]=lattice+linkedOrb_rnorm[i][ilink];
+            lattice[iorb].linkedOrb_rnorm[ilink]=lattice+linkedOrb_rnorm[i*maxNLinking+ilink];
             //printf("%d\n",linkedOrb_rnorm[i][ilink]);
             //printf("orb%d with strength %.3f\n",lattice[iorb].linkedOrb_rnorm[ilink]->id,lattice[iorb].linkStrength[ilink]);
         }
@@ -237,9 +237,9 @@ void localUpdate(int totOrbs, Orb lattice[], double *p_energy, double *p_totSpin
 }
  
 PyObject * blockUpdateMC(int totOrbs, double initSpin[totOrbs], int nthermal, int nsweep, 
-                   int maxNLinking, int nlink[totOrbs], double linkStrength[totOrbs][maxNLinking], int linkedOrb[totOrbs][maxNLinking],
+                   int maxNLinking, int nlink[totOrbs], double linkStrength[totOrbs*maxNLinking], int linkedOrb[totOrbs*maxNLinking],
                    int ninterval, int nLat, int corrOrbPair[nLat][2], double h,
-                   int renormOn, int totOrb_rnorm, int nOrbInCluster, int rOrb[totOrb_rnorm], int rOrbCluster[totOrb_rnorm][nOrbInCluster], int linkedOrb_rnorm[totOrb_rnorm][maxNLinking],
+                   int renormOn, int totOrb_rnorm, int nOrbInCluster, int rOrb[totOrb_rnorm], int rOrbCluster[totOrb_rnorm*nOrbInCluster], int linkedOrb_rnorm[totOrb_rnorm*maxNLinking],
                    int spinFrame){
     //printf("hello block algorithm!\n");
     // initialize lattice including one ghost spin
@@ -364,9 +364,9 @@ PyObject * blockUpdateMC(int totOrbs, double initSpin[totOrbs], int nthermal, in
 }
 
 PyObject * localUpdateMC(int totOrbs, double initSpin[totOrbs], int nthermal, int nsweep, 
-                   int maxNLinking, int nlink[totOrbs], double linkStrength[totOrbs][maxNLinking], int linkedOrb[totOrbs][maxNLinking],
+                   int maxNLinking, int nlink[totOrbs], double linkStrength[totOrbs*maxNLinking], int linkedOrb[totOrbs*maxNLinking],
                    int ninterval, int nLat, int corrOrbPair[nLat][2], double h,
-                   int renormOn, int totOrb_rnorm, int nOrbInCluster, int rOrb[totOrb_rnorm], int rOrbCluster[totOrb_rnorm][nOrbInCluster], int linkedOrb_rnorm[totOrb_rnorm][maxNLinking],
+                   int renormOn, int totOrb_rnorm, int nOrbInCluster, int rOrb[totOrb_rnorm], int rOrbCluster[totOrb_rnorm*nOrbInCluster], int linkedOrb_rnorm[totOrb_rnorm*maxNLinking],
                    int spinFrame){
     // initialize lattice 
     Orb lattice[totOrbs];
@@ -516,17 +516,17 @@ PyObject * MCMainFunction(PyObject* self, PyObject* args){
     int spinFrame=(int)PyLong_AsLong(py_spinFrame);
 
     int totOrbs=(int)PyTuple_Size(py_initSpin);
-    double initSpin[totOrbs];
+    double *initSpin=(double*)malloc(totOrbs*sizeof(double));
     for(int iorb=0;iorb<totOrbs;iorb++)initSpin[iorb]=PyFloat_AsDouble(PyTuple_GetItem(py_initSpin,iorb));
     
-    int nlink[totOrbs];
-    double linkStrength[totOrbs][maxNLinking];
-    int linkedOrb[totOrbs][maxNLinking];
+    int *nlink=(int*)malloc(totOrbs*sizeof(int));
+    double *linkStrength=(double*)malloc(totOrbs*maxNLinking*sizeof(double));
+    int *linkedOrb=(int*)malloc(totOrbs*maxNLinking*sizeof(int));
     for(int iorb=0;iorb<totOrbs;iorb++){
         nlink[iorb]=(int)PyLong_AsLong(PyTuple_GetItem(py_nlink,iorb));
         for(int ilink=0;ilink<maxNLinking;ilink++){
-            linkedOrb[iorb][ilink]=(int)PyLong_AsLong(PyTuple_GetItem(py_linkedOrb,iorb*maxNLinking+ilink));
-            linkStrength[iorb][ilink]=PyFloat_AsDouble(PyTuple_GetItem(py_linkStrength,iorb*maxNLinking+ilink));
+            linkedOrb[iorb*maxNLinking+ilink]=(int)PyLong_AsLong(PyTuple_GetItem(py_linkedOrb,iorb*maxNLinking+ilink));
+            linkStrength[iorb*maxNLinking+ilink]=PyFloat_AsDouble(PyTuple_GetItem(py_linkStrength,iorb*maxNLinking+ilink));
         }
     }
     //printf("totOrbs=%d s0=%f nther=%d nst=%d tau=%d maxLink=%d link0=%d J=%f\n",totOrbs,initSpin[0],nthermal,nsweep,ninterval,maxNLinking,nlink[0],linkStrength[0][0]);
@@ -547,15 +547,15 @@ PyObject * MCMainFunction(PyObject* self, PyObject* args){
     int totOrb_rnorm=(int)PyTuple_Size(py_rOrb);
     int nOrbInCluster=(int)PyTuple_Size(py_rOrbCluster)/totOrb_rnorm;
     //printf("totOrb renorm=%d grain size=%d\n",totOrb_rnorm,nOrbInCluster);
-    int rOrb[totOrb_rnorm];
-    int rOrbCluster[totOrb_rnorm][nOrbInCluster];
-    int linkedOrb_rnorm[totOrb_rnorm][maxNLinking];
+    int *rOrb=(int*)malloc(totOrb_rnorm*sizeof(int));
+    int *rOrbCluster=(int*)malloc(totOrb_rnorm*nOrbInCluster*sizeof(int));
+    int *linkedOrb_rnorm=(int*)malloc(totOrb_rnorm*maxNLinking*sizeof(int));
     for(int iorb=0;iorb<totOrb_rnorm;iorb++){
         rOrb[iorb]=(int)PyLong_AsLong(PyTuple_GetItem(py_rOrb,iorb));
         for(int iorb_cluster=0;iorb_cluster<nOrbInCluster;iorb_cluster++)
-            rOrbCluster[iorb][iorb_cluster]=(int)PyLong_AsLong(PyTuple_GetItem(py_rOrbCluster,iorb*nOrbInCluster+iorb_cluster));
+            rOrbCluster[iorb*nOrbInCluster+iorb_cluster]=(int)PyLong_AsLong(PyTuple_GetItem(py_rOrbCluster,iorb*nOrbInCluster+iorb_cluster));
         for(int ilink=0;ilink<maxNLinking;ilink++)
-            linkedOrb_rnorm[iorb][ilink]=(int)PyLong_AsLong(PyTuple_GetItem(py_linkedOrb_rnorm,iorb*maxNLinking+ilink));
+            linkedOrb_rnorm[iorb*maxNLinking+ilink]=(int)PyLong_AsLong(PyTuple_GetItem(py_linkedOrb_rnorm,iorb*maxNLinking+ilink));
     }
 
     if(algorithm==0){

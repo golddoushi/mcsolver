@@ -10,7 +10,7 @@ heisenbergLib=Extension('heisenberglib',sources=['./mcsolver/heisenbergLib.c'],l
 
 setup(
     name="mcsolver",
-    version="3.0.4",
+    version="3.0.5",
     author="Liang Liu",
     author_email="liangliu@main.sdu.edu.cn",
     description="A user friendly program to do Monte Carlo sims for magnetic systems",
@@ -30,13 +30,3 @@ setup(
         "Topic :: Scientific/Engineering :: Visualization",
     ],
 )
-
-#from distutils.sysconfig import get_python_lib
-#from subprocess import check_call
-#mcs_path=get_python_lib()+'/mcsolver/'
-#check_call(["rm -rf %sisinglib.so"%(mcs_path)],shell=True)
-#check_call(["rm -rf %sxylib.so"%(mcs_path)],shell=True)
-#check_call(["rm -rf %sheisenberglib.so"%(mcs_path)],shell=True)
-#check_call(["ln -s %s/lib/isinglib.* %sisinglib.so"%(mcs_path,mcs_path)],shell=True)
-#check_call(["ln -s %s/lib/xylib.* %sxylib.so"%(mcs_path,mcs_path)],shell=True)
-#check_call(["ln -s %s/lib/heisenberglib.* %sheisenberglib.so"%(mcs_path,mcs_path)],shell=True)
