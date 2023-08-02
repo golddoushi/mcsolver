@@ -594,7 +594,7 @@ PyObject * MCMainFunction(PyObject* self, PyObject* args){
     if (ignoreNonDiagonalJ>0) p_diagonalDot=diagonalDot_simple;
     
     // initialize lattice
-    Orb lattice[totOrbs];
+    Orb *lattice=(Orb*)malloc(totOrbs*sizeof(Orb));
     //printf("hello here is C lib\n");
     establishLattice(lattice, totOrbs, initSpin, initD, h, flunc, maxNLinking, nlink, linkStrength, totOrb_rnorm, nOrbInCluster, rOrb, rOrbCluster);
     establishLinking(lattice, totOrbs, maxNLinking, nlink, linkedOrb, totOrb_rnorm, rOrb, linkedOrb_rnorm);

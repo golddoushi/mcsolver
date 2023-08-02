@@ -244,7 +244,7 @@ PyObject * blockUpdateMC(int totOrbs, double initSpin[totOrbs], int nthermal, in
     //printf("hello block algorithm!\n");
     // initialize lattice including one ghost spin
     //totOrbs+=1;
-    Orb lattice[totOrbs];
+    Orb *lattice=(Orb*)malloc(totOrbs*sizeof(Orb));
     //establishLatticeWithGhost(lattice, totOrbs, initSpin, maxNLinking, nlink, linkStrength, h, totOrb_rnorm, rOrb);
     //establishLinkingWithGhost(lattice, totOrbs, maxNLinking, nlink, linkedOrb, totOrb_rnorm, rOrb, linkedOrb_rnorm);
     establishLattice(lattice, totOrbs, initSpin, maxNLinking, nlink, linkStrength, totOrb_rnorm, nOrbInCluster, rOrb, rOrbCluster);
@@ -369,7 +369,7 @@ PyObject * localUpdateMC(int totOrbs, double initSpin[totOrbs], int nthermal, in
                    int renormOn, int totOrb_rnorm, int nOrbInCluster, int rOrb[totOrb_rnorm], int rOrbCluster[totOrb_rnorm*nOrbInCluster], int linkedOrb_rnorm[totOrb_rnorm*maxNLinking],
                    int spinFrame){
     // initialize lattice 
-    Orb lattice[totOrbs];
+    Orb *lattice=(Orb*)malloc(totOrbs*sizeof(Orb));
     establishLattice(lattice, totOrbs, initSpin, maxNLinking, nlink, linkStrength, totOrb_rnorm, nOrbInCluster, rOrb, rOrbCluster);
     establishLinking(lattice, totOrbs, maxNLinking, nlink, linkedOrb, totOrb_rnorm, rOrb, linkedOrb_rnorm);
 
