@@ -1,0 +1,48 @@
+This is mcsolver's save file, version: 3.0
+Lattice:
+ 1   0         0
+-0.5 0.8660254 0
+ 0   0         1
+Supercell used in MC simulations:
+16 16 1
+Orbitals in cell:
+2
+Positions, initial spin states and onsite-anisotropy of every orbital:
+orb 0: type 0 spin 1 pos [0.3333333 0.6666667 0] Dx 0 Dy 0 Dz -0.1 h 0
+orb 1: type 0 spin 1 pos [0.6666667 0.3333333 0] Dx 0 Dy 0 Dz -0.1 h 0
+Bonds:
+3
+id, source, target, overLat, exchange matrix elements of each bond:
+bond 0: Jx -1 Jy -1 Jz -1 Jxy 0 Jxz -0.8660254 Jyz  0.5 Jyx 0 Jzx  0.8660254 Jzy -0.5 orb 0 to orb 1 over [ 0 0 0]
+bond 1: Jx -1 Jy -1 Jz -1 Jxy 0 Jxz  0         Jyz -1   Jyx 0 Jzx  0         Jzy  1   orb 0 to orb 1 over [ 0 1 0]
+bond 2: Jx -1 Jy -1 Jz -1 Jxy 0 Jxz  0.8660254 Jyz  0.5 Jyx 0 Jzx -0.8660254 Jzy -0.5 orb 0 to orb 1 over [-1 0 0]
+Temperature scanning region:
+Tmin 0.3 Tmax 0.3 nT 1
+Field scanning region (in unit 1.48872 T, only if Kelvin and uB is used for energy and spin): 
+Hmin 0 Hmax 0.7 nH 16
+Dipole long-range coupling:
+alpha 0
+Measurement:
+measure the correlation function between orb0 and orb0 over [0 0 0]
+Supergroup
+OrbGroup:1
+Supergroup
+group0 orb0-orb0
+>>>       Topological section      <<<
+LocalCircuit per cell: 4 (set to 0 to skip the calc. for topo. Q)
+Circuit 0 enclosed by orb 1 [0 0 0],  orb 1 [1 0 0], and orb 0 [1 0 0] 
+Circuit 1 enclosed by orb 1 [1 0 0],  orb 1 [1 1 0], and orb 0 [1 0 0] 
+Circuit 2 enclosed by orb 1 [0 0 0],  orb 0 [1 0 0], and orb 1 [1 1 0] 
+Circuit 3 enclosed by orb 1 [0 0 0],  orb 1 [1 1 0], and orb 1 [0 1 0] 
+>>>   End of Topological section   <<<
+Distribution output frame: 1
+Sweeps for thermalization and statistics, and relaxiation step for each sweep:
+40000 80000 0
+XAxis type:
+H
+Model type:
+Heisenberg
+Algorithm:
+Metropolis
+Ncores:
+16
