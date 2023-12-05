@@ -238,7 +238,7 @@ void localUpdate(int totOrbs, Orb lattice[], double *p_energy, double *p_totSpin
  
 PyObject * blockUpdateMC(int totOrbs, double initSpin[totOrbs], int nthermal, int nsweep, 
                    int maxNLinking, int nlink[totOrbs], double linkStrength[totOrbs*maxNLinking], int linkedOrb[totOrbs*maxNLinking],
-                   int ninterval, int nLat, int corrOrbPair[nLat][2], double h,
+                   int ninterval, int nLat, int corrOrbPair[nLat*2], double h,
                    int renormOn, int totOrb_rnorm, int nOrbInCluster, int rOrb[totOrb_rnorm], int rOrbCluster[totOrb_rnorm*nOrbInCluster], int linkedOrb_rnorm[totOrb_rnorm*maxNLinking],
                    int spinFrame){
     //printf("hello block algorithm!\n");
@@ -299,8 +299,8 @@ PyObject * blockUpdateMC(int totOrbs, double initSpin[totOrbs], int nthermal, in
         double spin_j_avg=0;
         double corrAvg=0.0;
         for(int j=0;j<nLat;j++){
-            double si_tmp=lattice[corrOrbPair[j][0]].spin;
-            double sj_tmp=lattice[corrOrbPair[j][1]].spin;
+            double si_tmp=lattice[corrOrbPair[j*2+0]].spin;
+            double sj_tmp=lattice[corrOrbPair[j*2+1]].spin;
             spin_i_avg+=si_tmp;
             spin_j_avg+=sj_tmp;
             corrAvg+=si_tmp*sj_tmp;
@@ -365,7 +365,7 @@ PyObject * blockUpdateMC(int totOrbs, double initSpin[totOrbs], int nthermal, in
 
 PyObject * localUpdateMC(int totOrbs, double initSpin[totOrbs], int nthermal, int nsweep, 
                    int maxNLinking, int nlink[totOrbs], double linkStrength[totOrbs*maxNLinking], int linkedOrb[totOrbs*maxNLinking],
-                   int ninterval, int nLat, int corrOrbPair[nLat][2], double h,
+                   int ninterval, int nLat, int corrOrbPair[nLat*2], double h,
                    int renormOn, int totOrb_rnorm, int nOrbInCluster, int rOrb[totOrb_rnorm], int rOrbCluster[totOrb_rnorm*nOrbInCluster], int linkedOrb_rnorm[totOrb_rnorm*maxNLinking],
                    int spinFrame){
     // initialize lattice 
@@ -427,8 +427,8 @@ PyObject * localUpdateMC(int totOrbs, double initSpin[totOrbs], int nthermal, in
         double spin_j_avg=0;
         double corrAvg=0.0;
         for(int j=0;j<nLat;j++){
-            double si_tmp=lattice[corrOrbPair[j][0]].spin;
-            double sj_tmp=lattice[corrOrbPair[j][1]].spin;
+            double si_tmp=lattice[corrOrbPair[j*2+0]].spin;
+            double sj_tmp=lattice[corrOrbPair[j*2+1]].spin;
             spin_i_avg+=si_tmp;
             spin_j_avg+=sj_tmp;
             corrAvg+=si_tmp*sj_tmp;
@@ -534,10 +534,10 @@ PyObject * MCMainFunction(PyObject* self, PyObject* args){
     //for(int iorb=0;iorb<nlink[0];iorb++)printf("orb0-orb%d\n",linkedOrb[0][iorb]);
 
     int nLat=(int)PyTuple_Size(py_corrOrbPair)/2;
-    int corrOrbPair[nLat][2];
+    int *corrOrbPair=(int*)malloc(nLat*2*sizeof(int));
     for(int ilat=0;ilat<nLat;ilat++){
         for(int icomp=0;icomp<2;icomp++)
-        corrOrbPair[ilat][icomp]=(int)PyLong_AsLong(PyTuple_GetItem(py_corrOrbPair,ilat*2+icomp));
+        corrOrbPair[ilat*2+icomp]=(int)PyLong_AsLong(PyTuple_GetItem(py_corrOrbPair,ilat*2+icomp));
         //printf("pair%d orb%d-orb%d\n",ilat,corrOrbPair[ilat][0],corrOrbPair[ilat][1]);
     }
     
