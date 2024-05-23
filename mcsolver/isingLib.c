@@ -196,7 +196,7 @@ void blockUpdate(int totOrbs, Orb lattice[], double*p_energy, double*p_totSpin){
     //printf("one block update step is initializaing...\n");
     Orb *block[totOrbs];
     Orb *buffer[totOrbs];
-    int seedID=rand()%totOrbs;
+    int seedID=(rand()*RAND_MAX+rand())%totOrbs;
     block[0]=lattice+seedID;
     buffer[0]=lattice+seedID;
     block[0]->inBlock=1;
@@ -221,7 +221,7 @@ void blockUpdate(int totOrbs, Orb lattice[], double*p_energy, double*p_totSpin){
 }
 
 void localUpdate(int totOrbs, Orb lattice[], double *p_energy, double *p_totSpin, double h){
-    int seedID=rand()%totOrbs;
+    int seedID=(rand()*RAND_MAX+rand())%totOrbs;
     double corr=2*(getCorrEnergy(lattice+seedID)-h*lattice[seedID].spin);
     //printf("local update: try to flip orb%d, corr=%.6f\n",lattice[seedID].id,corr);
     if(corr>=0){

@@ -375,7 +375,7 @@ void blockUpdate(int totOrbs, Orb lattice[], double*p_energy, Vec *p_totSpin){
     for(int i=0;i<totOrbs;i++){lattice[i].isProjected=0;lattice[i].inBlock=0;} // initialize all orb status
     Orb **block=(Orb**)malloc(totOrbs*sizeof(Orb*));
     Orb **buffer=(Orb**)malloc(totOrbs*sizeof(Orb*));
-    int seedID=rand()%totOrbs;
+    unsigned long long seedID=(rand()*1000+rand()%1000)%totOrbs;  // chose one orb
     block[0]=lattice+seedID;
     buffer[0]=lattice+seedID;
     block[0]->inBlock=1;
@@ -438,7 +438,7 @@ void blockUpdate(int totOrbs, Orb lattice[], double*p_energy, Vec *p_totSpin){
 
 void localUpdate(int totOrbs, Orb lattice[], double *p_energy, Vec *p_totSpin){
     //printf("start local updating\n");
-    int seedID=rand()%totOrbs;  // chose one orb
+    unsigned long long seedID=(rand()*1000+rand()%1000)%totOrbs;  // chose one orb
     //printf("considering %d orb, its spin is %.3f %.3f %.3f\n",
     //         seedID,lattice[seedID].spin.coor[0],lattice[seedID].spin.coor[1],lattice[seedID].spin.coor[2]);
     Vec *refDirection=generateRandomVec(); // chose new direction
@@ -509,8 +509,8 @@ PyObject * MCMainFunction(PyObject* self, PyObject* args){
 
     int algorithm=(int)PyLong_AsLong(py_algorithm); 
     //printf("%d\n",algorithm);
-    int nthermal=(int)PyLong_AsLong(py_nthermal);
-    int nsweep=(int)PyLong_AsLong(py_nsweep);
+    long nthermal=PyLong_AsLong(py_nthermal);
+    long nsweep=PyLong_AsLong(py_nsweep);
     int maxNLinking=(int)PyLong_AsLong(py_maxNLinking);
     long ninterval=PyLong_AsLong(py_ninterval);
     int spinFrame=(int)PyLong_AsLong(py_spinFrame);
@@ -607,7 +607,7 @@ PyObject * MCMainFunction(PyObject* self, PyObject* args){
     Vec*p_totSpin=&totSpin;
     for(int i=0;i<totOrbs;i++) plusEqual(p_totSpin, lattice[i].spin);
 
-    for(long i=0;i<nthermal*ninterval;i++) (*p_mcUpdate)(totOrbs, lattice, p_energy, p_totSpin); //thermalization
+    for(long i=0;i<ninterval;i++)for(long j=0;j<nthermal;j++) (*p_mcUpdate)(totOrbs, lattice, p_energy, p_totSpin); //thermalization
 
     printf("start sweeping\n");
     Vec spin_i, spin_i_r;
@@ -631,7 +631,7 @@ PyObject * MCMainFunction(PyObject* self, PyObject* args){
     spin_i_h=0;spin_j_h=0;spin_tot_h=0;
 
     // prepare for output spin frame
-    int output_per_sweep=nsweep;
+    long output_per_sweep=nsweep;
     int iFrame=0;
     PyObject *spinFrameData;
     if(spinFrame>0){
@@ -647,7 +647,7 @@ PyObject * MCMainFunction(PyObject* self, PyObject* args){
     double spin4Order[nOrbGroup+1];
     for(unsigned long long i=0;i<nOrbGroup+1;i++) spin4Order[i]=0.0;
     
-    for(int i=0;i<nsweep;i++){
+    for(unsigned long long i=0;i<nsweep;i++){
         for(unsigned long long j=0;j<ninterval;j++) (*p_mcUpdate)(totOrbs, lattice, p_energy, p_totSpin);
         // record the spin vector field distribution
         if((spinFrame>0) & (i%output_per_sweep==0)){

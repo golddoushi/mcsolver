@@ -321,7 +321,7 @@ void blockUpdate(int totOrbs, Orb lattice[], double*p_energy, Vec *p_totSpin){
     for(int i=0;i<totOrbs;i++){lattice[i].isProjected=0;lattice[i].inBlock=0;} // initialize all orb status
     Orb **block=(Orb**)malloc(totOrbs*sizeof(Orb*));
     Orb **buffer=(Orb**)malloc(totOrbs*sizeof(Orb*));
-    int seedID=rand()%totOrbs;
+    int seedID=(rand()*RAND_MAX+rand())%totOrbs;
     block[0]=lattice+seedID;
     buffer[0]=lattice+seedID;
     block[0]->inBlock=1;
@@ -381,7 +381,7 @@ void blockUpdate(int totOrbs, Orb lattice[], double*p_energy, Vec *p_totSpin){
 
 void localUpdate(int totOrbs, Orb lattice[], double *p_energy, Vec *p_totSpin){
     //printf("start local updating\n");
-    int seedID=rand()%totOrbs;  // chose one orb Note that WE CANNOT CHOOSE GHOST SPIN, since it's not compatible with local statistics
+    int seedID=(rand()*RAND_MAX+rand())%totOrbs;  // chose one orb Note that WE CANNOT CHOOSE GHOST SPIN, since it's not compatible with local statistics
     //int seedID=totOrbs;
     //printf("considering %d orb, its spin is %.3f %.3f\n",
     //         seedID,lattice[seedID].spin.x,lattice[seedID].spin.y);

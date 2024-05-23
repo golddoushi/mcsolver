@@ -271,7 +271,7 @@ def loadParam(updateGUI=True,rpath='./mcInput'):
     nCircuits=int(findall(r"[0-9]+",data[tagTopo])[0])
     localCircuitList=[]
     for icircuit in range(nCircuits):
-        ele=[int(x) for x in findall(r"[0-9\-]+",data[tagTopo+1+i])]
+        ele=[int(x) for x in findall(r"[0-9\-]+",data[tagTopo+1+icircuit])]
                              # S1 id  S1 overLat                S2 id  S2 overLat                S3 id  S3 overLat
         circuit_data_packed=[(ele[1],(ele[2],ele[3],ele[4],)),(ele[5],(ele[6],ele[7],ele[8],)),(ele[9],(ele[10],ele[11],ele[12],)),]
         localCircuitList.append(circuit_data_packed)
