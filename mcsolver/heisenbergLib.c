@@ -375,7 +375,9 @@ void blockUpdate(int totOrbs, Orb lattice[], double*p_energy, Vec *p_totSpin){
     for(int i=0;i<totOrbs;i++){lattice[i].isProjected=0;lattice[i].inBlock=0;} // initialize all orb status
     Orb **block=(Orb**)malloc(totOrbs*sizeof(Orb*));
     Orb **buffer=(Orb**)malloc(totOrbs*sizeof(Orb*));
-    unsigned long long seedID=(rand()*1000+rand()%1000)%totOrbs;  // chose one orb
+    unsigned long long r1=(unsigned long long)rand();
+    unsigned long long r2=(unsigned long long)rand();
+    unsigned long long seedID=(r1*RAND_MAX+r2)%totOrbs;  // chose one orb
     block[0]=lattice+seedID;
     buffer[0]=lattice+seedID;
     block[0]->inBlock=1;
@@ -438,12 +440,14 @@ void blockUpdate(int totOrbs, Orb lattice[], double*p_energy, Vec *p_totSpin){
 
 void localUpdate(int totOrbs, Orb lattice[], double *p_energy, Vec *p_totSpin){
     //printf("start local updating\n");
-    unsigned long long seedID=(rand()*1000+rand()%1000)%totOrbs;  // chose one orb
+    unsigned long long r1=(unsigned long long)rand();
+    unsigned long long r2=(unsigned long long)rand();
+    unsigned long long seedID=(r1*RAND_MAX+r2)%totOrbs;  // chose one orb
     //printf("considering %d orb, its spin is %.3f %.3f %.3f\n",
-    //         seedID,lattice[seedID].spin.coor[0],lattice[seedID].spin.coor[1],lattice[seedID].spin.coor[2]);
+    //         seedID,lattice[seedID].spin.x,lattice[seedID].spin.y,lattice[seedID].spin.z);
     Vec *refDirection=generateRandomVec(); // chose new direction
     //printf("try new spin direction, ref: %.3f %.3f %.3f\n",
-    //       refDirection.coor[0],refDirection.coor[1],refDirection.coor[2]);
+    //       refDirection->x,refDirection->y,refDirection->z);
     double s1n=-2*dot(lattice[seedID].spin,*refDirection);
     //printf("projection s1n: %.3f\n",s1n);
     equal(&lattice[seedID].transSpin,*refDirection);
@@ -460,7 +464,7 @@ void localUpdate(int totOrbs, Orb lattice[], double *p_energy, Vec *p_totSpin){
         *p_energy+=corr;
         //printf("since new direction is energertically lowerd thus we accept, energy: %.3f\n",*p_energy);
         //double energy_tmp=0;
-        //for(int i=0;i<totOrbs;i++) energy_tmp+=getCorrEnergy(lattice+i);
+        //for(unsigned long long i=0;i<totOrbs;i++) energy_tmp+=getCorrEnergy(lattice+i);
         //energy_tmp/=2;
         //printf("ref energy (with out onsite) %.3f\n",energy_tmp);
     }
@@ -600,15 +604,22 @@ PyObject * MCMainFunction(PyObject* self, PyObject* args){
     for(int i=0;i<totOrbs;i++)*p_energy+=getCorrEnergy(lattice+i);
     *p_energy/=2; // double counting
     for(int i=0;i<totOrbs;i++)*p_energy+=getOnsiteEnergy(lattice+i);
-    //printf("gournd energy=%.3f nLat=%d\n",*p_energy, nLat);
+    printf("gournd energy=%.3f nLat=%d\n",*p_energy, nLat);
 
     Vec totSpin;
     totSpin.x=0;totSpin.y=0;totSpin.z=0;
     Vec*p_totSpin=&totSpin;
     for(int i=0;i<totOrbs;i++) plusEqual(p_totSpin, lattice[i].spin);
 
-    for(long i=0;i<ninterval;i++)for(long j=0;j<nthermal;j++) (*p_mcUpdate)(totOrbs, lattice, p_energy, p_totSpin); //thermalization
+    for(unsigned long long i=0;i<ninterval;i++){
+            //printf("i=%d nthermal=%d\n",i,nthermal);
+	    for(unsigned long long j=0;j<nthermal;j++){
+		    //printf("j=%d\n",j);
+		    (*p_mcUpdate)(totOrbs, lattice, p_energy, p_totSpin); //thermalizati
+	    }
+    }
 
+    printf("Energy after thermalization=%.3f nLat=%d\n",*p_energy, nLat);
     printf("start sweeping\n");
     Vec spin_i, spin_i_r;
     Vec spin_j, spin_j_r;

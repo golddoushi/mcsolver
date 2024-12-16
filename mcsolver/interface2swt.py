@@ -351,5 +351,5 @@ def __MTCurv(path='./',draw=False,algo='HF_longWave'):
         plt.close()
     return T, magList
 
-mainLoop('./samples/FeCl2')
+#mainLoop('./spg8Co8Gd4H.txt')
 #drawSpinWave('./samples/CrI3With2NNCoupling',[1./5,1./5,0.],0,Lx=6,Ly=6)
