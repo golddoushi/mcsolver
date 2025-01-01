@@ -14,8 +14,8 @@ except:
 
 class MC:
     def __init__(self,ID,LMatrix,pos=[],S=[],D=[],bondList=[],T=1,Lx=1,Ly=1,Lz=1,ki_s=0,ki_t=0,ki_overLat=[0,0,0],orbGroupList=[],groupInSC=False,h=0.,dipoleAlpha=0,On=1,spinFrame=0,localCircuitList=[]): # init for specified temperature
-        self.Lx, self.Ly, self.Lz=Lx, Ly, Lz
         norb=len(pos)
+        self.Lx, self.Ly, self.Lz, self.norbs=Lx, Ly, Lz, norb
         self.totOrbs=Lx*Ly*Lz*norb
         # to aviod 0K
         T=0.1 if T<0.1 else T
@@ -34,7 +34,6 @@ class MC:
             print("ERROR: index out of range ki_S=%d, ki_t=%d, norb=%d\n"%(ki_s,ki_t,norb))
             raise("Input Error!")
         self.correlatedOrbitalPair=lat.establishLinking(self.lattice_array,bondList,ki_s=ki_s,ki_t=ki_t,ki_overLat=ki_overLat,Lmatrix=np.array(LMatrix),bmatrix=np.array(pos),dipoleAlpha=dipoleAlpha)
-        lat.constructLocalFrame(self.lattice)
         self.dipoleCorrection = False 
         if abs(dipoleAlpha)>1e-5:
             self.dipoleCorrection=True

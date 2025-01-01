@@ -658,10 +658,10 @@ PyObject * MCMainFunction(PyObject* self, PyObject* args){
     double spin4Order[nOrbGroup+1];
     for(unsigned long long i=0;i<nOrbGroup+1;i++) spin4Order[i]=0.0;
     
-    for(unsigned long long i=0;i<nsweep;i++){
+    for(unsigned long long isweep=0;isweep<nsweep;isweep++){
         for(unsigned long long j=0;j<ninterval;j++) (*p_mcUpdate)(totOrbs, lattice, p_energy, p_totSpin);
         // record the spin vector field distribution
-        if((spinFrame>0) & (i%output_per_sweep==0)){
+        if((spinFrame>0) & (isweep%output_per_sweep==0)){
             PyObject *spinDistribution=PyTuple_New(totOrbs);
             for(int j=0;j<totOrbs;j++){
                 PyObject *spinJVec=PyTuple_New(3);
@@ -718,15 +718,9 @@ PyObject * MCMainFunction(PyObject* self, PyObject* args){
         spin_i_z+=spin_i_z_avg/nLat;
         spin_j_z+=spin_j_z_avg/nLat;
         spin_tot_z+=(dot(spin_direction,*p_totSpin)/nLat);
-        //if(h<0.00001){// avoid faults time reversal symmetry
-        //    spin_i_h+=fabs(spin_i_h_avg)/nLat;
-        //    spin_j_h+=fabs(spin_j_h_avg)/nLat;
-        //    spin_tot_h+=fabs(p_totSpin->z/nLat);
-        //}else{
-            spin_i_h+=spin_i_h_avg/nLat;
-            spin_j_h+=spin_j_h_avg/nLat;
-            spin_tot_h+=p_totSpin->z/nLat;
-        //}
+        spin_i_h+=spin_i_h_avg/nLat;
+        spin_j_h+=spin_j_h_avg/nLat;
+        spin_tot_h+=p_totSpin->z/nLat;
 
 
         M=sqrt(dot(*p_totSpin,*p_totSpin))/nLat;
@@ -835,6 +829,7 @@ PyObject * MCMainFunction(PyObject* self, PyObject* args){
             }
         }
     }
+    printf("sweeps finished\n");
     double U4=(M2/nsweep)*(M2/nsweep)/(M4/nsweep);
     double autoCorr=(MdotM_tmp/nsweep-M_tot/nsweep*M_tot/nsweep);
     PyObject *spinDotSpinBetweenGroup_Tuple;

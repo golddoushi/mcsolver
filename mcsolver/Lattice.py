@@ -14,7 +14,6 @@ class Orbital:
         self.linkedOrb=[]
         self.linkStrength=[]
         self.linkDistance=[]
-        self.invFactorMat=np.eye(3,dtype=float) # use to compute local spin vorticity
         self.spin=spin
         self.D=D
         self.inBlock=False
@@ -283,16 +282,6 @@ def establishLinking(lattice,bondList,ki_s=0,ki_t=0,ki_overLat=[0,0,0],
                     lattice[x][y][z][o].classifyTheLinking(On=On)
     '''
     return correlatedOrbitalPair
-
-def constructLocalFrame(lattice_flatten):
-    for orb in lattice_flatten:
-        factorMatrix=np.zeros((3,3))
-        for irow in range(3):
-            for icol in range(3):
-                for dis in orb.linkDistance:
-                    factorMatrix[irow,icol]+=dis[irow]*dis[icol]
-        orb.invFactorMat=np.linalg.inv(improveTheMatrixRankToThree(factorMatrix))
-
 
 def generateDipoleBondings(lattice,dipoleAlpha,On=1):
     # long-range dipole coupling
