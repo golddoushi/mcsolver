@@ -23,7 +23,7 @@ class MC:
         #  ATTENTION: all energies are multiplied by beta here #
         #******************************************************#
         # create orbs for manual temperature
-        DT=[d/T for d in D]
+        DT=[np.array(d)/T for d in D]
         self.lattice_array, self.lattice, self.orbGroup, self.localCircuit=lat.establishLattice(Lx=Lx,Ly=Ly,Lz=Lz,norb=norb,Lmatrix=np.array(LMatrix),bmatrix=np.array(pos),SpinList=S,DList=DT,orbGroupList=orbGroupList,groupInSC=groupInSC,localCircuitList=localCircuitList)
         # create bond list for manual temperature
         #bondT=[]

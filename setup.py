@@ -10,7 +10,7 @@ heisenbergLib=Extension('heisenberglib',sources=['./mcsolver/heisenbergLib.c'],l
 
 setup(
     name="mcsolver",
-    version="3.0.6",
+    version="3.1.1",
     author="Liang Liu",
     author_email="liangliu@main.sdu.edu.cn",
     description="A user friendly program to do Monte Carlo sims for magnetic systems",
